@@ -1,10 +1,11 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { Button, StyleSheet, Text, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import * as SecureStore from "expo-secure-store";
 
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
+const TODAY = new Date(Math.floor(Date.now() / DAY_IN_MS) * DAY_IN_MS);
 
 /**
  * getUTCDay returns 0..6 representing Sunday..Saturday
@@ -75,19 +76,109 @@ class MonthGenerator {
   }
 }
 
-type SelectedDates = Record<string, Set<number>>;
+class SelectedDates {
+  dates: Record<number, Record<number, Set<number>>>;
+
+  constructor(selectedDates?: SelectedDates) {
+    this.dates = selectedDates?.dates ?? {};
+  }
+
+  getYear(year: number) {
+    if (!(year in this.dates)) {
+      this.dates[year] = {};
+    }
+    return this.dates[year];
+  }
+
+  setYear(year: number, months: Record<number, Set<number>>) {
+    if (!(year in this.dates)) {
+      this.dates[year] = {};
+    }
+    this.dates[year] = months;
+    return this;
+  }
+
+  select(date: Date) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    if (!(year in this.dates)) {
+      this.dates[year] = { [month]: new Set() };
+    } else if (!(month in this.dates[year])) {
+      this.dates[year][month] = new Set();
+    }
+
+    const selected = this.dates[year][month];
+    if (selected.has(date.getDate())) {
+      selected.delete(date.getDate());
+    } else {
+      selected.add(date.getDate());
+    }
+
+    return this;
+  }
+
+  isSelected(date: Date) {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+
+    if (!(year in this.dates)) {
+      this.dates[year] = { [month]: new Set() };
+    } else if (!(month in this.dates[year])) {
+      this.dates[year][month] = new Set();
+    }
+
+    return this.dates[year][month].has(date.getDate());
+  }
+
+  getSelectedCount() {
+    return {
+      oneYear: 1,
+      twelveMonths: 1,
+      thirtySixMonths: 1,
+    };
+  }
+}
+
 interface SelectedDatesContext {
   selectedDates: SelectedDates;
   toggleDate: (date: Date) => void;
-  loadSelectedDates: (year: number, month: number) => void;
-  saveSelectedDates: (year: number, month: number) => void;
 }
 const SelectedDatesContext = React.createContext({} as SelectedDatesContext);
 
-const useDateSelected = (date: Date) => {
-  const { selectedDates } = React.useContext(SelectedDatesContext);
-  return selectedDates[date.toISOMonthString()]?.has(date.getDate());
-};
+class SelectedDateStorage {
+  static async load(year: number) {
+    try {
+      const value = await SecureStore.getItemAsync(`selected-dates-${year}`);
+      if (value) {
+        const parsed = JSON.parse(value) as Record<string, Array<number>>;
+        const selected = {} as Record<number, Set<number>>;
+        Object.entries(parsed).forEach(([key, items]) => {
+          selected[Number(key)] = new Set(items);
+        });
+        return selected;
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    return {} as Record<number, Set<number>>;
+  }
+
+  static async save(year: number, dates: Record<number, Set<number>>) {
+    try {
+      const value = {} as Record<string, Array<number>>;
+      Object.entries(dates).forEach(([k, v]) => {
+        value[k] = Array.from(v);
+      });
+      await SecureStore.setItemAsync(
+        `selected-dates-${year}`,
+        JSON.stringify(value)
+      );
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+}
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
@@ -97,7 +188,7 @@ export default function App() {
     monthGenerator.next(),
     monthGenerator.next(),
   ]);
-  const [selectedDates, setSelectedDates] = React.useState<SelectedDates>({});
+  const [selectedDates, setSelectedDates] = React.useState(new SelectedDates());
 
   React.useEffect(() => {
     // Adding months must be slightly delayed to
@@ -111,18 +202,17 @@ export default function App() {
     return () => clearTimeout(handle);
   }, []);
 
+  React.useEffect(() => {
+    const currentYear = TODAY.getFullYear();
+    loadSelectedDates(currentYear);
+    loadSelectedDates(currentYear - 1);
+    loadSelectedDates(currentYear - 2);
+    loadSelectedDates(currentYear - 3);
+  }, []);
+
   const toggleDate = React.useCallback(
     (date: Date) =>
-      setSelectedDates((prev) => {
-        const key = date.toISOMonthString();
-        const selected = prev[key] ?? new Set();
-        if (selected.has(date.getDate())) {
-          selected.delete(date.getDate());
-        } else {
-          selected.add(date.getDate());
-        }
-        return { ...prev, [key]: selected };
-      }),
+      setSelectedDates((prev) => new SelectedDates(prev).select(date)),
     []
   );
 
@@ -136,22 +226,16 @@ export default function App() {
     return Promise.resolve();
   }, []);
 
-  const loadSelectedDates = React.useCallback((year: number, month: number) => {
-    const key = toISOMonthString(year, month);
-    SecureStore.getItemAsync(key)
-      .then((value) => {
-        if (value) {
-          const selected = new Set(JSON.parse(value) as number[]);
-          setSelectedDates((prev) => ({ ...prev, [key]: selected }));
-        }
-      })
-      .catch(console.warn);
+  const loadSelectedDates = React.useCallback(async (year: number) => {
+    const selected = await SelectedDateStorage.load(year);
+    setSelectedDates((prev) => new SelectedDates(prev).setYear(year, selected));
   }, []);
 
-  const saveSelectedDates = React.useCallback((year: number, month: number) => {
-    const key = toISOMonthString(year, month);
-    const value = JSON.stringify(new Array(selectedDates[key]));
-    SecureStore.setItemAsync(key, value).catch(console.warn);
+  const saveSelectedDates = React.useCallback(async () => {
+    const years = Object.keys(selectedDates.dates) as unknown as number[];
+    years.forEach(async (year) => {
+      await SelectedDateStorage.save(year, selectedDates.getYear(year));
+    });
   }, []);
 
   return (
@@ -180,8 +264,6 @@ export default function App() {
         value={{
           selectedDates,
           toggleDate,
-          loadSelectedDates,
-          saveSelectedDates,
         }}
       >
         <FlatList
@@ -197,6 +279,9 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         />
       </SelectedDatesContext.Provider>
+      <View style={styles.saveButton}>
+        <Button color={colors.text} title="Save" onPress={saveSelectedDates} />
+      </View>
       <StatusBar style="light" />
     </View>
   );
@@ -213,13 +298,8 @@ interface IMonthView {
   month: number;
 }
 const MonthView = ({ year, month }: IMonthView) => {
-  const { loadSelectedDates } = React.useContext(SelectedDatesContext);
   const weeks = getWeeksInMonth(year, month);
   const title = getMonthTitle(year, month);
-
-  React.useEffect(() => {
-    loadSelectedDates(year, month);
-  }, []);
 
   return (
     <View style={styles.monthView}>
@@ -257,15 +337,11 @@ interface IDateView {
   date: Date;
 }
 
-function isDateToday(date: Date) {
-  return Math.floor(Date.now() / DAY_IN_MS) * DAY_IN_MS == date.getTime();
-}
-
 const DateView = ({ year, month, date }: IDateView) => {
-  const { toggleDate } = React.useContext(SelectedDatesContext);
-  const isSelected = useDateSelected(date);
+  const { selectedDates, toggleDate } = React.useContext(SelectedDatesContext);
+  const isSelected = selectedDates.isSelected(date);
   const isVisible = date.getMonth() == month;
-  const isToday = isDateToday(date);
+  const isToday = date.getTime() == TODAY.getTime();
 
   return (
     <View
@@ -348,5 +424,14 @@ const styles = StyleSheet.create({
     color: "white",
     borderRadius: 15,
     overflow: "hidden",
+  },
+  saveButton: {
+    position: "absolute",
+    bottom: 150,
+    right: 20,
+    backgroundColor: colors.primary,
+    borderRadius: 25,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
   },
 });
