@@ -39,26 +39,38 @@ function toISOMonthString(year: number, month: number) {
   return new Date(Date.UTC(year, month, 1)).toISOMonthString();
 }
 
-function getMonthGenerator() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
+type Month = { year: number; month: number };
+class MonthGenerator {
+  current: Month;
+  prev: () => Month;
+  next: () => Month;
 
-  function* prev() {
-    for (let i = 1; true; i++) {
-      const date = new Date(Date.UTC(year, month - i, 1));
-      yield { year: date.getFullYear(), month: date.getMonth() };
+  constructor() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+
+    function* prev() {
+      for (let i = 1; true; i++) {
+        const date = new Date(Date.UTC(year, month - i, 1));
+        yield { year: date.getFullYear(), month: date.getMonth() };
+      }
     }
-  }
 
-  function* next() {
-    for (let i = 1; true; i++) {
-      const date = new Date(Date.UTC(year, month + i, 1));
-      yield { year: date.getFullYear(), month: date.getMonth() };
+    function* next() {
+      for (let i = 1; true; i++) {
+        const date = new Date(Date.UTC(year, month + i, 1));
+        yield { year: date.getFullYear(), month: date.getMonth() };
+      }
     }
-  }
 
-  return [{ year, month }, prev(), next()] as const;
+    const prevMonthGenerator = prev();
+    const nextMonthGenerator = next();
+
+    this.current = { year, month };
+    this.prev = () => prevMonthGenerator.next().value!;
+    this.next = () => nextMonthGenerator.next().value!;
+  }
 }
 
 type SelectedDates = Record<string, Set<number>>;
@@ -76,13 +88,12 @@ const useDateSelected = (date: Date) => {
 };
 
 export default function App() {
-  const [[currentMonth, prevMonthGenerator, nextMonthGenerator]] =
-    React.useState(() => getMonthGenerator());
-  const [visibleMonths, setVisibleMonths] = React.useState([
-    prevMonthGenerator.next().value!,
-    currentMonth,
-    nextMonthGenerator.next().value!,
-    nextMonthGenerator.next().value!,
+  const [monthGenerator] = React.useState(() => new MonthGenerator());
+  const [visibleMonths, setVisibleMonths] = React.useState(() => [
+    monthGenerator.prev(),
+    monthGenerator.current,
+    monthGenerator.next(),
+    monthGenerator.next(),
   ]);
   const [selectedDates, setSelectedDates] = React.useState<SelectedDates>({});
 
@@ -114,12 +125,12 @@ export default function App() {
   );
 
   const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((prev) => [prevMonthGenerator.next().value!, ...prev]);
+    setVisibleMonths((prev) => [monthGenerator.prev(), ...prev]);
     return Promise.resolve();
   }, []);
 
   const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((prev) => [...prev, nextMonthGenerator.next().value!]);
+    setVisibleMonths((prev) => [...prev, monthGenerator.next()]);
     return Promise.resolve();
   }, []);
 
