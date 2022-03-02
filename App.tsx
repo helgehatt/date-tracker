@@ -4,6 +4,8 @@ import { StyleSheet, Text, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import * as SecureStore from "expo-secure-store";
 
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
 /**
  * getUTCDay returns 0..6 representing Sunday..Saturday
  * getISODay returns 1..7 representing Monday..Sunday
@@ -18,7 +20,7 @@ Date.prototype.getWeekNumber = function () {
   const fromDay = new Date(from).getISODay();
   const firstWeek = fromDay <= 4 ? 1 : 0;
   const missingDays = 7 - fromDay;
-  const days = (to - from) / (60 * 60 * 24 * 1000);
+  const days = (to - from) / DAY_IN_MS;
   return Math.ceil((days - missingDays) / 7) + firstWeek;
 };
 
@@ -255,12 +257,20 @@ interface IDateView {
   date: Date;
 }
 
+function isDateToday(date: Date) {
+  return Math.floor(Date.now() / DAY_IN_MS) * DAY_IN_MS == date.getTime();
+}
+
 const DateView = ({ year, month, date }: IDateView) => {
   const { toggleDate } = React.useContext(SelectedDatesContext);
   const isSelected = useDateSelected(date);
   const isVisible = date.getMonth() == month;
+  const isToday = isDateToday(date);
+
   return (
-    <View style={styles.dateView}>
+    <View
+      style={[styles.dateView, isVisible && isToday && styles.dateViewToday]}
+    >
       {isVisible && (
         <Text
           onPress={() => toggleDate(date)}
@@ -280,6 +290,7 @@ const DateView = ({ year, month, date }: IDateView) => {
 const colors = {
   background: "#2C394B",
   primary: "#FF4C29",
+  secondary: "#082032",
   text: "#FFFFFF",
 };
 
@@ -320,11 +331,15 @@ const styles = StyleSheet.create({
     display: "flex",
     flexGrow: 1,
     alignItems: "center",
+    justifyContent: "center",
     width: "10%",
   },
+  dateViewToday: {
+    backgroundColor: colors.secondary,
+  },
   dateViewText: {
+    width: "70%",
     padding: 5,
-    width: "60%",
     textAlign: "center",
     color: colors.text,
   },
