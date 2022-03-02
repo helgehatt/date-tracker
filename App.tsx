@@ -154,6 +154,9 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Header</Text>
+      </View>
       <SelectedDatesContext.Provider
         value={{
           selectedDates,
@@ -174,7 +177,7 @@ export default function App() {
           onEndReachedThreshold={1000}
         />
       </SelectedDatesContext.Provider>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </View>
   );
 }
@@ -249,13 +252,28 @@ const DateView = ({ year, month, date }: IDateView) => {
   );
 };
 
+// https://colorhunt.co/palette/0820322c394b334756ff4c29
+const colors = {
+  background: "#2C394B",
+  primary: "#FF4C29",
+  text: "#FFFFFF",
+};
+
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
+  },
+  header: {
+    paddingTop: 60,
+    backgroundColor: colors.primary,
+  },
+  headerText: {
+    color: colors.text,
   },
   monthView: {},
-  monthViewText: {},
+  monthViewText: {
+    color: colors.text,
+  },
   weekView: {
     display: "flex",
     flexDirection: "row",
@@ -271,9 +289,10 @@ const styles = StyleSheet.create({
     padding: 5,
     width: "60%",
     textAlign: "center",
+    color: colors.text,
   },
   dateViewTextSelected: {
-    backgroundColor: "#525860",
+    backgroundColor: colors.primary,
     color: "white",
     borderRadius: 15,
     overflow: "hidden",
