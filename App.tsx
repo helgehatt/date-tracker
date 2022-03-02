@@ -155,7 +155,24 @@ export default function App() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerText}>Header</Text>
+        <View>
+          <Text style={[styles.headerText, styles.headerTextTitle]}>1 Y</Text>
+          <Text style={[styles.headerText, styles.headerTextContent]}>
+            1 / 61
+          </Text>
+        </View>
+        <View>
+          <Text style={[styles.headerText, styles.headerTextTitle]}>12 M</Text>
+          <Text style={[styles.headerText, styles.headerTextContent]}>
+            1 / 183
+          </Text>
+        </View>
+        <View>
+          <Text style={[styles.headerText, styles.headerTextTitle]}>36 M</Text>
+          <Text style={[styles.headerText, styles.headerTextContent]}>
+            1 / 270
+          </Text>
+        </View>
       </View>
       <SelectedDatesContext.Provider
         value={{
@@ -175,11 +192,18 @@ export default function App() {
           onStartReachedThreshold={1000}
           onEndReached={showNextMonth}
           onEndReachedThreshold={1000}
+          showsVerticalScrollIndicator={false}
         />
       </SelectedDatesContext.Provider>
       <StatusBar style="light" />
     </View>
   );
+}
+
+function getMonthTitle(year: number, month: number) {
+  const date = new Date(Date.UTC(year, month));
+  const options = { year: "numeric", month: "long" } as const;
+  return date.toLocaleDateString(undefined, options);
 }
 
 interface IMonthView {
@@ -189,7 +213,7 @@ interface IMonthView {
 const MonthView = ({ year, month }: IMonthView) => {
   const { loadSelectedDates } = React.useContext(SelectedDatesContext);
   const weeks = getWeeksInMonth(year, month);
-  const title = toISOMonthString(year, month);
+  const title = getMonthTitle(year, month);
 
   React.useEffect(() => {
     loadSelectedDates(year, month);
@@ -264,15 +288,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-around",
     paddingTop: 60,
+    padding: 20,
     backgroundColor: colors.primary,
   },
   headerText: {
     color: colors.text,
+    textAlign: "center",
+  },
+  headerTextTitle: {
+    fontSize: 20,
+  },
+  headerTextContent: {
+    marginTop: 10,
   },
   monthView: {},
   monthViewText: {
     color: colors.text,
+    padding: 20,
+    fontSize: 16,
   },
   weekView: {
     display: "flex",
