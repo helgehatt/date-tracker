@@ -4,3 +4,7 @@ interface Date {
     toISOMonthString(): string;
     toISODateString(): string;
 }
+
+interface ObjectConstructor {
+    keys(o: Record<K,V>): K[]
+}

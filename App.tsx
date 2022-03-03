@@ -132,10 +132,46 @@ class SelectedDates {
   }
 
   getSelectedCount() {
+    const dates = [] as number[];
+
+    if (this.dates) {
+      Object.keys(this.dates).forEach((year) => {
+        Object.keys(this.dates[year]).forEach((month) => {
+          this.dates[year][month].forEach((date) => {
+            dates.push(Date.UTC(year, month, date));
+          });
+        });
+      });
+    }
+
+    const intervals = {
+      oneYear: [
+        Date.UTC(TODAY.getFullYear(), 0, 1),
+        Date.UTC(TODAY.getFullYear() + 1, 0, 0),
+      ],
+      twelveMonths: [
+        Date.UTC(TODAY.getFullYear(), TODAY.getMonth() - 12, TODAY.getDate()),
+        Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate()),
+      ],
+      thirtySixMonths: [
+        Date.UTC(TODAY.getFullYear(), TODAY.getMonth() - 36, TODAY.getDate()),
+        Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate()),
+      ],
+    };
+
     return {
-      oneYear: 1,
-      twelveMonths: 1,
-      thirtySixMonths: 1,
+      oneYear: dates.filter(
+        (date) => intervals.oneYear[0] < date && date <= intervals.oneYear[1]
+      ).length,
+      twelveMonths: dates.filter(
+        (date) =>
+          intervals.twelveMonths[0] < date && date <= intervals.twelveMonths[1]
+      ).length,
+      thirtySixMonths: dates.filter(
+        (date) =>
+          intervals.thirtySixMonths[0] < date &&
+          date <= intervals.thirtySixMonths[1]
+      ).length,
     };
   }
 }
@@ -189,6 +225,9 @@ export default function App() {
     monthGenerator.next(),
   ]);
   const [selectedDates, setSelectedDates] = React.useState(new SelectedDates());
+  const [selectedCount, setSelectedCount] = React.useState(() =>
+    selectedDates.getSelectedCount()
+  );
 
   React.useEffect(() => {
     // Adding months must be slightly delayed to
@@ -209,6 +248,10 @@ export default function App() {
     loadSelectedDates(currentYear - 2);
     loadSelectedDates(currentYear - 3);
   }, []);
+
+  React.useEffect(() => {
+    setSelectedCount(selectedDates.getSelectedCount());
+  }, [selectedDates]);
 
   const toggleDate = React.useCallback(
     (date: Date) =>
@@ -244,19 +287,19 @@ export default function App() {
         <View>
           <Text style={[styles.headerText, styles.headerTextTitle]}>1 Y</Text>
           <Text style={[styles.headerText, styles.headerTextContent]}>
-            1 / 61
+            {selectedCount.oneYear} / 61
           </Text>
         </View>
         <View>
           <Text style={[styles.headerText, styles.headerTextTitle]}>12 M</Text>
           <Text style={[styles.headerText, styles.headerTextContent]}>
-            1 / 183
+            {selectedCount.twelveMonths} / 183
           </Text>
         </View>
         <View>
           <Text style={[styles.headerText, styles.headerTextTitle]}>36 M</Text>
           <Text style={[styles.headerText, styles.headerTextContent]}>
-            1 / 270
+            {selectedCount.thirtySixMonths} / 270
           </Text>
         </View>
       </View>
