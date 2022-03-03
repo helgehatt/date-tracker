@@ -7,6 +7,14 @@ import * as SecureStore from "expo-secure-store";
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 const TODAY = new Date(Math.floor(Date.now() / DAY_IN_MS) * DAY_IN_MS);
 
+Date.prototype.getComponents = function () {
+  return {
+    year: this.getFullYear(),
+    month: this.getMonth(),
+    date: this.getDate(),
+  };
+};
+
 /**
  * getUTCDay returns 0..6 representing Sunday..Saturday
  * getISODay returns 1..7 representing Monday..Sunday
@@ -16,8 +24,9 @@ Date.prototype.getISODay = function () {
 };
 
 Date.prototype.getWeekNumber = function () {
-  const from = Date.UTC(this.getFullYear(), 0, 1);
-  const to = Date.UTC(this.getFullYear(), this.getMonth(), this.getDate());
+  const { year, month, date } = this.getComponents();
+  const from = Date.UTC(year, 0, 1);
+  const to = Date.UTC(year, month, date);
   const fromDay = new Date(from).getISODay();
   const firstWeek = fromDay <= 4 ? 1 : 0;
   const missingDays = 7 - fromDay;
@@ -49,21 +58,17 @@ class MonthGenerator {
   next: () => Month;
 
   constructor() {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const { year, month } = new Date().getComponents();
 
     function* prev() {
       for (let i = 1; true; i++) {
-        const date = new Date(Date.UTC(year, month - i, 1));
-        yield { year: date.getFullYear(), month: date.getMonth() };
+        yield new Date(Date.UTC(year, month - i, 1)).getComponents();
       }
     }
 
     function* next() {
       for (let i = 1; true; i++) {
-        const date = new Date(Date.UTC(year, month + i, 1));
-        yield { year: date.getFullYear(), month: date.getMonth() };
+        yield new Date(Date.UTC(year, month + i, 1)).getComponents();
       }
     }
 
@@ -78,9 +83,11 @@ class MonthGenerator {
 
 class SelectedDates {
   dates: Record<number, Record<number, Set<number>>>;
+  referenceDate: Date;
 
   constructor(selectedDates?: SelectedDates) {
     this.dates = selectedDates?.dates ?? {};
+    this.referenceDate = selectedDates?.referenceDate ?? TODAY;
   }
 
   getYear(year: number) {
@@ -95,12 +102,10 @@ class SelectedDates {
       this.dates[year] = {};
     }
     this.dates[year] = months;
-    return this;
   }
 
-  select(date: Date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  select(other: Date) {
+    const { year, month, date } = other.getComponents();
 
     if (!(year in this.dates)) {
       this.dates[year] = { [month]: new Set() };
@@ -109,18 +114,15 @@ class SelectedDates {
     }
 
     const selected = this.dates[year][month];
-    if (selected.has(date.getDate())) {
-      selected.delete(date.getDate());
+    if (selected.has(date)) {
+      selected.delete(date);
     } else {
-      selected.add(date.getDate());
+      selected.add(date);
     }
-
-    return this;
   }
 
-  isSelected(date: Date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+  isSelected(other: Date) {
+    const { year, month, date } = other.getComponents();
 
     if (!(year in this.dates)) {
       this.dates[year] = { [month]: new Set() };
@@ -128,10 +130,14 @@ class SelectedDates {
       this.dates[year][month] = new Set();
     }
 
-    return this.dates[year][month].has(date.getDate());
+    return this.dates[year][month].has(date);
   }
 
-  getSelectedCount() {
+  getSelectedCount(): {
+    oneYear: number;
+    twelveMonths: number;
+    thirtySixMonths: number;
+  } {
     const dates = [] as number[];
 
     if (this.dates) {
@@ -144,41 +150,33 @@ class SelectedDates {
       });
     }
 
+    const { year, month, date } = this.referenceDate.getComponents();
+
     const intervals = {
-      oneYear: [
-        Date.UTC(TODAY.getFullYear(), 0, 1),
-        Date.UTC(TODAY.getFullYear() + 1, 0, 0),
-      ],
+      oneYear: [Date.UTC(year, 0, 0), Date.UTC(year + 1, 0, 0)],
       twelveMonths: [
-        Date.UTC(TODAY.getFullYear(), TODAY.getMonth() - 12, TODAY.getDate()),
-        Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate()),
+        Date.UTC(year, month - 12, date),
+        Date.UTC(year, month, date),
       ],
       thirtySixMonths: [
-        Date.UTC(TODAY.getFullYear(), TODAY.getMonth() - 36, TODAY.getDate()),
-        Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate()),
+        Date.UTC(year, month - 36, date),
+        Date.UTC(year, month, date),
       ],
-    };
+    } as const;
 
-    return {
-      oneYear: dates.filter(
-        (date) => intervals.oneYear[0] < date && date <= intervals.oneYear[1]
-      ).length,
-      twelveMonths: dates.filter(
-        (date) =>
-          intervals.twelveMonths[0] < date && date <= intervals.twelveMonths[1]
-      ).length,
-      thirtySixMonths: dates.filter(
-        (date) =>
-          intervals.thirtySixMonths[0] < date &&
-          date <= intervals.thirtySixMonths[1]
-      ).length,
-    };
+    return Object.fromEntries(
+      Object.entries(intervals).map(([key, [start, end]]) => [
+        key,
+        dates.filter((date) => start < date && date <= end).length,
+      ])
+    ) as ReturnType<typeof this.getSelectedCount>;
   }
 }
 
 interface SelectedDatesContext {
   selectedDates: SelectedDates;
   toggleDate: (date: Date) => void;
+  setReferenceDate: (date: Date) => void;
 }
 const SelectedDatesContext = React.createContext({} as SelectedDatesContext);
 
@@ -253,11 +251,21 @@ export default function App() {
     setSelectedCount(selectedDates.getSelectedCount());
   }, [selectedDates]);
 
-  const toggleDate = React.useCallback(
-    (date: Date) =>
-      setSelectedDates((prev) => new SelectedDates(prev).select(date)),
-    []
-  );
+  const toggleDate = React.useCallback((date: Date) => {
+    setSelectedDates((prevObj) => {
+      const newObj = new SelectedDates(prevObj);
+      newObj.select(date);
+      return newObj;
+    });
+  }, []);
+
+  const setReferenceDate = React.useCallback((date: Date) => {
+    setSelectedDates((prev) => {
+      const newObj = new SelectedDates(prev);
+      newObj.referenceDate = date;
+      return newObj;
+    });
+  }, []);
 
   const showPreviousMonth = React.useCallback(() => {
     setVisibleMonths((prev) => [monthGenerator.prev(), ...prev]);
@@ -271,7 +279,11 @@ export default function App() {
 
   const loadSelectedDates = React.useCallback(async (year: number) => {
     const selected = await SelectedDateStorage.load(year);
-    setSelectedDates((prev) => new SelectedDates(prev).setYear(year, selected));
+    setSelectedDates((prevObj) => {
+      const newObj = new SelectedDates(prevObj);
+      newObj.setYear(year, selected);
+      return newObj;
+    });
   }, []);
 
   const saveSelectedDates = React.useCallback(async () => {
@@ -307,6 +319,7 @@ export default function App() {
         value={{
           selectedDates,
           toggleDate,
+          setReferenceDate,
         }}
       >
         <FlatList
@@ -381,18 +394,25 @@ interface IDateView {
 }
 
 const DateView = ({ year, month, date }: IDateView) => {
-  const { selectedDates, toggleDate } = React.useContext(SelectedDatesContext);
+  const { selectedDates, toggleDate, setReferenceDate } =
+    React.useContext(SelectedDatesContext);
   const isSelected = selectedDates.isSelected(date);
   const isVisible = date.getMonth() == month;
   const isToday = date.getTime() == TODAY.getTime();
+  const isReference = date.getTime() == selectedDates.referenceDate.getTime();
 
   return (
     <View
-      style={[styles.dateView, isVisible && isToday && styles.dateViewToday]}
+      style={[
+        styles.dateView,
+        isVisible && isToday && styles.dateViewToday,
+        isVisible && isReference && styles.dateViewReference,
+      ]}
     >
       {isVisible && (
         <Text
           onPress={() => toggleDate(date)}
+          onLongPress={() => setReferenceDate(date)}
           style={[
             styles.dateViewText,
             isSelected && styles.dateViewTextSelected,
@@ -455,6 +475,10 @@ const styles = StyleSheet.create({
   },
   dateViewToday: {
     backgroundColor: colors.secondary,
+  },
+  dateViewReference: {
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   dateViewText: {
     width: "70%",
