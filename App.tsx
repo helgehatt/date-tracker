@@ -1,6 +1,6 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { Button, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import * as SecureStore from "expo-secure-store";
 
@@ -32,6 +32,23 @@ Date.prototype.getWeekNumber = function () {
   const missingDays = 7 - fromDay;
   const days = (to - from) / DAY_IN_MS;
   return Math.ceil((days - missingDays) / 7) + firstWeek;
+};
+
+Array.prototype.groupBy = function (key) {
+  return this.reduce((acc, { [key]: grouper, ...rest }) => {
+    acc[grouper] = acc[grouper] || [];
+    acc[grouper].push({ ...rest });
+    return acc;
+  }, {});
+};
+
+Object.map = function (o, callbackfn) {
+  return Object.fromEntries(
+    Object.entries(o).map(([key, value], index) => [
+      key,
+      callbackfn(value, index),
+    ])
+  ) as any;
 };
 
 function getWeeksInMonth(year: number, month: number) {
@@ -81,75 +98,28 @@ class MonthGenerator {
   }
 }
 
-class SelectedDates {
-  dates: Record<number, Record<number, Set<number>>>;
+class SelectionManager {
+  dates: Set<number>;
   referenceDate: Date;
 
-  constructor(selectedDates?: SelectedDates) {
-    this.dates = selectedDates?.dates ?? {};
-    this.referenceDate = selectedDates?.referenceDate ?? TODAY;
+  constructor(selectionManager?: SelectionManager) {
+    this.dates = selectionManager?.dates ?? new Set();
+    this.referenceDate = selectionManager?.referenceDate ?? TODAY;
   }
 
-  getYear(year: number) {
-    if (!(year in this.dates)) {
-      this.dates[year] = {};
-    }
-    return this.dates[year];
-  }
-
-  setYear(year: number, months: Record<number, Set<number>>) {
-    if (!(year in this.dates)) {
-      this.dates[year] = {};
-    }
-    this.dates[year] = months;
-  }
-
-  select(other: Date) {
-    const { year, month, date } = other.getComponents();
-
-    if (!(year in this.dates)) {
-      this.dates[year] = { [month]: new Set() };
-    } else if (!(month in this.dates[year])) {
-      this.dates[year][month] = new Set();
-    }
-
-    const selected = this.dates[year][month];
-    if (selected.has(date)) {
-      selected.delete(date);
+  select(date: Date) {
+    if (this.dates.has(date.getTime())) {
+      this.dates.delete(date.getTime());
     } else {
-      selected.add(date);
+      this.dates.add(date.getTime());
     }
   }
 
-  isSelected(other: Date) {
-    const { year, month, date } = other.getComponents();
-
-    if (!(year in this.dates)) {
-      this.dates[year] = { [month]: new Set() };
-    } else if (!(month in this.dates[year])) {
-      this.dates[year][month] = new Set();
-    }
-
-    return this.dates[year][month].has(date);
+  isSelected(date: Date) {
+    return this.dates.has(date.getTime());
   }
 
-  getSelectedCount(): {
-    oneYear: number;
-    twelveMonths: number;
-    thirtySixMonths: number;
-  } {
-    const dates = [] as number[];
-
-    if (this.dates) {
-      Object.keys(this.dates).forEach((year) => {
-        Object.keys(this.dates[year]).forEach((month) => {
-          this.dates[year][month].forEach((date) => {
-            dates.push(Date.UTC(year, month, date));
-          });
-        });
-      });
-    }
-
+  getSelectedCount() {
     const { year, month, date } = this.referenceDate.getComponents();
 
     const intervals = {
@@ -162,55 +132,54 @@ class SelectedDates {
         Date.UTC(year, month - 36, date),
         Date.UTC(year, month, date),
       ],
-    } as const;
+    };
 
-    return Object.fromEntries(
-      Object.entries(intervals).map(([key, [start, end]]) => [
-        key,
-        dates.filter((date) => start < date && date <= end).length,
-      ])
-    ) as ReturnType<typeof this.getSelectedCount>;
+    const dates = Array.from(this.dates);
+
+    return Object.map(intervals, ([start, end]) => {
+      return dates.filter((date) => start < date && date <= end).length;
+    });
   }
 }
 
 interface SelectedDatesContext {
-  selectedDates: SelectedDates;
+  selectionManager: SelectionManager;
   toggleDate: (date: Date) => void;
   setReferenceDate: (date: Date) => void;
 }
 const SelectedDatesContext = React.createContext({} as SelectedDatesContext);
 
 class SelectedDateStorage {
-  static async load(year: number) {
+  static async load(year: number): Promise<number[]> {
     try {
       const value = await SecureStore.getItemAsync(`selected-dates-${year}`);
       if (value) {
         const parsed = JSON.parse(value) as Record<string, Array<number>>;
-        const selected = {} as Record<number, Set<number>>;
-        Object.entries(parsed).forEach(([key, items]) => {
-          selected[Number(key)] = new Set(items);
+        return Object.entries(parsed).flatMap(([month, dates]) => {
+          return dates.map((date) => Date.UTC(year, Number(month), date));
         });
-        return selected;
       }
     } catch (e) {
       console.warn(e);
     }
-    return {} as Record<number, Set<number>>;
+    return [];
   }
 
-  static async save(year: number, dates: Record<number, Set<number>>) {
-    try {
-      const value = {} as Record<string, Array<number>>;
-      Object.entries(dates).forEach(([k, v]) => {
-        value[k] = Array.from(v);
-      });
-      await SecureStore.setItemAsync(
-        `selected-dates-${year}`,
-        JSON.stringify(value)
+  static async save(dates: Set<number>) {
+    const years = Object.entries(
+      Array.from(dates)
+        .map((date) => new Date(date).getComponents())
+        .groupBy("year")
+    );
+    years.forEach(([year, yearGroup]) => {
+      const dates = Object.map(yearGroup.groupBy("month"), (group) =>
+        group.map((item) => item.date)
       );
-    } catch (e) {
-      console.warn(e);
-    }
+      SecureStore.setItemAsync(
+        `selected-dates-${year}`,
+        JSON.stringify(dates)
+      ).catch(console.warn);
+    });
   }
 }
 
@@ -222,9 +191,11 @@ export default function App() {
     monthGenerator.next(),
     monthGenerator.next(),
   ]);
-  const [selectedDates, setSelectedDates] = React.useState(new SelectedDates());
+  const [selectionManager, setSelectionManager] = React.useState(
+    () => new SelectionManager()
+  );
   const [selectedCount, setSelectedCount] = React.useState(() =>
-    selectedDates.getSelectedCount()
+    selectionManager.getSelectedCount()
   );
 
   React.useEffect(() => {
@@ -248,48 +219,42 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    setSelectedCount(selectedDates.getSelectedCount());
-  }, [selectedDates]);
+    setSelectedCount(selectionManager.getSelectedCount());
+    SelectedDateStorage.save(selectionManager.dates);
+  }, [selectionManager]);
 
   const toggleDate = React.useCallback((date: Date) => {
-    setSelectedDates((prevObj) => {
-      const newObj = new SelectedDates(prevObj);
+    setSelectionManager((prevObj) => {
+      const newObj = new SelectionManager(prevObj);
       newObj.select(date);
       return newObj;
     });
   }, []);
 
   const setReferenceDate = React.useCallback((date: Date) => {
-    setSelectedDates((prev) => {
-      const newObj = new SelectedDates(prev);
+    setSelectionManager((prevObj) => {
+      const newObj = new SelectionManager(prevObj);
       newObj.referenceDate = date;
       return newObj;
     });
   }, []);
 
   const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((prev) => [monthGenerator.prev(), ...prev]);
+    setVisibleMonths((prevMonths) => [monthGenerator.prev(), ...prevMonths]);
     return Promise.resolve();
   }, []);
 
   const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((prev) => [...prev, monthGenerator.next()]);
+    setVisibleMonths((prevMonths) => [...prevMonths, monthGenerator.next()]);
     return Promise.resolve();
   }, []);
 
   const loadSelectedDates = React.useCallback(async (year: number) => {
     const selected = await SelectedDateStorage.load(year);
-    setSelectedDates((prevObj) => {
-      const newObj = new SelectedDates(prevObj);
-      newObj.setYear(year, selected);
+    setSelectionManager((prevObj) => {
+      const newObj = new SelectionManager(prevObj);
+      newObj.dates = new Set([...newObj.dates, ...selected]);
       return newObj;
-    });
-  }, []);
-
-  const saveSelectedDates = React.useCallback(async () => {
-    const years = Object.keys(selectedDates.dates) as unknown as number[];
-    years.forEach(async (year) => {
-      await SelectedDateStorage.save(year, selectedDates.getYear(year));
     });
   }, []);
 
@@ -317,7 +282,7 @@ export default function App() {
       </View>
       <SelectedDatesContext.Provider
         value={{
-          selectedDates,
+          selectionManager,
           toggleDate,
           setReferenceDate,
         }}
@@ -335,9 +300,6 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         />
       </SelectedDatesContext.Provider>
-      <View style={styles.saveButton}>
-        <Button color={colors.text} title="Save" onPress={saveSelectedDates} />
-      </View>
       <StatusBar style="light" />
     </View>
   );
@@ -394,12 +356,13 @@ interface IDateView {
 }
 
 const DateView = ({ year, month, date }: IDateView) => {
-  const { selectedDates, toggleDate, setReferenceDate } =
+  const { selectionManager, toggleDate, setReferenceDate } =
     React.useContext(SelectedDatesContext);
-  const isSelected = selectedDates.isSelected(date);
+  const isSelected = selectionManager.isSelected(date);
   const isVisible = date.getMonth() == month;
   const isToday = date.getTime() == TODAY.getTime();
-  const isReference = date.getTime() == selectedDates.referenceDate.getTime();
+  const isReference =
+    date.getTime() == selectionManager.referenceDate.getTime();
 
   return (
     <View
@@ -491,14 +454,5 @@ const styles = StyleSheet.create({
     color: "white",
     borderRadius: 15,
     overflow: "hidden",
-  },
-  saveButton: {
-    position: "absolute",
-    bottom: 150,
-    right: 20,
-    backgroundColor: colors.primary,
-    borderRadius: 25,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
   },
 });

@@ -1,3 +1,7 @@
+interface Array<T> {
+    groupBy<K extends keyof T>(key: K): Record<string, Omit<T,K>[]>
+}
+
 interface Date {
     getComponents(): { year: number, month: number, date: number }
     getISODay(): number;
@@ -6,6 +10,6 @@ interface Date {
     toISODateString(): string;
 }
 
-interface ObjectConstructor {
-    keys(o: Record<K,V>): K[]
+interface Object {
+    map<T, R>(o: T, callbackfn: (value: T[keyof T], index: number) => R): {[P in keyof T]: R}
 }
