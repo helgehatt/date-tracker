@@ -1,6 +1,6 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import * as SecureStore from "expo-secure-store";
 
@@ -259,48 +259,58 @@ export default function App() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View>
       <View style={styles.header}>
-        <View>
-          <Text style={[styles.headerText, styles.headerTextTitle]}>1 Y</Text>
-          <Text style={[styles.headerText, styles.headerTextContent]}>
-            {selectedCount.oneYear} / 61
-          </Text>
-        </View>
-        <View>
-          <Text style={[styles.headerText, styles.headerTextTitle]}>12 M</Text>
-          <Text style={[styles.headerText, styles.headerTextContent]}>
-            {selectedCount.twelveMonths} / 183
-          </Text>
-        </View>
-        <View>
-          <Text style={[styles.headerText, styles.headerTextTitle]}>36 M</Text>
-          <Text style={[styles.headerText, styles.headerTextContent]}>
-            {selectedCount.thirtySixMonths} / 270
-          </Text>
+        <SafeAreaView>
+          <StatusBar style="light" />
+        </SafeAreaView>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={[styles.headerText, styles.headerTextTitle]}>1 Y</Text>
+            <Text style={[styles.headerText, styles.headerTextContent]}>
+              {selectedCount.oneYear} / 61
+            </Text>
+          </View>
+          <View>
+            <Text style={[styles.headerText, styles.headerTextTitle]}>
+              12 M
+            </Text>
+            <Text style={[styles.headerText, styles.headerTextContent]}>
+              {selectedCount.twelveMonths} / 183
+            </Text>
+          </View>
+          <View>
+            <Text style={[styles.headerText, styles.headerTextTitle]}>
+              36 M
+            </Text>
+            <Text style={[styles.headerText, styles.headerTextContent]}>
+              {selectedCount.thirtySixMonths} / 270
+            </Text>
+          </View>
         </View>
       </View>
-      <SelectedDatesContext.Provider
-        value={{
-          selectionManager,
-          toggleDate,
-          setReferenceDate,
-        }}
-      >
-        <FlatList
-          data={visibleMonths}
-          renderItem={({ item: { year, month } }) => (
-            <MonthView year={year} month={month} />
-          )}
-          keyExtractor={({ year, month }) => toISOMonthString(year, month)}
-          onStartReached={showPreviousMonth}
-          onStartReachedThreshold={1000}
-          onEndReached={showNextMonth}
-          onEndReachedThreshold={1000}
-          showsVerticalScrollIndicator={false}
-        />
-      </SelectedDatesContext.Provider>
-      <StatusBar style="light" />
+      <View style={styles.container}>
+        <SelectedDatesContext.Provider
+          value={{
+            selectionManager,
+            toggleDate,
+            setReferenceDate,
+          }}
+        >
+          <FlatList
+            data={visibleMonths}
+            renderItem={({ item: { year, month } }) => (
+              <MonthView year={year} month={month} />
+            )}
+            keyExtractor={({ year, month }) => toISOMonthString(year, month)}
+            onStartReached={showPreviousMonth}
+            onStartReachedThreshold={1000}
+            onEndReached={showNextMonth}
+            onEndReachedThreshold={1000}
+            showsVerticalScrollIndicator={false}
+          />
+        </SelectedDatesContext.Provider>
+      </View>
     </View>
   );
 }
@@ -308,7 +318,7 @@ export default function App() {
 function getMonthTitle(year: number, month: number) {
   const date = new Date(Date.UTC(year, month));
   const options = { year: "numeric", month: "long" } as const;
-  return date.toLocaleDateString(undefined, options);
+  return date.toLocaleDateString("en-US", options);
 }
 
 interface IMonthView {
@@ -401,12 +411,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    backgroundColor: colors.primary,
+  },
+  headerContent: {
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingTop: 60,
     padding: 20,
-    backgroundColor: colors.primary,
   },
   headerText: {
     color: colors.text,
@@ -430,11 +441,9 @@ const styles = StyleSheet.create({
     height: 50,
   },
   dateView: {
-    display: "flex",
-    flexGrow: 1,
+    flex: 111,
     alignItems: "center",
     justifyContent: "center",
-    width: "10%",
   },
   dateViewToday: {
     backgroundColor: colors.secondary,
@@ -451,7 +460,6 @@ const styles = StyleSheet.create({
   },
   dateViewTextSelected: {
     backgroundColor: colors.primary,
-    color: "white",
     borderRadius: 15,
     overflow: "hidden",
   },
