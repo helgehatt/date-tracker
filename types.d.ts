@@ -1,15 +1,18 @@
 interface Array<T> {
-    groupBy<K extends keyof T>(key: K): Record<string, Omit<T,K>[]>
+  groupBy<K extends keyof T>(key: K): Record<string, Omit<T, K>[]>;
 }
 
 interface Date {
-    getComponents(): { year: number, month: number, date: number }
-    getISODay(): number;
-    getWeekNumber(): number;
-    toISOMonthString(): string;
-    toISODateString(): string;
+  getComponents(): { year: number; month: number; date: number };
+  getISODay(): number;
+  getWeekNumber(): number;
+  toISOMonthString(): string;
+  toISODateString(): string;
 }
 
 interface Object {
-    map<T, R>(o: T, callbackfn: (value: T[keyof T], index: number) => R): {[P in keyof T]: R}
+  map<T, R>(
+    o: T,
+    callbackfn: (value: T[keyof T], index: number) => R
+  ): { [P in keyof T]: R };
 }

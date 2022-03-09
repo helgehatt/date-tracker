@@ -1,6 +1,14 @@
 {
+    "emmet.showAbbreviationSuggestions": false,
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.updateImportsOnFileMove.enabled": "always",
     "[typescriptreact]": {
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true
-    }
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
 }
