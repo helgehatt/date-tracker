@@ -98,25 +98,70 @@ class MonthGenerator {
   }
 }
 
+class DateCollection {
+  set: Set<number>;
+  obj: Record<string, Set<number>>;
+
+  constructor() {
+    this.set = new Set();
+    this.obj = {};
+  }
+
+  get(date: Date) {
+    const key = date.toISOMonthString();
+    this.obj[key] = this.obj[key] || new Set();
+    return this.obj[key];
+  }
+
+  has(date: Date) {
+    return this.set.has(date.getTime());
+  }
+
+  add(date: Date) {
+    this.set.add(date.getTime());
+    this.get(date).add(date.getTime());
+  }
+
+  delete(date: Date) {
+    this.set.delete(date.getTime());
+    this.get(date).delete(date.getTime());
+  }
+
+  toArray() {
+    return Array.from(this.set);
+  }
+}
+
 class SelectionManager {
-  dates: Set<number>;
+  dates: DateCollection;
   referenceDate: Date;
+  storage: SelectedDateStorage;
 
   constructor(selectionManager?: SelectionManager) {
-    this.dates = selectionManager?.dates ?? new Set();
+    this.dates = selectionManager?.dates ?? new DateCollection();
     this.referenceDate = selectionManager?.referenceDate ?? TODAY;
+    this.storage = selectionManager?.storage ?? new SelectedDateStorage();
+  }
+
+  load() {
+    return this.storage.load();
   }
 
   select(date: Date) {
-    if (this.dates.has(date.getTime())) {
-      this.dates.delete(date.getTime());
+    if (this.dates.has(date)) {
+      this.dates.delete(date);
     } else {
-      this.dates.add(date.getTime());
+      this.dates.add(date);
     }
+    this.storage.save(date, this.dates.get(date));
   }
 
   isSelected(date: Date) {
-    return this.dates.has(date.getTime());
+    return this.dates.has(date);
+  }
+
+  setReferenceDate(date: Date) {
+    this.referenceDate = date;
   }
 
   getSelectedCount() {
@@ -134,7 +179,7 @@ class SelectionManager {
       ],
     };
 
-    const dates = Array.from(this.dates);
+    const dates = this.dates.toArray();
 
     return Object.map(intervals, ([start, end]) => {
       return dates.filter((date) => start < date && date <= end).length;
@@ -150,14 +195,43 @@ interface SelectedDatesContext {
 const SelectedDatesContext = React.createContext({} as SelectedDatesContext);
 
 class SelectedDateStorage {
-  static async load(year: number): Promise<number[]> {
+  static PREFIX = "selected-dates";
+  keys: Set<string>;
+
+  constructor() {
+    this.keys = new Set();
+  }
+
+  async load() {
+    const keys = await SelectedDateStorage.loadKeys();
+    console.log(`Loading selected dates: [${keys}]`);
+
+    const tasks = keys.map((key) => SelectedDateStorage.loadMonth(key));
+
+    const result = await Promise.all(tasks);
+
+    keys.forEach((key) => this.keys.add(key));
+
+    return result.flat();
+  }
+
+  async save(date: Date, dates: Set<number>) {
+    const key = date.toISOMonthString();
+    await SelectedDateStorage.saveMonth(key, dates);
+    if (!this.keys.has(key)) {
+      this.keys.add(key);
+      await SelectedDateStorage.saveKeys(this.keys);
+    } else if (dates.size == 0) {
+      this.keys.delete(key);
+      await SelectedDateStorage.saveKeys(this.keys);
+    }
+  }
+
+  static async loadKeys() {
     try {
-      const value = await SecureStore.getItemAsync(`selected-dates-${year}`);
+      const value = await SecureStore.getItemAsync(`${this.PREFIX}-keys`);
       if (value) {
-        const parsed = JSON.parse(value) as Record<string, Array<number>>;
-        return Object.entries(parsed).flatMap(([month, dates]) => {
-          return dates.map((date) => Date.UTC(year, Number(month), date));
-        });
+        return JSON.parse(value) as string[];
       }
     } catch (e) {
       console.warn(e);
@@ -165,21 +239,37 @@ class SelectedDateStorage {
     return [];
   }
 
-  static async save(dates: Set<number>) {
-    const years = Object.entries(
-      Array.from(dates)
-        .map((date) => new Date(date).getComponents())
-        .groupBy("year")
+  static async loadMonth(month: string) {
+    try {
+      const value = await SecureStore.getItemAsync(`${this.PREFIX}-${month}`);
+      if (value) {
+        const parsed = JSON.parse(value) as number[];
+        return parsed
+          .map((value) => String(value).padStart(2, "0"))
+          .map((value) => `${month}-${value}`)
+          .map((value) => new Date(value).getTime());
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+    return [];
+  }
+
+  static async saveKeys(keys: Set<string>) {
+    const value = JSON.stringify(Array.from(keys));
+    await SecureStore.setItemAsync(`${this.PREFIX}-keys`, value).catch(
+      console.warn
     );
-    years.forEach(([year, yearGroup]) => {
-      const dates = Object.map(yearGroup.groupBy("month"), (group) =>
-        group.map((item) => item.date)
-      );
-      SecureStore.setItemAsync(
-        `selected-dates-${year}`,
-        JSON.stringify(dates)
-      ).catch(console.warn);
-    });
+  }
+
+  static async saveMonth(key: string, dates: Set<number>) {
+    const value = JSON.stringify(
+      Array.from(dates).map((value) => new Date(value).getDate())
+    );
+
+    await SecureStore.setItemAsync(`${this.PREFIX}-${key}`, value).catch(
+      console.warn
+    );
   }
 }
 
@@ -211,17 +301,20 @@ export default function App() {
   }, []);
 
   React.useEffect(() => {
-    const currentYear = TODAY.getFullYear();
-    loadSelectedDates(currentYear);
-    loadSelectedDates(currentYear - 1);
-    loadSelectedDates(currentYear - 2);
-    loadSelectedDates(currentYear - 3);
-  }, []);
+    setSelectedCount(selectionManager.getSelectedCount());
+  }, [selectionManager]);
 
   React.useEffect(() => {
-    setSelectedCount(selectionManager.getSelectedCount());
-    SelectedDateStorage.save(selectionManager.dates);
-  }, [selectionManager]);
+    selectionManager.load().then((selected) => {
+      setSelectionManager((prevObj) => {
+        const newObj = new SelectionManager(prevObj);
+        selected
+          .map((value) => new Date(value))
+          .forEach((value) => newObj.dates.add(value));
+        return newObj;
+      });
+    });
+  }, []);
 
   const toggleDate = React.useCallback((date: Date) => {
     setSelectionManager((prevObj) => {
@@ -234,7 +327,7 @@ export default function App() {
   const setReferenceDate = React.useCallback((date: Date) => {
     setSelectionManager((prevObj) => {
       const newObj = new SelectionManager(prevObj);
-      newObj.referenceDate = date;
+      newObj.setReferenceDate(date);
       return newObj;
     });
   }, []);
@@ -247,15 +340,6 @@ export default function App() {
   const showNextMonth = React.useCallback(() => {
     setVisibleMonths((prevMonths) => [...prevMonths, monthGenerator.next()]);
     return Promise.resolve();
-  }, []);
-
-  const loadSelectedDates = React.useCallback(async (year: number) => {
-    const selected = await SelectedDateStorage.load(year);
-    setSelectionManager((prevObj) => {
-      const newObj = new SelectionManager(prevObj);
-      newObj.dates = new Set([...newObj.dates, ...selected]);
-      return newObj;
-    });
   }, []);
 
   return (
