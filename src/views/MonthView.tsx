@@ -1,11 +1,12 @@
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { COLORS } from "../constants";
+import { COLORS, DAY_IN_MS, MONTH_VIEW_HEIGHT } from "../constants";
 import WeekView from "./WeekView";
 
 function getWeeksInMonth(year: number, month: number) {
   const from = new Date(Date.UTC(year, month, 1)).getWeekNumber();
-  const to = new Date(Date.UTC(year, month + 1, 0)).getWeekNumber();
-  return Array.from({ length: to - from + 1 }, (_, i) => i + from);
+  //const to = new Date(Date.UTC(year, month + 1, 0)).getWeekNumber();
+  return Array.from({ length: 6 }, (_, i) => i + from);
 }
 
 function getMonthTitle(year: number, month: number) {
@@ -34,7 +35,9 @@ const MonthView = ({ year, month }: IProps) => {
 };
 
 const styles = StyleSheet.create({
-  container: {},
+  container: {
+    height: MONTH_VIEW_HEIGHT,
+  },
   text: {
     color: COLORS.text,
     padding: 20,

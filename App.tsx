@@ -7,34 +7,19 @@ import MonthGenerator from "./src/helpers/MonthGenerator";
 import SelectedDatesContext from "./src/helpers/SelectedDatesContext";
 import MonthView from "./src/views/MonthView";
 import HeaderView from "./src/views/HeaderView";
-import { COLORS } from "./src/constants";
+import { COLORS, MONTH_VIEW_HEIGHT } from "./src/constants";
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
-  const [visibleMonths, setVisibleMonths] = React.useState(() => [
-    monthGenerator.prev(),
-    monthGenerator.current,
-    monthGenerator.next(),
-    monthGenerator.next(),
-  ]);
+  const [visibleMonths, setVisibleMonths] = React.useState(() =>
+    monthGenerator.init(5, 5)
+  );
   const [selectionManager, setSelectionManager] = React.useState(
     () => new SelectionManager()
   );
   const [selectedCount, setSelectedCount] = React.useState(() =>
     selectionManager.getSelectedCount()
   );
-
-  React.useEffect(() => {
-    // Adding months must be slightly delayed to
-    // keep current month in center
-    const handle = setTimeout(() => {
-      for (let i = 0; i < 3; i++) {
-        showNextMonth();
-        showPreviousMonth();
-      }
-    }, 1);
-    return () => clearTimeout(handle);
-  }, []);
 
   React.useEffect(() => {
     setSelectedCount(selectionManager.getSelectedCount());
@@ -94,6 +79,12 @@ export default function App() {
             renderItem={({ item: { year, month } }) => (
               <MonthView year={year} month={month} />
             )}
+            getItemLayout={(_, index) => ({
+              length: MONTH_VIEW_HEIGHT,
+              offset: MONTH_VIEW_HEIGHT * index,
+              index,
+            })}
+            initialScrollIndex={5}
             keyExtractor={({ year, month }) => `${year}.${month}`}
             onStartReached={showPreviousMonth}
             onStartReachedThreshold={1000}

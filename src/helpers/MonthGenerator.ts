@@ -26,6 +26,14 @@ class MonthGenerator {
     this.prev = () => prevMonthGenerator.next().value!;
     this.next = () => nextMonthGenerator.next().value!;
   }
+
+  init(prev: number, next: number) {
+    return [
+      ...Array.from({ length: prev }, () => this.prev()).reverse(),
+      this.current,
+      ...Array.from({ length: next }, () => this.next()),
+    ];
+  }
 }
 
 export default MonthGenerator;

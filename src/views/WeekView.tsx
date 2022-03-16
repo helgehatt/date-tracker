@@ -24,9 +24,8 @@ const WeekView = ({ year, month, week }: IProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    display: "flex",
+    flex: 111,
     flexDirection: "row",
-    height: 50,
   },
 });
 
