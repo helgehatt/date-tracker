@@ -16,7 +16,7 @@ const DateView = ({ year, month, date }: IProps) => {
   const isVisible = date.getMonth() == month;
   const isToday = date.getTime() == TODAY.getTime();
   const isReference =
-    date.getTime() == selectionManager.referenceDate.getTime();
+    date.getTime() == selectionManager.getRefrenceDate().getTime();
 
   return (
     <View

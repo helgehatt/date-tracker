@@ -17,13 +17,6 @@ export default function App() {
   const [selectionManager, setSelectionManager] = React.useState(
     () => new SelectionManager()
   );
-  const [selectedCount, setSelectedCount] = React.useState(() =>
-    selectionManager.getSelectedCount()
-  );
-
-  React.useEffect(() => {
-    setSelectedCount(selectionManager.getSelectedCount());
-  }, [selectionManager]);
 
   React.useEffect(() => {
     selectionManager.load().then((selected) => {
@@ -31,7 +24,7 @@ export default function App() {
         const newObj = new SelectionManager(prevObj);
         selected
           .map((value) => new Date(value))
-          .forEach((value) => newObj.dates.add(value));
+          .forEach((value) => newObj.add(value));
         return newObj;
       });
     });
@@ -65,7 +58,7 @@ export default function App() {
 
   return (
     <View>
-      <HeaderView {...selectedCount} />
+      <HeaderView {...selectionManager.getSelectedCount()} />
       <View style={styles.container}>
         <SelectedDatesContext.Provider
           value={{
