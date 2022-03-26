@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { COLORS, MONTH_VIEW_HEIGHT } from "../constants";
+import SelectionManager from "../helpers/SelectionManager";
 import DateView from "./DateView";
 
 function getMonthTitle(year: number, month: number) {
@@ -12,9 +13,12 @@ function getMonthTitle(year: number, month: number) {
 interface IProps {
   year: number;
   month: number;
+  selectionManager: SelectionManager;
+  setReferenceDate: (date: Date) => void;
+  selectDate: (date: Date) => void;
 }
 
-const MonthView = ({ year, month }: IProps) => {
+const MonthView = ({ year, month, ...props }: IProps) => {
   const title = getMonthTitle(year, month);
   const offset = new Date(Date.UTC(year, month, 1)).getISODay() - 1;
 
@@ -28,7 +32,8 @@ const MonthView = ({ year, month }: IProps) => {
               key={j}
               year={year}
               month={month}
-              date={new Date(Date.UTC(year, month, 1 - offset + 7 * i + j))}
+              datetime={Date.UTC(year, month, 1 - offset + 7 * i + j)}
+              {...props}
             />
           ))}
         </View>

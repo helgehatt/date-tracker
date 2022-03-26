@@ -4,7 +4,6 @@ import { StyleSheet, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import SelectionManager from "./src/helpers/SelectionManager";
 import MonthGenerator from "./src/helpers/MonthGenerator";
-import SelectedDatesContext from "./src/helpers/SelectedDatesContext";
 import MonthView from "./src/views/MonthView";
 import HeaderView from "./src/views/HeaderView";
 import { COLORS, MONTH_VIEW_HEIGHT } from "./src/constants";
@@ -22,15 +21,15 @@ export default function App() {
     selectionManager.load().then((selected) => {
       setSelectionManager((prevObj) => {
         const newObj = new SelectionManager(prevObj);
-        selected
-          .map((value) => new Date(value))
-          .forEach((value) => newObj.add(value));
+        for (const datetime of selected) {
+          newObj.select(new Date(datetime));
+        }
         return newObj;
       });
     });
   }, []);
 
-  const toggleDate = React.useCallback((date: Date) => {
+  const selectDate = React.useCallback((date: Date) => {
     setSelectionManager((prevObj) => {
       const newObj = new SelectionManager(prevObj);
       newObj.select(date);
@@ -60,32 +59,30 @@ export default function App() {
     <View>
       <HeaderView {...selectionManager.getSelectedCount()} />
       <View style={styles.container}>
-        <SelectedDatesContext.Provider
-          value={{
-            selectionManager,
-            toggleDate,
-            setReferenceDate,
-          }}
-        >
-          <FlatList
-            data={visibleMonths}
-            renderItem={({ item: { year, month } }) => (
-              <MonthView year={year} month={month} />
-            )}
-            getItemLayout={(_, index) => ({
-              length: MONTH_VIEW_HEIGHT,
-              offset: MONTH_VIEW_HEIGHT * index,
-              index,
-            })}
-            initialScrollIndex={5}
-            keyExtractor={({ year, month }) => `${year}.${month}`}
-            onStartReached={showPreviousMonth}
-            onStartReachedThreshold={1000}
-            onEndReached={showNextMonth}
-            onEndReachedThreshold={1000}
-            showsVerticalScrollIndicator={false}
-          />
-        </SelectedDatesContext.Provider>
+        <FlatList
+          data={visibleMonths}
+          renderItem={({ item: { year, month } }) => (
+            <MonthView
+              year={year}
+              month={month}
+              selectionManager={selectionManager}
+              selectDate={selectDate}
+              setReferenceDate={setReferenceDate}
+            />
+          )}
+          getItemLayout={(_, index) => ({
+            length: MONTH_VIEW_HEIGHT,
+            offset: MONTH_VIEW_HEIGHT * index,
+            index,
+          })}
+          initialScrollIndex={5}
+          keyExtractor={({ year, month }) => `${year}.${month}`}
+          onStartReached={showPreviousMonth}
+          onStartReachedThreshold={1000}
+          onEndReached={showNextMonth}
+          onEndReachedThreshold={1000}
+          showsVerticalScrollIndicator={false}
+        />
       </View>
     </View>
   );

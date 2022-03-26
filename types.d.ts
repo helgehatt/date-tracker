@@ -6,7 +6,6 @@ interface Date {
   getComponents(): { year: number; month: number; date: number };
   getISODay(): number;
   toISOMonthString(): string;
-  toISODateString(): string;
 }
 
 interface Object {
