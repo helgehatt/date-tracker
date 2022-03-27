@@ -3,36 +3,24 @@ import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../constants";
 
 interface IProps {
-  oneYear: number;
-  twelveMonths: number;
-  thirtySixMonths: number;
+  countProfiles: CountProfile[];
 }
 
-const HeaderView = (props: IProps) => {
+const HeaderView = ({ countProfiles }: IProps) => {
   return (
     <View style={styles.container}>
       <SafeAreaView>
         <StatusBar style="light" />
       </SafeAreaView>
       <View style={styles.content}>
-        <View>
-          <Text style={[styles.text, styles.textTop]}>1 Y</Text>
-          <Text style={[styles.text, styles.textBottom]}>
-            {props.oneYear} / 61
-          </Text>
-        </View>
-        <View>
-          <Text style={[styles.text, styles.textTop]}>12 M</Text>
-          <Text style={[styles.text, styles.textBottom]}>
-            {props.twelveMonths} / 183
-          </Text>
-        </View>
-        <View>
-          <Text style={[styles.text, styles.textTop]}>36 M</Text>
-          <Text style={[styles.text, styles.textBottom]}>
-            {props.thirtySixMonths} / 270
-          </Text>
-        </View>
+        {countProfiles.map((profile) => (
+          <View key={profile.title}>
+            <Text style={[styles.text, styles.textTop]}>{profile.title}</Text>
+            <Text style={[styles.text, styles.textBottom]}>
+              {profile.count} / {profile.limit}
+            </Text>
+          </View>
+        ))}
       </View>
     </View>
   );

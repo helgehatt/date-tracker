@@ -1,5 +1,3 @@
-import { DAY_IN_MS } from "./constants";
-
 Date.prototype.getComponents = function () {
   return {
     year: this.getFullYear(),

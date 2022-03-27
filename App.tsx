@@ -57,7 +57,7 @@ export default function App() {
 
   return (
     <View>
-      <HeaderView {...selectionManager.getSelectedCount()} />
+      <HeaderView countProfiles={selectionManager.getCountProfiles()} />
       <View style={styles.container}>
         <FlatList
           data={visibleMonths}

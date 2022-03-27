@@ -45,8 +45,8 @@ class SelectionManager {
     this.counter.setReferenceDate(date, this.dates.toArray());
   }
 
-  getSelectedCount() {
-    return this.counter.getSelectedCount();
+  getCountProfiles() {
+    return this.counter.getCountProfiles();
   }
 }
 

@@ -14,3 +14,15 @@ interface Object {
     callbackfn: (value: T[keyof T], index: number) => R
   ): { [P in keyof T]: R };
 }
+
+interface CountProfile {
+  title: string;
+  count: number;
+  limit: number;
+  interval: [number, number];
+  intervalConstructor: (
+    year: number,
+    month: number,
+    date: number
+  ) => [number, number];
+}

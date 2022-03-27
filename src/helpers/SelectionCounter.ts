@@ -1,28 +1,50 @@
 import { TODAY } from "../constants";
 
-type Keys = "oneYear" | "twelveMonths" | "thirtySixMonths";
-
-type SelectedCount = {
-  [P in Keys]: number;
-};
-
-type TimeIntervals = {
-  [P in Keys]: [number, number];
-};
-
 class SelectionCounter {
   referenceDate: Date;
-  intervals: TimeIntervals;
-  selectedCount: SelectedCount;
+  countProfiles: CountProfile[];
 
   constructor() {
     this.referenceDate = TODAY;
-    this.intervals = getIntervals(this.referenceDate);
-    this.selectedCount = {
-      oneYear: 0,
-      twelveMonths: 0,
-      thirtySixMonths: 0,
-    };
+    this.countProfiles = [
+      {
+        title: "1 Y",
+        count: 0,
+        limit: 61,
+        interval: [0, 0],
+        intervalConstructor: (year, month, date) => [
+          Date.UTC(year, 0, 0),
+          Date.UTC(year + 1, 0, 0),
+        ],
+      },
+      {
+        title: "12 M",
+        count: 0,
+        limit: 183,
+        interval: [0, 0],
+        intervalConstructor: (year, month, date) => [
+          Date.UTC(year, month - 12, date),
+          Date.UTC(year, month, date),
+        ],
+      },
+      {
+        title: "36 M",
+        count: 0,
+        limit: 270,
+        interval: [0, 0],
+        intervalConstructor: (year, month, date) => [
+          Date.UTC(year, month - 36, date),
+          Date.UTC(year, month, date),
+        ],
+      },
+    ];
+    for (const profile of this.countProfiles) {
+      profile.interval = profile.intervalConstructor(
+        this.referenceDate.getFullYear(),
+        this.referenceDate.getMonth(),
+        this.referenceDate.getDate()
+      );
+    }
   }
 
   getReferenceDate() {
@@ -31,65 +53,41 @@ class SelectionCounter {
 
   setReferenceDate(date: Date, selectedDates: number[]) {
     this.referenceDate = date;
-    this.intervals = getIntervals(this.referenceDate);
-    this.resetSelectedCount();
-    this.addMany(selectedDates);
+    for (const profile of this.countProfiles) {
+      const [start, end] = profile.intervalConstructor(
+        this.referenceDate.getFullYear(),
+        this.referenceDate.getMonth(),
+        this.referenceDate.getDate()
+      );
+      profile.count = 0;
+      profile.interval = [start, end];
+      profile.count = selectedDates.filter(
+        (date) => start < date && date <= end
+      ).length;
+    }
   }
 
-  getSelectedCount() {
-    return this.selectedCount;
-  }
-
-  resetSelectedCount() {
-    this.selectedCount = {
-      oneYear: 0,
-      twelveMonths: 0,
-      thirtySixMonths: 0,
-    };
+  getCountProfiles() {
+    return this.countProfiles;
   }
 
   add(date: number) {
-    Object.keys(this.intervals).forEach((key) => {
-      const [start, end] = this.intervals[key as Keys];
+    for (const profile of this.countProfiles) {
+      const [start, end] = profile.interval;
       if (start < date && date <= end) {
-        this.selectedCount[key as Keys] += 1;
+        profile.count += 1;
       }
-    });
-  }
-
-  addMany(dates: number[]) {
-    Object.keys(this.intervals).forEach((key) => {
-      const [start, end] = this.intervals[key as Keys];
-      this.selectedCount[key as Keys] = dates.filter(
-        (date) => start < date && date <= end
-      ).length;
-    });
+    }
   }
 
   delete(date: number) {
-    Object.keys(this.intervals).forEach((key) => {
-      const [start, end] = this.intervals[key as Keys];
+    for (const profile of this.countProfiles) {
+      const [start, end] = profile.interval;
       if (start < date && date <= end) {
-        this.selectedCount[key as Keys] -= 1;
+        profile.count -= 1;
       }
-    });
+    }
   }
-}
-
-function getIntervals(referenceDate: Date): TimeIntervals {
-  const { year, month, date } = referenceDate.getComponents();
-
-  return {
-    oneYear: [Date.UTC(year, 0, 0), Date.UTC(year + 1, 0, 0)],
-    twelveMonths: [
-      Date.UTC(year, month - 12, date),
-      Date.UTC(year, month, date),
-    ],
-    thirtySixMonths: [
-      Date.UTC(year, month - 36, date),
-      Date.UTC(year, month, date),
-    ],
-  };
 }
 
 export default SelectionCounter;
