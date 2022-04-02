@@ -48,12 +48,12 @@ export default function App() {
   const showPreviousMonth = React.useCallback(() => {
     setVisibleMonths((prevMonths) => [monthGenerator.prev(), ...prevMonths]);
     return Promise.resolve();
-  }, []);
+  }, [monthGenerator]);
 
   const showNextMonth = React.useCallback(() => {
     setVisibleMonths((prevMonths) => [...prevMonths, monthGenerator.next()]);
     return Promise.resolve();
-  }, []);
+  }, [monthGenerator]);
 
   return (
     <View>

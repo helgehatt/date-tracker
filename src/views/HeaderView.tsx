@@ -1,3 +1,4 @@
+import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../constants";
@@ -6,7 +7,7 @@ interface IProps {
   countProfiles: CountProfile[];
 }
 
-const HeaderView = ({ countProfiles }: IProps) => {
+const HeaderView: React.FC<IProps> = ({ countProfiles }) => {
   return (
     <View style={styles.container}>
       <SafeAreaView>

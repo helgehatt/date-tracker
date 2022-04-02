@@ -18,10 +18,9 @@ interface IProps {
   selectDate: (date: Date) => void;
 }
 
-const MonthView = ({ year, month, ...props }: IProps) => {
+const MonthView: React.FC<IProps> = ({ year, month, ...props }) => {
   const title = getMonthTitle(year, month);
   const offset = new Date(Date.UTC(year, month, 1)).getISODay() - 1;
-
   return (
     <View style={styles.container}>
       <Text style={styles.text}>{title}</Text>

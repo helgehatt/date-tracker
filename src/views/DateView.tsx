@@ -21,16 +21,18 @@ interface IMemoizableProps {
   onLongPress: () => void;
 }
 
-const DateView = ({
-  year,
+const DateView: React.FC<IProps> = ({
   month,
   datetime,
   selectionManager,
   selectDate,
   setReferenceDate,
-}: IProps) => {
+}) => {
   const date = new Date(datetime);
   const isVisible = date.getMonth() == month;
+
+  const onPress = React.useCallback(() => selectDate(date), []);
+  const onLongPress = React.useCallback(() => setReferenceDate(date), []);
 
   if (!isVisible) {
     return <MemoizedPlaceholder />;
@@ -40,9 +42,6 @@ const DateView = ({
   const isSelected = selectionManager.isSelected(date);
   const isToday = date.getTime() == TODAY.getTime();
   const isReference = date.getTime() == referenceDate.getTime();
-
-  const onPress = React.useCallback(() => selectDate(date), []);
-  const onLongPress = React.useCallback(() => setReferenceDate(date), []);
 
   return (
     <MemoizableDateView
@@ -56,15 +55,8 @@ const DateView = ({
   );
 };
 
-const MemoizableDateView = React.memo(
-  ({
-    datetime,
-    isToday,
-    isSelected,
-    isReference,
-    onPress,
-    onLongPress,
-  }: IMemoizableProps) => {
+const MemoizableDateView = React.memo<IMemoizableProps>(
+  ({ datetime, isToday, isSelected, isReference, onPress, onLongPress }) => {
     const date = new Date(datetime);
     return (
       <Pressable
@@ -83,10 +75,12 @@ const MemoizableDateView = React.memo(
     );
   }
 );
+MemoizableDateView.displayName = "MemoizableDateView";
 
 const MemoizedPlaceholder = React.memo(() => {
   return <View style={styles.container} />;
 });
+MemoizedPlaceholder.displayName = "MemoizedPlaceholder";
 
 const styles = StyleSheet.create({
   container: {

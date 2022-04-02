@@ -28,7 +28,7 @@ Object.map = function (o, callbackfn) {
       key,
       callbackfn(value, index),
     ])
-  ) as any;
+  ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
 /**

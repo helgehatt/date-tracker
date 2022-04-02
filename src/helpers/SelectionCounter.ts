@@ -12,7 +12,7 @@ class SelectionCounter {
         count: 0,
         limit: 61,
         interval: [0, 0],
-        intervalConstructor: (year, month, date) => [
+        intervalConstructor: (year) => [
           Date.UTC(year, 0, 0),
           Date.UTC(year + 1, 0, 0),
         ],

@@ -1,4 +1,5 @@
 type Month = { year: number; month: number };
+
 class MonthGenerator {
   current: Month;
   prev: () => Month;
