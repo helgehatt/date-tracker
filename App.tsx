@@ -2,62 +2,87 @@ import "./src/extensions";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { FlatList } from "react-native-bidirectional-infinite-scroll";
-import SelectionManager from "./src/helpers/SelectionManager";
+import { COLORS, MONTH_VIEW_HEIGHT, TODAY } from "./src/constants";
+import ApplicationStorage from "./src/helpers/ApplicationStorage";
+import CountProfile from "./src/helpers/CountProfile";
+import HeaderView from "./src/views/HeaderView";
 import MonthGenerator from "./src/helpers/MonthGenerator";
 import MonthView from "./src/views/MonthView";
-import HeaderView from "./src/views/HeaderView";
-import { COLORS, MONTH_VIEW_HEIGHT } from "./src/constants";
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
   const [visibleMonths, setVisibleMonths] = React.useState(() =>
     monthGenerator.init(5, 5)
   );
-  const [selectionManager, setSelectionManager] = React.useState(
-    () => new SelectionManager()
+
+  const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
+  const [referenceDate, setReferenceDate] = React.useState(TODAY);
+  const [countProfiles, setCountProfiles] = React.useState(() =>
+    CountProfile.getDefaultProfiles(referenceDate)
   );
 
   React.useEffect(() => {
-    selectionManager.load().then((selected) => {
-      setSelectionManager((prevObj) => {
-        const newObj = new SelectionManager(prevObj);
-        for (const datetime of selected) {
-          newObj.select(new Date(datetime));
-        }
-        return newObj;
+    ApplicationStorage.loadSelectedDates().then((loadedDates) => {
+      setSelectedDates((selectedDates) => {
+        const datetimes = [...selectedDates, ...loadedDates];
+        setCountProfiles((profiles) => [
+          ...profiles.map((profile) => profile.reset(datetimes)),
+        ]);
+        return new Set(datetimes);
       });
     });
   }, []);
 
-  const selectDate = React.useCallback((date: Date) => {
-    setSelectionManager((prevObj) => {
-      const newObj = new SelectionManager(prevObj);
-      newObj.select(date);
-      return newObj;
+  React.useEffect(() => {
+    ApplicationStorage.saveSelectedDates([...selectedDates]);
+  }, [selectedDates]);
+
+  const selectDate = React.useCallback((datetime: number) => {
+    setSelectedDates((dates) => {
+      if (dates.delete(datetime)) {
+        setCountProfiles((profiles) => [
+          ...profiles.map((profile) => profile.remove(datetime)),
+        ]);
+        return new Set(dates);
+      } else {
+        setCountProfiles((profiles) => [
+          ...profiles.map((profile) => profile.add(datetime)),
+        ]);
+        return new Set(dates).add(datetime);
+      }
     });
   }, []);
 
-  const setReferenceDate = React.useCallback((date: Date) => {
-    setSelectionManager((prevObj) => {
-      const newObj = new SelectionManager(prevObj);
-      newObj.setReferenceDate(date);
-      return newObj;
-    });
-  }, []);
+  const setReferenceDateAndResetCount = React.useCallback(
+    (datetime: number) => {
+      setReferenceDate(datetime);
+      setSelectedDates((selectedDates) => {
+        setCountProfiles((profiles) => {
+          for (const profile of profiles) {
+            profile.setInterval(datetime);
+            profile.reset(Array.from(selectedDates));
+          }
+          return [...profiles];
+        });
+        return selectedDates;
+      });
+    },
+    []
+  );
 
   const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((prevMonths) => [monthGenerator.prev(), ...prevMonths]);
+    setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
     return Promise.resolve();
   }, [monthGenerator]);
 
   const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((prevMonths) => [...prevMonths, monthGenerator.next()]);
+    setVisibleMonths((months) => [...months, monthGenerator.next()]);
     return Promise.resolve();
   }, [monthGenerator]);
 
   return (
     <View>
-      <HeaderView countProfiles={selectionManager.getCountProfiles()} />
+      <HeaderView countProfiles={countProfiles} />
       <View style={styles.container}>
         <FlatList
           data={visibleMonths}
@@ -65,9 +90,10 @@ export default function App() {
             <MonthView
               year={year}
               month={month}
-              selectionManager={selectionManager}
+              selectedDates={selectedDates}
               selectDate={selectDate}
-              setReferenceDate={setReferenceDate}
+              referenceDate={referenceDate}
+              setReferenceDate={setReferenceDateAndResetCount}
             />
           )}
           getItemLayout={(_, index) => ({

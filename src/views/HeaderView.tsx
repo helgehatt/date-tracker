@@ -2,6 +2,7 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { COLORS } from "../constants";
+import CountProfile from "../helpers/CountProfile";
 
 interface IProps {
   countProfiles: CountProfile[];
