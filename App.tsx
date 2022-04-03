@@ -1,9 +1,9 @@
 import "./src/extensions";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { FlatList } from "react-native-bidirectional-infinite-scroll";
 import { COLORS, MONTH_VIEW_HEIGHT, TODAY } from "./src/constants";
 import ApplicationStorage from "./src/helpers/ApplicationStorage";
+import BidirectionalFlatList from "./src/components/BidirectionalFlatList";
 import CountProfile from "./src/helpers/CountProfile";
 import HeaderView from "./src/views/HeaderView";
 import MonthGenerator from "./src/helpers/MonthGenerator";
@@ -72,19 +72,17 @@ export default function App() {
 
   const showPreviousMonth = React.useCallback(() => {
     setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
-    return Promise.resolve();
   }, [monthGenerator]);
 
   const showNextMonth = React.useCallback(() => {
     setVisibleMonths((months) => [...months, monthGenerator.next()]);
-    return Promise.resolve();
   }, [monthGenerator]);
 
   return (
     <View>
       <HeaderView countProfiles={countProfiles} />
       <View style={styles.container}>
-        <FlatList
+        <BidirectionalFlatList
           data={visibleMonths}
           renderItem={({ item: { year, month } }) => (
             <MonthView
