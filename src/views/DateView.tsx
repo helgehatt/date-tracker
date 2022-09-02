@@ -96,12 +96,13 @@ const styles = StyleSheet.create({
     flex: 111,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.background,
   },
   isToday: {
     backgroundColor: COLORS.secondary,
   },
   isReference: {
-    borderWidth: 1,
     borderColor: COLORS.primary,
   },
   text: {
