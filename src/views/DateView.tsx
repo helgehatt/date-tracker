@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
   },
   isToday: {
     backgroundColor: COLORS.secondary,
+    borderColor: COLORS.secondary,
   },
   isReference: {
     borderColor: COLORS.primary,
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   },
   isSelected: {
     backgroundColor: COLORS.primary,
-    borderRadius: 15,
+    borderRadius: 14,
     overflow: "hidden",
   },
 });

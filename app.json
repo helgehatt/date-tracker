@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "emigration-calendar",
-    "slug": "emigration-calendar",
+    "name": "Date Tracker",
+    "slug": "date-tracker",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,14 +18,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.helgehatt.emigrationcalendar"
+      "bundleIdentifier": "com.helgehatt.datetracker"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.helgehatt.emigrationcalendar"
+      "package": "com.helgehatt.datetracker"
     },
     "web": {
       "favicon": "./assets/favicon.png"
