@@ -1,9 +1,9 @@
-type Month = { year: number; month: number };
+type YearMonth = { year: number; month: number };
 
 class MonthGenerator {
-  current: Month;
-  prev: () => Month;
-  next: () => Month;
+  current: YearMonth;
+  prev: () => YearMonth;
+  next: () => YearMonth;
 
   constructor() {
     const { year, month } = new Date().getComponents();
