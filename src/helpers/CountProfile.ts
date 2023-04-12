@@ -1,75 +1,89 @@
-type IntervalConstructor = (
-  year: number,
-  month: number,
-  date: number
-) => [number, number];
+class Interval<T> {
+  constructor(private start: T, private stop: T) {}
+
+  contains(x: T) {
+    return this.start <= x && x <= this.stop;
+  }
+}
+
+class DatetimeIntervalConstructor {
+  constructor(
+    private fn: (year: number, month: number, day: number) => Interval<number>
+  ) {}
+
+  new(datetime: number) {
+    const { year, month, date: day } = new Date(datetime).getComponents();
+    return this.fn(year, month, day);
+  }
+}
+
+class CountProfileMetadata {
+  constructor(
+    public title: string,
+    public limit: number,
+    public intervalConstructor: DatetimeIntervalConstructor
+  ) {}
+}
+
+const DEFAULT_COUNT_PROFILE_METADATA = [
+  new CountProfileMetadata(
+    "1 Y",
+    61,
+    new DatetimeIntervalConstructor(
+      (y, m, d) => new Interval(Date.UTC(y, 0, 1), Date.UTC(y + 1, 0, 0))
+    )
+  ),
+  new CountProfileMetadata(
+    "12 M",
+    183,
+    new DatetimeIntervalConstructor(
+      (y, m, d) => new Interval(Date.UTC(y, m - 12, d + 1), Date.UTC(y, m, d))
+    )
+  ),
+  new CountProfileMetadata(
+    "36 M",
+    270,
+    new DatetimeIntervalConstructor(
+      (y, m, d) => new Interval(Date.UTC(y, m - 36, d + 1), Date.UTC(y, m, d))
+    )
+  ),
+];
 
 class CountProfile {
-  title: string;
-  count: number;
-  limit: number;
-  interval: [number, number];
-  intervalConstructor: IntervalConstructor;
-
   constructor(
-    title: string,
-    limit: number,
-    intervalConstructor: IntervalConstructor
+    public metadata: CountProfileMetadata,
+    public interval: Interval<Number>,
+    public count: number
+  ) {}
+
+  static fromReferenceDate(
+    metadata: CountProfileMetadata,
+    referenceDate: number
   ) {
-    this.title = title;
-    this.count = 0;
-    this.limit = limit;
-    this.interval = [0, 0];
-    this.intervalConstructor = intervalConstructor;
+    return new CountProfile(
+      metadata,
+      metadata.intervalConstructor.new(referenceDate),
+      0
+    );
   }
 
-  contains(datetime: number) {
-    const [start, end] = this.interval;
-    return start < datetime && datetime <= end;
+  add(...datetimes: number[]) {
+    return new CountProfile(
+      this.metadata,
+      this.interval,
+      this.count + datetimes.filter((dt) => this.interval.contains(dt)).length
+    );
   }
 
-  add(datetime: number) {
-    this.count += Number(this.contains(datetime));
-    return this;
+  remove(...datetimes: number[]) {
+    return new CountProfile(
+      this.metadata,
+      this.interval,
+      this.count - datetimes.filter((dt) => this.interval.contains(dt)).length
+    );
   }
 
-  reset(datetimes: number[]) {
-    this.count = datetimes.filter((dt) => this.contains(dt)).length;
-    return this;
-  }
-
-  remove(datetime: number) {
-    this.count -= Number(this.contains(datetime));
-    return this;
-  }
-
-  setInterval(datetime: number) {
-    const { year, month, date } = new Date(datetime).getComponents();
-    this.interval = this.intervalConstructor(year, month, date);
-    this.count = 0; // count is no longer correct
-    return this;
-  }
-
-  static getDefaultProfiles(referenceDate: number) {
-    const profiles = [
-      new CountProfile("1 Y", 61, (year) => [
-        Date.UTC(year, 0, 0),
-        Date.UTC(year + 1, 0, 0),
-      ]),
-      new CountProfile("12 M", 183, (year, month, date) => [
-        Date.UTC(year, month - 12, date),
-        Date.UTC(year, month, date),
-      ]),
-      new CountProfile("36 M", 270, (year, month, date) => [
-        Date.UTC(year, month - 36, date),
-        Date.UTC(year, month, date),
-      ]),
-    ];
-    for (const profile of profiles) {
-      profile.setInterval(referenceDate);
-    }
-    return profiles;
-  }
+  static DEFAULT_METADATA = DEFAULT_COUNT_PROFILE_METADATA;
 }
 
 export default CountProfile;

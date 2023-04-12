@@ -18,17 +18,18 @@ export default function App() {
   const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
   const [referenceDate, setReferenceDate] = React.useState(TODAY);
   const [countProfiles, setCountProfiles] = React.useState(() =>
-    CountProfile.getDefaultProfiles(referenceDate)
+    CountProfile.DEFAULT_METADATA.map((metadata) =>
+      CountProfile.fromReferenceDate(metadata, referenceDate)
+    )
   );
 
   React.useEffect(() => {
     ApplicationStorage.loadSelectedDates().then((loadedDates) => {
       setSelectedDates((selectedDates) => {
-        const datetimes = [...selectedDates, ...loadedDates];
-        setCountProfiles((profiles) => [
-          ...profiles.map((profile) => profile.reset(datetimes)),
-        ]);
-        return new Set(datetimes);
+        setCountProfiles((profiles) =>
+          profiles.map((profile) => profile.add(...loadedDates))
+        );
+        return new Set([...selectedDates, ...loadedDates]);
       });
     });
   }, []);
@@ -40,29 +41,30 @@ export default function App() {
   const selectDate = React.useCallback((datetime: number) => {
     setSelectedDates((dates) => {
       if (dates.delete(datetime)) {
-        setCountProfiles((profiles) => [
-          ...profiles.map((profile) => profile.remove(datetime)),
-        ]);
+        setCountProfiles((profiles) =>
+          profiles.map((profile) => profile.remove(datetime))
+        );
         return new Set(dates);
       } else {
-        setCountProfiles((profiles) => [
-          ...profiles.map((profile) => profile.add(datetime)),
-        ]);
+        setCountProfiles((profiles) =>
+          profiles.map((profile) => profile.add(datetime))
+        );
         return new Set(dates).add(datetime);
       }
     });
   }, []);
 
   const setReferenceDateAndResetCount = React.useCallback(
-    (datetime: number) => {
-      setReferenceDate(datetime);
+    (newReferenceDate: number) => {
+      setReferenceDate(newReferenceDate);
       setSelectedDates((selectedDates) => {
         setCountProfiles((profiles) => {
-          for (const profile of profiles) {
-            profile.setInterval(datetime);
-            profile.reset(Array.from(selectedDates));
-          }
-          return [...profiles];
+          return profiles.map((profile) =>
+            CountProfile.fromReferenceDate(
+              profile.metadata,
+              newReferenceDate
+            ).add(...selectedDates)
+          );
         });
         return selectedDates;
       });

@@ -16,10 +16,12 @@ const HeaderView: React.FC<IProps> = ({ countProfiles }) => {
       </SafeAreaView>
       <View style={styles.content}>
         {countProfiles.map((profile) => (
-          <View key={profile.title}>
-            <Text style={[styles.text, styles.textTop]}>{profile.title}</Text>
+          <View key={profile.metadata.title}>
+            <Text style={[styles.text, styles.textTop]}>
+              {profile.metadata.title}
+            </Text>
             <Text style={[styles.text, styles.textBottom]}>
-              {profile.count} / {profile.limit}
+              {profile.count} / {profile.metadata.limit}
             </Text>
           </View>
         ))}
