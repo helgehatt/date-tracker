@@ -8,12 +8,14 @@ import CountProfile from "./src/helpers/CountProfile";
 import HeaderView from "./src/views/HeaderView";
 import MonthGenerator from "./src/helpers/MonthGenerator";
 import MonthView from "./src/views/MonthView";
+import AppbarView from "./src/views/AppbarView";
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
   const [visibleMonths, setVisibleMonths] = React.useState(() =>
     monthGenerator.init(5, 5)
   );
+  const [editMode, setEditMode] = React.useState(false);
 
   const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
   const [referenceDate, setReferenceDate] = React.useState(TODAY);
@@ -81,9 +83,9 @@ export default function App() {
   }, [monthGenerator]);
 
   return (
-    <View>
+    <View style={styles.container}>
       <HeaderView countProfiles={countProfiles} />
-      <View style={styles.container}>
+      <View style={styles.calendar}>
         <BidirectionalFlatList
           data={visibleMonths}
           renderItem={({ item: { year, month } }) => (
@@ -110,12 +112,24 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         />
       </View>
+      <AppbarView
+        style={styles.appbar}
+        editMode={editMode}
+        setEditMode={setEditMode}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     backgroundColor: COLORS.background,
+  },
+  calendar: {
+    flexShrink: 1,
+  },
+  appbar: {
+    height: 100,
   },
 });
