@@ -2,15 +2,15 @@ import React from "react";
 import { Animated, Pressable, StyleSheet, View, ViewStyle } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
+import { SelectionContext } from "../components/SelectionProvider";
 
 interface IProps {
   style?: ViewStyle;
-  editMode: boolean;
-  setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const AppbarView: React.FC<IProps> = ({ style, editMode, setEditMode }) => {
+const AppbarView: React.FC<IProps> = ({ style }) => {
   const [rotationPct] = React.useState(new Animated.Value(0));
+  const { editMode, toggleEditMode } = React.useContext(SelectionContext);
 
   React.useEffect(() => {
     Animated.timing(rotationPct, {
@@ -28,7 +28,7 @@ const AppbarView: React.FC<IProps> = ({ style, editMode, setEditMode }) => {
     <View style={[styles.container, style]}>
       <View>
         <Animated.View style={{ transform: [{ rotate: rotationDeg }] }}>
-          <Pressable onPress={() => setEditMode((prev) => !prev)}>
+          <Pressable onPress={toggleEditMode}>
             <EvilIcons name="plus" size={64} color="white" />
           </Pressable>
         </Animated.View>

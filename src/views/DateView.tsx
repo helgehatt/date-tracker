@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS, TODAY } from "../constants";
 
 interface IProps {
@@ -7,9 +8,6 @@ interface IProps {
   month: number;
   day: number;
   selectedDates: Set<number>;
-  selectDate: (datetime: number) => void;
-  selectedStartDate: number | undefined;
-  selectedStopDate: number | undefined;
   referenceDate: number;
   setReferenceDate: (datetime: number) => void;
 }
@@ -30,12 +28,11 @@ const DateView: React.FC<IProps> = ({
   month,
   day,
   selectedDates,
-  selectDate,
-  selectedStartDate,
-  selectedStopDate,
   referenceDate,
   setReferenceDate,
 }) => {
+  const { selectedStartDate, selectedStopDate, selectDate } =
+    React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
 

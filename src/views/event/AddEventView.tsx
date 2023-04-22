@@ -2,31 +2,23 @@ import React from "react";
 import { StyleSheet, TextInput, View, ViewStyle } from "react-native";
 import BottomSheet from "../../components/BottomSheet";
 import MyButton from "../../components/MyButton";
+import { SelectionContext } from "../../components/SelectionProvider";
 import { COLORS } from "../../constants";
 
 interface IProps {
   style?: ViewStyle;
-  editMode: boolean;
-  setEditMode: React.Dispatch<React.SetStateAction<boolean>>;
-  selectedStartDate: number | undefined;
-  setSelectedStartDate: React.Dispatch<
-    React.SetStateAction<number | undefined>
-  >;
-  selectedStopDate: number | undefined;
-  setSelectedStopDate: React.Dispatch<React.SetStateAction<number | undefined>>;
 }
 
-const AddEventView: React.FC<IProps> = ({
-  style,
-  editMode,
-  setEditMode,
-  selectedStartDate,
-  setSelectedStartDate,
-  selectedStopDate,
-  setSelectedStopDate,
-}) => {
+const AddEventView: React.FC<IProps> = ({ style }) => {
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
+  const {
+    editMode,
+    selectedStartDate,
+    selectedStopDate,
+    setSelectedStartDate,
+    setSelectedStopDate,
+  } = React.useContext(SelectionContext);
 
   const onChangeStartDate = React.useCallback((text: string) => {
     return setStartDate((prev) => formatDate(prev, text));

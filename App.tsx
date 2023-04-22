@@ -10,15 +10,13 @@ import MonthGenerator from "./src/helpers/MonthGenerator";
 import MonthView from "./src/views/MonthView";
 import AppbarView from "./src/views/AppbarView";
 import AddEventView from "./src/views/event/AddEventView";
+import SelectionProvider from "./src/components/SelectionProvider";
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
   const [visibleMonths, setVisibleMonths] = React.useState(() =>
     monthGenerator.init(5, 5)
   );
-  const [editMode, setEditMode] = React.useState(false);
-  const [selectedStartDate, setSelectedStartDate] = React.useState<number>();
-  const [selectedStopDate, setSelectedStopDate] = React.useState<number>();
 
   const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
   const [referenceDate, setReferenceDate] = React.useState(TODAY);
@@ -42,28 +40,6 @@ export default function App() {
   React.useEffect(() => {
     ApplicationStorage.saveSelectedDates([...selectedDates]);
   }, [selectedDates]);
-
-  React.useEffect(() => {
-    if (!editMode) {
-      setSelectedStartDate(undefined);
-      setSelectedStopDate(undefined);
-    }
-  }, [editMode]);
-
-  const selectDate = React.useCallback(
-    (datetime: number) => {
-      if (editMode) {
-        if (selectedStartDate === undefined) {
-          setSelectedStartDate(datetime);
-        } else if (datetime < selectedStartDate) {
-          setSelectedStartDate(datetime);
-        } else {
-          setSelectedStopDate(datetime);
-        }
-      }
-    },
-    [editMode, selectedStartDate]
-  );
 
   const setReferenceDateAndResetCount = React.useCallback(
     (newReferenceDate: number) => {
@@ -92,52 +68,39 @@ export default function App() {
   }, [monthGenerator]);
 
   return (
-    <View style={styles.container}>
-      <HeaderView countProfiles={countProfiles} />
-      <View style={styles.calendar}>
-        <BidirectionalFlatList
-          data={visibleMonths}
-          renderItem={({ item: { year, month } }) => (
-            <MonthView
-              year={year}
-              month={month}
-              selectedDates={selectedDates}
-              selectDate={selectDate}
-              selectedStartDate={selectedStartDate}
-              selectedStopDate={selectedStopDate}
-              referenceDate={referenceDate}
-              setReferenceDate={setReferenceDateAndResetCount}
-            />
-          )}
-          getItemLayout={(_, index) => ({
-            length: MONTH_VIEW_HEIGHT,
-            offset: MONTH_VIEW_HEIGHT * index,
-            index,
-          })}
-          initialScrollIndex={5}
-          keyExtractor={({ year, month }) => `${year}.${month}`}
-          onStartReached={showPreviousMonth}
-          onStartReachedThreshold={1000}
-          onEndReached={showNextMonth}
-          onEndReachedThreshold={1000}
-          showsVerticalScrollIndicator={false}
-        />
+    <SelectionProvider>
+      <View style={styles.container}>
+        <HeaderView countProfiles={countProfiles} />
+        <View style={styles.calendar}>
+          <BidirectionalFlatList
+            data={visibleMonths}
+            renderItem={({ item: { year, month } }) => (
+              <MonthView
+                year={year}
+                month={month}
+                selectedDates={selectedDates}
+                referenceDate={referenceDate}
+                setReferenceDate={setReferenceDateAndResetCount}
+              />
+            )}
+            getItemLayout={(_, index) => ({
+              length: MONTH_VIEW_HEIGHT,
+              offset: MONTH_VIEW_HEIGHT * index,
+              index,
+            })}
+            initialScrollIndex={5}
+            keyExtractor={({ year, month }) => `${year}.${month}`}
+            onStartReached={showPreviousMonth}
+            onStartReachedThreshold={1000}
+            onEndReached={showNextMonth}
+            onEndReachedThreshold={1000}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+        <AddEventView style={styles.addevent} />
+        <AppbarView style={styles.appbar} />
       </View>
-      <AddEventView
-        style={styles.addevent}
-        editMode={editMode}
-        setEditMode={setEditMode}
-        selectedStartDate={selectedStartDate}
-        setSelectedStartDate={setSelectedStartDate}
-        selectedStopDate={selectedStopDate}
-        setSelectedStopDate={setSelectedStopDate}
-      />
-      <AppbarView
-        style={styles.appbar}
-        editMode={editMode}
-        setEditMode={setEditMode}
-      />
-    </View>
+    </SelectionProvider>
   );
 }
 

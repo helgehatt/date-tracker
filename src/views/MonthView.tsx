@@ -13,9 +13,6 @@ interface IProps {
   year: number;
   month: number;
   selectedDates: Set<number>;
-  selectDate: (datetime: number) => void;
-  selectedStartDate: number | undefined;
-  selectedStopDate: number | undefined;
   referenceDate: number;
   setReferenceDate: (datetime: number) => void;
 }
