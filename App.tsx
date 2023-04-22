@@ -9,6 +9,7 @@ import HeaderView from "./src/views/HeaderView";
 import MonthGenerator from "./src/helpers/MonthGenerator";
 import MonthView from "./src/views/MonthView";
 import AppbarView from "./src/views/AppbarView";
+import AddEventView from "./src/views/event/AddEventView";
 
 export default function App() {
   const [monthGenerator] = React.useState(() => new MonthGenerator());
@@ -16,6 +17,8 @@ export default function App() {
     monthGenerator.init(5, 5)
   );
   const [editMode, setEditMode] = React.useState(false);
+  const [selectedStartDate, setSelectedStartDate] = React.useState<number>();
+  const [selectedStopDate, setSelectedStopDate] = React.useState<number>();
 
   const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
   const [referenceDate, setReferenceDate] = React.useState(TODAY);
@@ -40,21 +43,27 @@ export default function App() {
     ApplicationStorage.saveSelectedDates([...selectedDates]);
   }, [selectedDates]);
 
-  const selectDate = React.useCallback((datetime: number) => {
-    setSelectedDates((dates) => {
-      if (dates.delete(datetime)) {
-        setCountProfiles((profiles) =>
-          profiles.map((profile) => profile.remove(datetime))
-        );
-        return new Set(dates);
-      } else {
-        setCountProfiles((profiles) =>
-          profiles.map((profile) => profile.add(datetime))
-        );
-        return new Set(dates).add(datetime);
+  React.useEffect(() => {
+    if (!editMode) {
+      setSelectedStartDate(undefined);
+      setSelectedStopDate(undefined);
+    }
+  }, [editMode]);
+
+  const selectDate = React.useCallback(
+    (datetime: number) => {
+      if (editMode) {
+        if (selectedStartDate === undefined) {
+          setSelectedStartDate(datetime);
+        } else if (datetime < selectedStartDate) {
+          setSelectedStartDate(datetime);
+        } else {
+          setSelectedStopDate(datetime);
+        }
       }
-    });
-  }, []);
+    },
+    [editMode, selectedStartDate]
+  );
 
   const setReferenceDateAndResetCount = React.useCallback(
     (newReferenceDate: number) => {
@@ -94,6 +103,8 @@ export default function App() {
               month={month}
               selectedDates={selectedDates}
               selectDate={selectDate}
+              selectedStartDate={selectedStartDate}
+              selectedStopDate={selectedStopDate}
               referenceDate={referenceDate}
               setReferenceDate={setReferenceDateAndResetCount}
             />
@@ -112,6 +123,15 @@ export default function App() {
           showsVerticalScrollIndicator={false}
         />
       </View>
+      <AddEventView
+        style={styles.addevent}
+        editMode={editMode}
+        setEditMode={setEditMode}
+        selectedStartDate={selectedStartDate}
+        setSelectedStartDate={setSelectedStartDate}
+        selectedStopDate={selectedStopDate}
+        setSelectedStopDate={setSelectedStopDate}
+      />
       <AppbarView
         style={styles.appbar}
         editMode={editMode}
@@ -129,6 +149,7 @@ const styles = StyleSheet.create({
   calendar: {
     flexShrink: 1,
   },
+  addevent: {},
   appbar: {
     height: 100,
   },

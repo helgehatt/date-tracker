@@ -14,11 +14,14 @@ interface IProps {
   month: number;
   selectedDates: Set<number>;
   selectDate: (datetime: number) => void;
+  selectedStartDate: number | undefined;
+  selectedStopDate: number | undefined;
   referenceDate: number;
   setReferenceDate: (datetime: number) => void;
 }
 
-const MonthView: React.FC<IProps> = ({ year, month, ...props }) => {
+const MonthView: React.FC<IProps> = (props) => {
+  const { year, month } = props;
   const title = getMonthTitle(year, month);
   const offset = new Date(Date.UTC(year, month, 1)).getISODay() - 1;
   return (
@@ -27,13 +30,7 @@ const MonthView: React.FC<IProps> = ({ year, month, ...props }) => {
       {Array.from({ length: 6 }, (_, i) => (
         <View key={i} style={styles.row}>
           {Array.from({ length: 7 }, (_, j) => (
-            <DateView
-              key={j}
-              year={year}
-              month={month}
-              date={1 - offset + 7 * i + j}
-              {...props}
-            />
+            <DateView key={j} day={1 - offset + 7 * i + j} {...props} />
           ))}
         </View>
       ))}

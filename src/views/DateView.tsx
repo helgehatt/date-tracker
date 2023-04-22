@@ -5,17 +5,21 @@ import { COLORS, TODAY } from "../constants";
 interface IProps {
   year: number;
   month: number;
-  date: number;
+  day: number;
   selectedDates: Set<number>;
   selectDate: (datetime: number) => void;
+  selectedStartDate: number | undefined;
+  selectedStopDate: number | undefined;
   referenceDate: number;
   setReferenceDate: (datetime: number) => void;
 }
 
 interface IMemoizableProps {
-  date: number;
+  day: number;
   isToday: boolean;
   isSelected: boolean;
+  isStartDate: boolean;
+  isStopDate: boolean;
   isReference: boolean;
   onPress: () => void;
   onLongPress: () => void;
@@ -24,13 +28,15 @@ interface IMemoizableProps {
 const DateView: React.FC<IProps> = ({
   year,
   month,
-  date,
+  day,
   selectedDates,
   selectDate,
+  selectedStartDate,
+  selectedStopDate,
   referenceDate,
   setReferenceDate,
 }) => {
-  const datetime = Date.UTC(year, month, date);
+  const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
 
   const onPress = React.useCallback(
@@ -48,13 +54,17 @@ const DateView: React.FC<IProps> = ({
 
   const isSelected = selectedDates.has(datetime);
   const isToday = datetime == TODAY;
+  const isStartDate = datetime == selectedStartDate;
+  const isStopDate = datetime == selectedStopDate;
   const isReference = datetime == referenceDate;
 
   return (
     <MemoizableDateView
-      date={date}
+      day={day}
       isToday={isToday}
       isSelected={isSelected}
+      isStartDate={isStartDate}
+      isStopDate={isStopDate}
       isReference={isReference}
       onPress={onPress}
       onLongPress={onLongPress}
@@ -63,9 +73,11 @@ const DateView: React.FC<IProps> = ({
 };
 
 const _MemoizableDateView: React.FC<IMemoizableProps> = ({
-  date,
+  day,
   isToday,
   isSelected,
+  isStartDate,
+  isStopDate,
   isReference,
   onPress,
   onLongPress,
@@ -80,7 +92,16 @@ const _MemoizableDateView: React.FC<IMemoizableProps> = ({
         isReference && styles.isReference,
       ]}
     >
-      <Text style={[styles.text, isSelected && styles.isSelected]}>{date}</Text>
+      <Text
+        style={[
+          styles.text,
+          isSelected && styles.isSelected,
+          isStartDate && styles.isStartDate,
+          isStopDate && styles.isStopDate,
+        ]}
+      >
+        {day}
+      </Text>
     </Pressable>
   );
 };
@@ -93,7 +114,7 @@ const MemoizedPlaceholder = React.memo(_MemoizedPlaceholder);
 
 const styles = StyleSheet.create({
   container: {
-    flex: 111,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
@@ -116,6 +137,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     overflow: "hidden",
+  },
+  isStartDate: {
+    backgroundColor: "red",
+  },
+  isStopDate: {
+    color: "blue",
   },
 });
 
