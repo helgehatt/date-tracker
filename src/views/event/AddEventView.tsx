@@ -29,13 +29,17 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   React.useEffect(() => {
-    if (selectedStartDate) {
+    if (selectedStartDate === undefined) {
+      setStartDate("");
+    } else {
       setStartDate(new Date(selectedStartDate).toISOString().slice(0, 10));
     }
   }, [selectedStartDate]);
 
   React.useEffect(() => {
-    if (selectedStopDate) {
+    if (selectedStopDate === undefined) {
+      setStopDate("");
+    } else {
       setStopDate(new Date(selectedStopDate).toISOString().slice(0, 10));
     }
   }, [selectedStopDate]);

@@ -46,13 +46,18 @@ function reducer(state: State, action: Action): State {
       if (!state.editMode) {
         return state;
       }
-      if (state.selectedStartDate === undefined) {
-        return { ...state, selectedStartDate: action.payload.datetime };
+      if (
+        state.selectedStartDate &&
+        !state.selectedStopDate &&
+        state.selectedStartDate <= action.payload.datetime
+      ) {
+        return { ...state, selectedStopDate: action.payload.datetime };
       }
-      if (state.selectedStartDate > action.payload.datetime) {
-        return { ...state, selectedStartDate: action.payload.datetime };
-      }
-      return { ...state, selectedStopDate: action.payload.datetime };
+      return {
+        ...state,
+        selectedStartDate: action.payload.datetime,
+        selectedStopDate: undefined,
+      };
     case "TOGGLE_EDIT_MODE":
       if (state.editMode) {
         return {
@@ -66,6 +71,16 @@ function reducer(state: State, action: Action): State {
     case "SET_SELECTED_DATE":
       if (action.payload.type === "START") {
         return { ...state, selectedStartDate: action.payload.datetime };
+      }
+      if (
+        state.selectedStartDate &&
+        state.selectedStartDate > action.payload.datetime
+      ) {
+        return {
+          ...state,
+          selectedStartDate: action.payload.datetime,
+          selectedStopDate: action.payload.datetime,
+        };
       }
       return { ...state, selectedStopDate: action.payload.datetime };
     default:
