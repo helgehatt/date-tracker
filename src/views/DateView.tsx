@@ -7,9 +7,6 @@ interface IProps {
   year: number;
   month: number;
   day: number;
-  selectedDates: Set<number>;
-  referenceDate: number;
-  setReferenceDate: (datetime: number) => void;
 }
 
 interface IMemoizableProps {
@@ -20,17 +17,9 @@ interface IMemoizableProps {
   isStopDate: boolean;
   isReference: boolean;
   onPress: () => void;
-  onLongPress: () => void;
 }
 
-const DateView: React.FC<IProps> = ({
-  year,
-  month,
-  day,
-  selectedDates,
-  referenceDate,
-  setReferenceDate,
-}) => {
+const DateView: React.FC<IProps> = ({ year, month, day }) => {
   const { selectedStartDate, selectedStopDate, selectDate } =
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
@@ -40,20 +29,16 @@ const DateView: React.FC<IProps> = ({
     () => selectDate(datetime),
     [datetime, selectDate]
   );
-  const onLongPress = React.useCallback(
-    () => setReferenceDate(datetime),
-    [datetime, setReferenceDate]
-  );
 
   if (!isVisible) {
     return <MemoizedPlaceholder />;
   }
 
-  const isSelected = selectedDates.has(datetime);
+  const isSelected = false;
   const isToday = datetime == TODAY;
   const isStartDate = datetime == selectedStartDate;
   const isStopDate = datetime == selectedStopDate;
-  const isReference = datetime == referenceDate;
+  const isReference = false;
 
   return (
     <MemoizableDateView
@@ -64,7 +49,6 @@ const DateView: React.FC<IProps> = ({
       isStopDate={isStopDate}
       isReference={isReference}
       onPress={onPress}
-      onLongPress={onLongPress}
     />
   );
 };
@@ -77,12 +61,10 @@ const _MemoizableDateView: React.FC<IMemoizableProps> = ({
   isStopDate,
   isReference,
   onPress,
-  onLongPress,
 }) => {
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
       style={[
         styles.container,
         isToday && styles.isToday,

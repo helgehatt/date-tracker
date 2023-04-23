@@ -1,23 +1,16 @@
 import "./src/extensions";
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { COLORS, MONTH_VIEW_HEIGHT, TODAY } from "./src/constants";
+import { COLORS, TODAY } from "./src/constants";
 import ApplicationStorage from "./src/helpers/ApplicationStorage";
-import BidirectionalFlatList from "./src/components/BidirectionalFlatList";
 import CountProfile from "./src/helpers/CountProfile";
 import HeaderView from "./src/views/HeaderView";
-import MonthGenerator from "./src/helpers/MonthGenerator";
-import MonthView from "./src/views/MonthView";
 import AppbarView from "./src/views/AppbarView";
 import AddEventView from "./src/views/event/AddEventView";
 import SelectionProvider from "./src/components/SelectionProvider";
+import CalendarView from "./src/views/CalendarView";
 
 export default function App() {
-  const [monthGenerator] = React.useState(() => new MonthGenerator());
-  const [visibleMonths, setVisibleMonths] = React.useState(() =>
-    monthGenerator.init(5, 5)
-  );
-
   const [selectedDates, setSelectedDates] = React.useState(new Set<number>());
   const [referenceDate, setReferenceDate] = React.useState(TODAY);
   const [countProfiles, setCountProfiles] = React.useState(() =>
@@ -59,44 +52,11 @@ export default function App() {
     []
   );
 
-  const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
-  }, [monthGenerator]);
-
-  const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [...months, monthGenerator.next()]);
-  }, [monthGenerator]);
-
   return (
     <SelectionProvider>
       <View style={styles.container}>
         <HeaderView countProfiles={countProfiles} />
-        <View style={styles.calendar}>
-          <BidirectionalFlatList
-            data={visibleMonths}
-            renderItem={({ item: { year, month } }) => (
-              <MonthView
-                year={year}
-                month={month}
-                selectedDates={selectedDates}
-                referenceDate={referenceDate}
-                setReferenceDate={setReferenceDateAndResetCount}
-              />
-            )}
-            getItemLayout={(_, index) => ({
-              length: MONTH_VIEW_HEIGHT,
-              offset: MONTH_VIEW_HEIGHT * index,
-              index,
-            })}
-            initialScrollIndex={5}
-            keyExtractor={({ year, month }) => `${year}.${month}`}
-            onStartReached={showPreviousMonth}
-            onStartReachedThreshold={1000}
-            onEndReached={showNextMonth}
-            onEndReachedThreshold={1000}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
+        <CalendarView style={styles.calendar} />
         <AddEventView style={styles.addevent} />
         <AppbarView style={styles.appbar} />
       </View>
