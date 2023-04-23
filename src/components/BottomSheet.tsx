@@ -40,7 +40,14 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
         duration: closeDuration,
       }).start();
     }
-  }, [visible]);
+  }, [
+    animatedHeight,
+    height,
+    minClosingHeight,
+    visible,
+    closeDuration,
+    openDuration,
+  ]);
 
   return (
     <KeyboardAvoidingView

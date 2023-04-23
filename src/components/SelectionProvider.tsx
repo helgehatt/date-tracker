@@ -19,18 +19,25 @@ type Action =
       payload: { datetime: number; type: "START" | "STOP" };
     };
 
+type Context = State & {
+  setSelectedStartDate: (datetime: number) => void;
+  setSelectedStopDate: (datetime: number) => void;
+  selectDate: (datetime: number) => void;
+  toggleEditMode: () => void;
+};
+
 const initialState: State = {
   editMode: false,
   selectedStartDate: undefined,
   selectedStopDate: undefined,
 };
 
-export const SelectionContext = React.createContext({
+export const SelectionContext = React.createContext<Context>({
   ...initialState,
-  setSelectedStartDate: (datetime: number) => {},
-  setSelectedStopDate: (datetime: number) => {},
-  selectDate: (datetime: number) => {},
-  toggleEditMode: () => {},
+  setSelectedStartDate: () => undefined,
+  setSelectedStopDate: () => undefined,
+  selectDate: () => undefined,
+  toggleEditMode: () => undefined,
 });
 
 function reducer(state: State, action: Action): State {

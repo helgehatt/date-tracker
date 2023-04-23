@@ -30,7 +30,7 @@ const DEFAULT_COUNT_PROFILE_METADATA = [
     "1 Y",
     61,
     new DatetimeIntervalConstructor(
-      (y, m, d) => new Interval(Date.UTC(y, 0, 1), Date.UTC(y + 1, 0, 0))
+      (y) => new Interval(Date.UTC(y, 0, 1), Date.UTC(y + 1, 0, 0))
     )
   ),
   new CountProfileMetadata(
@@ -52,7 +52,7 @@ const DEFAULT_COUNT_PROFILE_METADATA = [
 class CountProfile {
   constructor(
     public metadata: CountProfileMetadata,
-    public interval: Interval<Number>,
+    public interval: Interval<number>,
     public count: number
   ) {}
 

@@ -17,7 +17,7 @@ const AppbarView: React.FC<IProps> = ({ style }) => {
       useNativeDriver: true,
       toValue: editMode ? 1 : 0,
     }).start();
-  }, [editMode]);
+  }, [rotationPct, editMode]);
 
   const rotationDeg = rotationPct.interpolate({
     inputRange: [0, 1],

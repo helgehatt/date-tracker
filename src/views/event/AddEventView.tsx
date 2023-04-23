@@ -29,17 +29,13 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   React.useEffect(() => {
-    if (selectedStartDate === undefined) {
-      setStartDate("");
-    } else {
+    if (selectedStartDate) {
       setStartDate(new Date(selectedStartDate).toISOString().slice(0, 10));
     }
   }, [selectedStartDate]);
 
   React.useEffect(() => {
-    if (selectedStopDate === undefined) {
-      setStopDate("");
-    } else {
+    if (selectedStopDate) {
       setStopDate(new Date(selectedStopDate).toISOString().slice(0, 10));
     }
   }, [selectedStopDate]);
@@ -49,14 +45,14 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
       const datetime = Date.parse(startDate);
       if (datetime) setSelectedStartDate(datetime);
     }
-  }, [startDate]);
+  }, [startDate, setSelectedStartDate]);
 
   React.useEffect(() => {
     if (stopDate.length == 10) {
       const datetime = Date.parse(stopDate);
       if (datetime) setSelectedStopDate(datetime);
     }
-  }, [stopDate]);
+  }, [stopDate, setSelectedStopDate]);
 
   return (
     <BottomSheet visible={editMode} height={150}>
