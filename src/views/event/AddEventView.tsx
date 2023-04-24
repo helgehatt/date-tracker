@@ -4,6 +4,7 @@ import BottomSheet from "../../components/BottomSheet";
 import MyButton from "../../components/MyButton";
 import { SelectionContext } from "../../components/SelectionProvider";
 import { COLORS } from "../../constants";
+import { EventContext } from "../../components/EventProvider";
 
 interface IProps {
   style?: ViewStyle;
@@ -12,10 +13,12 @@ interface IProps {
 const AddEventView: React.FC<IProps> = ({ style }) => {
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
+  const { addEvent } = React.useContext(EventContext);
   const {
     editMode,
     selectedStartDate,
     selectedStopDate,
+    toggleEditMode,
     setSelectedStartDate,
     setSelectedStopDate,
   } = React.useContext(SelectionContext);
@@ -27,6 +30,13 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   const onChangeStopDate = React.useCallback((text: string) => {
     return setStopDate((prev) => formatDate(prev, text));
   }, []);
+
+  const onPressAdd = React.useCallback(() => {
+    if (selectedStartDate && selectedStopDate) {
+      addEvent(selectedStartDate, selectedStopDate);
+      toggleEditMode();
+    }
+  }, [selectedStartDate, selectedStopDate, addEvent, toggleEditMode]);
 
   React.useEffect(() => {
     if (selectedStartDate === undefined) {
@@ -78,7 +88,7 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
           />
         </View>
         <View>
-          <MyButton title="Add" />
+          <MyButton title="Add" onPress={onPressAdd} />
         </View>
       </View>
     </BottomSheet>

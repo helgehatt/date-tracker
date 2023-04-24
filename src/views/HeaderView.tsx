@@ -1,16 +1,18 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
-import CountProfile from "../helpers/CountProfile";
+import { EventContext } from "../components/EventProvider";
 
 interface IProps {
-  countProfiles: CountProfile[];
+  style?: ViewStyle;
 }
 
-const HeaderView: React.FC<IProps> = ({ countProfiles }) => {
+const HeaderView: React.FC<IProps> = ({ style }) => {
+  const { countProfiles } = React.useContext(EventContext);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <SafeAreaView>
         <StatusBar style="light" />
       </SafeAreaView>

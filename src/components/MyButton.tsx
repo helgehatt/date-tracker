@@ -1,15 +1,21 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import {
+  Pressable,
+  PressableProps,
+  StyleSheet,
+  Text,
+  ViewStyle,
+} from "react-native";
 import { COLORS } from "../constants";
 
-interface IProps {
+interface IProps extends PressableProps {
   style?: ViewStyle;
   title?: string;
 }
 
-const MyButton: React.FC<IProps> = ({ style, title }) => {
+const MyButton: React.FC<IProps> = ({ style, title, ...props }) => {
   return (
-    <Pressable style={[styles.container, style]}>
+    <Pressable style={[styles.container, style]} {...props}>
       <Text style={styles.text}>{title}</Text>
     </Pressable>
   );

@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS, TODAY } from "../constants";
+import { EventContext } from "../components/EventProvider";
 
 interface IProps {
   year: number;
@@ -20,6 +21,7 @@ interface IMemoizableProps {
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
+  const { eventDates } = React.useContext(EventContext);
   const { selectedStartDate, selectedStopDate, selectDate } =
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
@@ -34,7 +36,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
     return <MemoizedPlaceholder />;
   }
 
-  const isSelected = false;
+  const isSelected = eventDates.has(datetime);
   const isToday = datetime == TODAY;
   const isStartDate = datetime == selectedStartDate;
   const isStopDate = datetime == selectedStopDate;
