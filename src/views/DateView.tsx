@@ -13,10 +13,8 @@ interface IProps {
 interface IMemoizableProps {
   day: number;
   isToday: boolean;
+  isEvent: boolean;
   isSelected: boolean;
-  isStartDate: boolean;
-  isStopDate: boolean;
-  isReference: boolean;
   onPress: () => void;
 }
 
@@ -36,20 +34,21 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
     return <MemoizedPlaceholder />;
   }
 
-  const isSelected = eventDates.has(datetime);
   const isToday = datetime == TODAY;
-  const isStartDate = datetime == selectedStartDate;
-  const isStopDate = datetime == selectedStopDate;
-  const isReference = false;
+  const isEvent = eventDates.has(datetime);
+  const isSelected =
+    datetime === selectedStartDate ||
+    (selectedStartDate !== undefined &&
+      selectedStopDate !== undefined &&
+      datetime >= selectedStartDate &&
+      datetime <= selectedStopDate);
 
   return (
     <MemoizableDateView
       day={day}
       isToday={isToday}
+      isEvent={isEvent}
       isSelected={isSelected}
-      isStartDate={isStartDate}
-      isStopDate={isStopDate}
-      isReference={isReference}
       onPress={onPress}
     />
   );
@@ -58,27 +57,21 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
 const _MemoizableDateView: React.FC<IMemoizableProps> = ({
   day,
   isToday,
+  isEvent,
   isSelected,
-  isStartDate,
-  isStopDate,
-  isReference,
   onPress,
 }) => {
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.container,
-        isToday && styles.isToday,
-        isReference && styles.isReference,
-      ]}
+      style={[styles.container, isToday && styles.isToday]}
     >
       <Text
         style={[
           styles.text,
+          isEvent && styles.isEvent,
+          isSelected && styles.isEvent,
           isSelected && styles.isSelected,
-          isStartDate && styles.isStartDate,
-          isStopDate && styles.isStopDate,
         ]}
       >
         {day}
@@ -98,15 +91,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.background,
   },
   isToday: {
     backgroundColor: COLORS.secondary,
-    borderColor: COLORS.secondary,
-  },
-  isReference: {
-    borderColor: COLORS.primary,
   },
   text: {
     width: "70%",
@@ -114,16 +101,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.text,
   },
-  isSelected: {
+  isEvent: {
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     overflow: "hidden",
   },
-  isStartDate: {
-    backgroundColor: "red",
-  },
-  isStopDate: {
-    color: "blue",
+  isSelected: {
+    opacity: 0.75,
   },
 });
 

@@ -15,7 +15,10 @@ interface IProps extends PressableProps {
 
 const MyButton: React.FC<IProps> = ({ style, title, ...props }) => {
   return (
-    <Pressable style={[styles.container, style]} {...props}>
+    <Pressable
+      style={[styles.container, style, props.disabled && styles.disabled]}
+      {...props}
+    >
       <Text style={styles.text}>{title}</Text>
     </Pressable>
   );
@@ -32,6 +35,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.text,
     fontSize: 20,
+  },
+  disabled: {
+    opacity: 0.75,
   },
 });
 

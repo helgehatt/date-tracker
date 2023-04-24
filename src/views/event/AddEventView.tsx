@@ -88,7 +88,11 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
           />
         </View>
         <View>
-          <MyButton title="Add" onPress={onPressAdd} />
+          <MyButton
+            title="Add"
+            onPress={onPressAdd}
+            disabled={!selectedStartDate || !selectedStopDate}
+          />
         </View>
       </View>
     </BottomSheet>
