@@ -1,86 +1,81 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS, TODAY } from "../constants";
+import { EventContext } from "../components/EventProvider";
 
 interface IProps {
   year: number;
   month: number;
-  date: number;
-  selectedDates: Set<number>;
-  selectDate: (datetime: number) => void;
-  referenceDate: number;
-  setReferenceDate: (datetime: number) => void;
+  day: number;
 }
 
 interface IMemoizableProps {
-  date: number;
+  day: number;
   isToday: boolean;
+  isEvent: boolean;
   isSelected: boolean;
-  isReference: boolean;
   onPress: () => void;
-  onLongPress: () => void;
 }
 
-const DateView: React.FC<IProps> = ({
-  year,
-  month,
-  date,
-  selectedDates,
-  selectDate,
-  referenceDate,
-  setReferenceDate,
-}) => {
-  const datetime = Date.UTC(year, month, date);
+const DateView: React.FC<IProps> = ({ year, month, day }) => {
+  const { eventDates } = React.useContext(EventContext);
+  const { selectedStartDate, selectedStopDate, selectDate } =
+    React.useContext(SelectionContext);
+  const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
 
   const onPress = React.useCallback(
     () => selectDate(datetime),
     [datetime, selectDate]
   );
-  const onLongPress = React.useCallback(
-    () => setReferenceDate(datetime),
-    [datetime, setReferenceDate]
-  );
 
   if (!isVisible) {
     return <MemoizedPlaceholder />;
   }
 
-  const isSelected = selectedDates.has(datetime);
   const isToday = datetime == TODAY;
-  const isReference = datetime == referenceDate;
+  const isEvent = eventDates.has(datetime);
+  const isSelected =
+    datetime === selectedStartDate ||
+    (selectedStartDate !== undefined &&
+      selectedStopDate !== undefined &&
+      datetime >= selectedStartDate &&
+      datetime <= selectedStopDate);
 
   return (
     <MemoizableDateView
-      date={date}
+      day={day}
       isToday={isToday}
+      isEvent={isEvent}
       isSelected={isSelected}
-      isReference={isReference}
       onPress={onPress}
-      onLongPress={onLongPress}
     />
   );
 };
 
 const _MemoizableDateView: React.FC<IMemoizableProps> = ({
-  date,
+  day,
   isToday,
+  isEvent,
   isSelected,
-  isReference,
   onPress,
-  onLongPress,
 }) => {
   return (
     <Pressable
       onPress={onPress}
-      onLongPress={onLongPress}
-      style={[
-        styles.container,
-        isToday && styles.isToday,
-        isReference && styles.isReference,
-      ]}
+      style={[styles.container, isToday && styles.isToday]}
     >
-      <Text style={[styles.text, isSelected && styles.isSelected]}>{date}</Text>
+      <Text
+        style={[
+          styles.text,
+          isEvent && styles.isEvent,
+          isSelected && styles.isEvent,
+          isSelected && styles.isSelected,
+        ]}
+      >
+        {day}
+      </Text>
     </Pressable>
   );
 };
@@ -93,18 +88,12 @@ const MemoizedPlaceholder = React.memo(_MemoizedPlaceholder);
 
 const styles = StyleSheet.create({
   container: {
-    flex: 111,
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.background,
   },
   isToday: {
     backgroundColor: COLORS.secondary,
-    borderColor: COLORS.secondary,
-  },
-  isReference: {
-    borderColor: COLORS.primary,
   },
   text: {
     width: "70%",
@@ -112,10 +101,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.text,
   },
-  isSelected: {
+  isEvent: {
     backgroundColor: COLORS.primary,
     borderRadius: 14,
     overflow: "hidden",
+  },
+  isSelected: {
+    opacity: 0.75,
   },
 });
 

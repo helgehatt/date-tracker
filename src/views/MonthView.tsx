@@ -12,15 +12,12 @@ function getMonthTitle(year: number, month: number) {
 interface IProps {
   year: number;
   month: number;
-  selectedDates: Set<number>;
-  selectDate: (datetime: number) => void;
-  referenceDate: number;
-  setReferenceDate: (datetime: number) => void;
 }
 
-const MonthView: React.FC<IProps> = ({ year, month, ...props }) => {
+const MonthView: React.FC<IProps> = ({ year, month }) => {
   const title = getMonthTitle(year, month);
   const offset = new Date(Date.UTC(year, month, 1)).getISODay() - 1;
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>{title}</Text>
@@ -31,8 +28,7 @@ const MonthView: React.FC<IProps> = ({ year, month, ...props }) => {
               key={j}
               year={year}
               month={month}
-              date={1 - offset + 7 * i + j}
-              {...props}
+              day={1 - offset + 7 * i + j}
             />
           ))}
         </View>

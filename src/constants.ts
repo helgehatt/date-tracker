@@ -9,5 +9,6 @@ export const COLORS = {
   background: "#2C394B",
   primary: "#FF4C29",
   secondary: "#082032",
+  tertiary: "#334756",
   text: "#FFFFFF",
 };

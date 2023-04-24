@@ -1,7 +1,13 @@
 import React from "react";
-import { FlatList, FlatListProps } from "react-native";
+import {
+  FlatList,
+  FlatListProps,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+} from "react-native";
 
 interface IProps
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extends Omit<FlatListProps<any>, "maintainVisibleContentPosition"> {
   onStartReached: () => void;
   onEndReached: () => void;
@@ -17,7 +23,7 @@ const BidirectionalFlatList: React.FC<IProps> = ({
   onEndReachedThreshold,
   ...props
 }) => {
-  const handleScroll: FlatListProps<any>["onScroll"] = (event) => {
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     onScroll?.(event);
 
     const offset = event.nativeEvent.contentOffset.y;
