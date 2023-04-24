@@ -69,7 +69,7 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   }, [stopDate, setSelectedStopDate]);
 
   return (
-    <BottomSheet visible={editMode} height={150}>
+    <BottomSheet visible={editMode} height={130}>
       <View style={[styles.container, style]}>
         <View style={styles.row}>
           <TextInput
@@ -103,9 +103,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.tertiary,
+    paddingHorizontal: 10,
   },
   row: {
     flexDirection: "row",
+    marginVertical: 10,
+    columnGap: 10,
   },
   input: {
     flex: 1,
