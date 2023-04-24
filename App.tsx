@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   calendar: {
-    flexShrink: 1,
+    flex: 1,
   },
   addevent: {},
   appbar: {

@@ -1,9 +1,9 @@
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { ActivityIndicator, StyleSheet, View, ViewStyle } from "react-native";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
 import MonthGenerator from "../helpers/MonthGenerator";
-import { MONTH_VIEW_HEIGHT } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT } from "../constants";
 
 interface IProps {
   style?: ViewStyle;
@@ -42,6 +42,20 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         onEndReached={showNextMonth}
         onEndReachedThreshold={1000}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <ActivityIndicator
+            size="large"
+            color={COLORS.text}
+            style={{ marginVertical: 50 }}
+          />
+        }
+        ListFooterComponent={
+          <ActivityIndicator
+            size="large"
+            color={COLORS.text}
+            style={{ marginVertical: 50 }}
+          />
+        }
       />
     </View>
   );
