@@ -1,19 +1,24 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-class ApplicationStorage {
-  static SELECTED_DATES = "selected-dates";
+export interface AppEvent {
+  start: number;
+  stop: number;
+}
 
-  static async loadSelectedDates(): Promise<number[]> {
-    return AsyncStorage.getItem(ApplicationStorage.SELECTED_DATES)
+class ApplicationStorage {
+  static EVENTS = "events";
+
+  static async loadEvents(): Promise<AppEvent[]> {
+    return AsyncStorage.getItem(ApplicationStorage.EVENTS)
       .catch(console.warn)
       .then((value) => value ?? "[]")
       .then(JSON.parse);
   }
 
-  static async saveSelectedDates(dates: number[]) {
+  static async saveEvents(events: AppEvent[]) {
     return AsyncStorage.setItem(
-      ApplicationStorage.SELECTED_DATES,
-      JSON.stringify(dates)
+      ApplicationStorage.EVENTS,
+      JSON.stringify(events)
     ).catch(console.warn);
   }
 }
