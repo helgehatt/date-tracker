@@ -1,6 +1,6 @@
 import React from "react";
 import { TODAY, DAY_IN_MS } from "../constants";
-import CountProfile from "../helpers/CountProfile";
+import CountProfile, { DEFAULT_COUNT_PROFILES } from "../helpers/CountProfile";
 import ApplicationStorage, { AppEvent } from "../helpers/ApplicationStorage";
 
 type State = {
@@ -27,9 +27,7 @@ const initialState: State = {
   eventsLoaded: false,
   eventDates: {},
   referenceDate: TODAY,
-  countProfiles: CountProfile.DEFAULT_METADATA.map((metadata) =>
-    CountProfile.fromReferenceDate(metadata, TODAY)
-  ),
+  countProfiles: DEFAULT_COUNT_PROFILES,
 };
 
 export const EventContext = React.createContext<Context>({
@@ -57,20 +55,33 @@ function getEventDates(events: AppEvent[]) {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "LOAD_EVENTS":
-      return {
-        ...state,
-        events: action.payload.events,
-        eventsLoaded: true,
-        eventDates: getEventDates(action.payload.events),
-      };
-    case "ADD_EVENT":
-      return {
-        ...state,
-        events: [...state.events, action.payload.event],
-        eventDates: getEventDates([...state.events, action.payload.event]),
-      };
+    case "LOAD_EVENTS": {
+      const update = { ...state }; // New object reference
 
+      update.events = [...update.events, ...action.payload.events];
+      update.eventsLoaded = true;
+      update.eventDates = getEventDates(update.events);
+
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "ADD_EVENT": {
+      const update = { ...state }; // New object reference
+
+      update.events = [...update.events, action.payload.event];
+      update.eventDates = getEventDates(update.events);
+
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
     default:
       return state;
   }
