@@ -6,7 +6,7 @@ import ApplicationStorage, { AppEvent } from "../helpers/ApplicationStorage";
 type State = {
   events: AppEvent[];
   eventsLoaded: boolean;
-  eventDates: Set<number>;
+  eventDates: Record<number, AppEvent>;
   referenceDate: number;
   countProfiles: CountProfile[];
 };
@@ -25,7 +25,7 @@ type Context = State & {
 const initialState: State = {
   events: [],
   eventsLoaded: false,
-  eventDates: new Set<number>(),
+  eventDates: {},
   referenceDate: TODAY,
   countProfiles: CountProfile.DEFAULT_METADATA.map((metadata) =>
     CountProfile.fromReferenceDate(metadata, TODAY)
@@ -43,16 +43,16 @@ function* dateRange(start: number, stop: number) {
   }
 }
 
-function updateDates(prev: Set<number>, ...events: AppEvent[]) {
-  const updated = new Set(prev);
+function getEventDates(events: AppEvent[]) {
+  const obj = {} as Record<number, AppEvent>;
 
   for (const event of events) {
     for (const date of dateRange(event.start, event.stop)) {
-      updated.add(date);
+      obj[date] = event;
     }
   }
 
-  return updated;
+  return obj;
 }
 
 function reducer(state: State, action: Action): State {
@@ -62,13 +62,13 @@ function reducer(state: State, action: Action): State {
         ...state,
         events: action.payload.events,
         eventsLoaded: true,
-        eventDates: updateDates(state.eventDates, ...action.payload.events),
+        eventDates: getEventDates(action.payload.events),
       };
     case "ADD_EVENT":
       return {
         ...state,
         events: [...state.events, action.payload.event],
-        eventDates: updateDates(state.eventDates, action.payload.event),
+        eventDates: getEventDates([...state.events, action.payload.event]),
       };
 
     default:

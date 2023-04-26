@@ -35,7 +35,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
   }
 
   const isToday = datetime == TODAY;
-  const isEvent = eventDates.has(datetime);
+  const isEvent = datetime in eventDates;
   const isSelected =
     datetime === selectedStartDate ||
     (selectedStartDate !== undefined &&
