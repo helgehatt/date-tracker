@@ -1,4 +1,5 @@
 import React from "react";
+import { AppEvent } from "../helpers/ApplicationStorage";
 
 type State = {
   selectMode: "add" | "edit" | undefined;
@@ -7,13 +8,9 @@ type State = {
 };
 
 type Action =
-  | {
-      type: "SELECT_DATE";
-      payload: { datetime: number };
-    }
-  | {
-      type: "TOGGLE_SELECT_MODE";
-    }
+  | { type: "SELECT_DATE"; payload: { datetime: number } }
+  | { type: "SELECT_EVENT"; payload: { event: AppEvent } }
+  | { type: "TOGGLE_SELECT_MODE" }
   | {
       type: "SET_SELECTED_DATE";
       payload: { datetime: number; type: "START" | "STOP" };
@@ -23,6 +20,7 @@ type Context = State & {
   setSelectedStartDate: (datetime: number) => void;
   setSelectedStopDate: (datetime: number) => void;
   selectDate: (datetime: number) => void;
+  selectEvent: (event: AppEvent) => void;
   toggleSelectMode: () => void;
 };
 
@@ -37,6 +35,7 @@ export const SelectionContext = React.createContext<Context>({
   setSelectedStartDate: () => undefined,
   setSelectedStopDate: () => undefined,
   selectDate: () => undefined,
+  selectEvent: () => undefined,
   toggleSelectMode: () => undefined,
 });
 
@@ -65,8 +64,18 @@ function reducer(state: State, action: Action): State {
 
       return state;
     }
+    case "SELECT_EVENT": {
+      const { event } = action.payload;
+
+      return {
+        ...state,
+        selectMode: "edit",
+        selectedStartDate: event.start,
+        selectedStopDate: event.stop,
+      };
+    }
     case "TOGGLE_SELECT_MODE": {
-      if (state.selectMode === "add") {
+      if (!!state.selectMode) {
         return {
           ...state,
           selectMode: undefined,
@@ -103,6 +112,10 @@ const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "SELECT_DATE", payload: { datetime } });
   }, []);
 
+  const selectEvent = React.useCallback((event: AppEvent) => {
+    dispatch({ type: "SELECT_EVENT", payload: { event } });
+  }, []);
+
   const setSelectedStartDate = React.useCallback((datetime: number) => {
     dispatch({
       type: "SET_SELECTED_DATE",
@@ -128,6 +141,7 @@ const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         setSelectedStartDate,
         setSelectedStopDate,
         selectDate,
+        selectEvent,
         toggleSelectMode,
       }}
     >
