@@ -13,10 +13,9 @@ type State = {
 
 type Action =
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
-  | {
-      type: "ADD_EVENT";
-      payload: { event: AppEvent };
-    };
+  | { type: "ADD_EVENT"; payload: { event: AppEvent } }
+  | { type: "EDIT_EVENT"; payload: { old: AppEvent; new: AppEvent } }
+  | { type: "DELETE_EVENT"; payload: { event: AppEvent } };
 
 type Context = State & {
   addEvent(start: number, stop: number): void;
@@ -60,8 +59,8 @@ function reducer(state: State, action: Action): State {
 
       update.events = [...update.events, ...action.payload.events];
       update.eventsLoaded = true;
-      update.eventDates = getEventDates(update.events);
 
+      update.eventDates = getEventDates(update.events);
       const datetimes = Object.keys(update.eventDates).map(Number);
       update.countProfiles = update.countProfiles.map((v) =>
         v.new(update.referenceDate, datetimes)
@@ -73,8 +72,36 @@ function reducer(state: State, action: Action): State {
       const update = { ...state }; // New object reference
 
       update.events = [...update.events, action.payload.event];
-      update.eventDates = getEventDates(update.events);
 
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "EDIT_EVENT": {
+      const update = { ...state };
+
+      update.events = update.events.map((v) =>
+        v === action.payload.old ? action.payload.new : v
+      );
+
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "DELETE_EVENT": {
+      const update = { ...state };
+
+      update.events = update.events.filter((v) => v !== action.payload.event);
+
+      update.eventDates = getEventDates(update.events);
       const datetimes = Object.keys(update.eventDates).map(Number);
       update.countProfiles = update.countProfiles.map((v) =>
         v.new(update.referenceDate, datetimes)
