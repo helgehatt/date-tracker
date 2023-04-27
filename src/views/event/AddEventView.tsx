@@ -15,10 +15,10 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   const [stopDate, setStopDate] = React.useState("");
   const { addEvent } = React.useContext(EventContext);
   const {
-    editMode,
+    selectMode,
     selectedStartDate,
     selectedStopDate,
-    toggleEditMode,
+    toggleSelectMode,
     setSelectedStartDate,
     setSelectedStopDate,
   } = React.useContext(SelectionContext);
@@ -34,9 +34,9 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   const onPressAdd = React.useCallback(() => {
     if (selectedStartDate && selectedStopDate) {
       addEvent(selectedStartDate, selectedStopDate);
-      toggleEditMode();
+      toggleSelectMode();
     }
-  }, [selectedStartDate, selectedStopDate, addEvent, toggleEditMode]);
+  }, [selectedStartDate, selectedStopDate, addEvent, toggleSelectMode]);
 
   React.useEffect(() => {
     if (selectedStartDate === undefined) {
@@ -69,7 +69,7 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   }, [stopDate, setSelectedStopDate]);
 
   return (
-    <BottomSheet visible={editMode} height={130}>
+    <BottomSheet visible={!!selectMode} height={130}>
       <View style={[styles.container, style]}>
         <View style={styles.row}>
           <TextInput
