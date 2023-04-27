@@ -9,7 +9,7 @@ type State = {
 };
 
 type Action =
-  | { type: "SELECT_DATE"; payload: { datetime: number } }
+  | { type: "SELECT_DATE"; payload: { datetime: number; event?: AppEvent } }
   | { type: "SELECT_EVENT"; payload: { event: AppEvent } }
   | { type: "TOGGLE_SELECT_MODE" }
   | {
@@ -20,8 +20,7 @@ type Action =
 type Context = State & {
   setSelectedStartDate: (datetime: number) => void;
   setSelectedStopDate: (datetime: number) => void;
-  selectDate: (datetime: number) => void;
-  selectEvent: (event: AppEvent) => void;
+  selectDate: (datetime: number, event?: AppEvent) => void;
   toggleSelectMode: () => void;
 };
 
@@ -37,14 +36,13 @@ export const SelectionContext = React.createContext<Context>({
   setSelectedStartDate: () => undefined,
   setSelectedStopDate: () => undefined,
   selectDate: () => undefined,
-  selectEvent: () => undefined,
   toggleSelectMode: () => undefined,
 });
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "SELECT_DATE": {
-      const { datetime } = action.payload;
+      const { datetime, event } = action.payload;
 
       if (state.selectMode === "add") {
         // If start date is already selected and before this selection
@@ -64,21 +62,30 @@ function reducer(state: State, action: Action): State {
         };
       }
 
+      if (event) {
+        return {
+          ...state,
+          selectMode: "edit",
+          selectedStartDate: event.start,
+          selectedStopDate: event.stop,
+          selectedEvent: event,
+        };
+      }
+
+      if (state.selectMode === "edit") {
+        return {
+          ...state,
+          selectMode: undefined,
+          selectedStartDate: undefined,
+          selectedStopDate: undefined,
+          selectedEvent: undefined,
+        };
+      }
+
       return state;
     }
-    case "SELECT_EVENT": {
-      const { event } = action.payload;
-
-      return {
-        ...state,
-        selectMode: "edit",
-        selectedStartDate: event.start,
-        selectedStopDate: event.stop,
-        selectedEvent: event,
-      };
-    }
     case "TOGGLE_SELECT_MODE": {
-      if (!!state.selectMode) {
+      if (state.selectMode) {
         return {
           ...state,
           selectMode: undefined,
@@ -112,12 +119,8 @@ function reducer(state: State, action: Action): State {
 const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  const selectDate = React.useCallback((datetime: number) => {
-    dispatch({ type: "SELECT_DATE", payload: { datetime } });
-  }, []);
-
-  const selectEvent = React.useCallback((event: AppEvent) => {
-    dispatch({ type: "SELECT_EVENT", payload: { event } });
+  const selectDate = React.useCallback((datetime: number, event?: AppEvent) => {
+    dispatch({ type: "SELECT_DATE", payload: { datetime, event } });
   }, []);
 
   const setSelectedStartDate = React.useCallback((datetime: number) => {
@@ -145,7 +148,6 @@ const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         setSelectedStartDate,
         setSelectedStopDate,
         selectDate,
-        selectEvent,
         toggleSelectMode,
       }}
     >

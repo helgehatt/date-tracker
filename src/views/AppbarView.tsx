@@ -15,7 +15,7 @@ const AppbarView: React.FC<IProps> = ({ style }) => {
   React.useEffect(() => {
     Animated.timing(rotationPct, {
       useNativeDriver: true,
-      toValue: !!selectMode ? 1 : 0,
+      toValue: selectMode ? 1 : 0,
     }).start();
   }, [rotationPct, selectMode]);
 

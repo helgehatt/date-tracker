@@ -20,15 +20,15 @@ interface IMemoizableProps {
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
   const { eventDates } = React.useContext(EventContext);
-  const { selectedStartDate, selectedStopDate, selectDate, selectEvent } =
+  const { selectedStartDate, selectedStopDate, selectDate } =
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
   const event = eventDates[datetime];
 
   const onPress = React.useCallback(
-    () => (event ? selectEvent(event) : selectDate(datetime)),
-    [datetime, selectDate, event]
+    () => selectDate(datetime, event),
+    [selectDate, datetime, event]
   );
 
   if (!isVisible) {
