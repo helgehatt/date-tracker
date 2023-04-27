@@ -14,11 +14,13 @@ type State = {
 type Action =
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "ADD_EVENT"; payload: { event: AppEvent } }
-  | { type: "EDIT_EVENT"; payload: { old: AppEvent; new: AppEvent } }
+  | { type: "EDIT_EVENT"; payload: { prev: AppEvent; event: AppEvent } }
   | { type: "DELETE_EVENT"; payload: { event: AppEvent } };
 
 type Context = State & {
   addEvent(start: number, stop: number): void;
+  editEvent(prev: AppEvent, event: AppEvent): void;
+  deleteEvent(event: AppEvent): void;
 };
 
 const initialState: State = {
@@ -32,6 +34,8 @@ const initialState: State = {
 export const EventContext = React.createContext<Context>({
   ...initialState,
   addEvent: () => undefined,
+  editEvent: () => undefined,
+  deleteEvent: () => undefined,
 });
 
 function* dateRange(start: number, stop: number) {
@@ -85,7 +89,7 @@ function reducer(state: State, action: Action): State {
       const update = { ...state };
 
       update.events = update.events.map((v) =>
-        v === action.payload.old ? action.payload.new : v
+        v === action.payload.prev ? action.payload.event : v
       );
 
       update.eventDates = getEventDates(update.events);
@@ -133,8 +137,18 @@ const EventProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "ADD_EVENT", payload: { event: { start, stop } } });
   }, []);
 
+  const editEvent = React.useCallback((prev: AppEvent, event: AppEvent) => {
+    dispatch({ type: "EDIT_EVENT", payload: { prev, event } });
+  }, []);
+
+  const deleteEvent = React.useCallback((event: AppEvent) => {
+    dispatch({ type: "DELETE_EVENT", payload: { event } });
+  }, []);
+
   return (
-    <EventContext.Provider value={{ ...state, addEvent }}>
+    <EventContext.Provider
+      value={{ ...state, addEvent, editEvent, deleteEvent }}
+    >
       {children}
     </EventContext.Provider>
   );

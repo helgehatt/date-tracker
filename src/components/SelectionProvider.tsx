@@ -5,6 +5,7 @@ type State = {
   selectMode: "add" | "edit" | undefined;
   selectedStartDate: number | undefined;
   selectedStopDate: number | undefined;
+  selectedEvent: AppEvent | undefined;
 };
 
 type Action =
@@ -28,6 +29,7 @@ const initialState: State = {
   selectMode: undefined,
   selectedStartDate: undefined,
   selectedStopDate: undefined,
+  selectedEvent: undefined,
 };
 
 export const SelectionContext = React.createContext<Context>({
@@ -72,6 +74,7 @@ function reducer(state: State, action: Action): State {
         selectMode: "edit",
         selectedStartDate: event.start,
         selectedStopDate: event.stop,
+        selectedEvent: event,
       };
     }
     case "TOGGLE_SELECT_MODE": {
@@ -81,6 +84,7 @@ function reducer(state: State, action: Action): State {
           selectMode: undefined,
           selectedStartDate: undefined,
           selectedStopDate: undefined,
+          selectedEvent: undefined,
         };
       }
       return { ...state, selectMode: "add" };
