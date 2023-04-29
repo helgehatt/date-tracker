@@ -10,14 +10,14 @@ interface IProps {
 
 const AppbarView: React.FC<IProps> = ({ style }) => {
   const [rotationPct] = React.useState(new Animated.Value(0));
-  const { editMode, toggleEditMode } = React.useContext(SelectionContext);
+  const { selectMode, toggleSelectMode } = React.useContext(SelectionContext);
 
   React.useEffect(() => {
     Animated.timing(rotationPct, {
       useNativeDriver: true,
-      toValue: editMode ? 1 : 0,
+      toValue: selectMode ? 1 : 0,
     }).start();
-  }, [rotationPct, editMode]);
+  }, [rotationPct, selectMode]);
 
   const rotationDeg = rotationPct.interpolate({
     inputRange: [0, 1],
@@ -28,7 +28,7 @@ const AppbarView: React.FC<IProps> = ({ style }) => {
     <View style={[styles.container, style]}>
       <View>
         <Animated.View style={{ transform: [{ rotate: rotationDeg }] }}>
-          <Pressable onPress={toggleEditMode}>
+          <Pressable onPress={toggleSelectMode}>
             <EvilIcons name="plus" size={64} color="white" />
           </Pressable>
         </Animated.View>

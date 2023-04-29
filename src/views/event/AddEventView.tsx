@@ -13,15 +13,20 @@ interface IProps {
 const AddEventView: React.FC<IProps> = ({ style }) => {
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
-  const { addEvent } = React.useContext(EventContext);
+  const { addEvent, editEvent, deleteEvent } = React.useContext(EventContext);
   const {
-    editMode,
+    selectMode,
     selectedStartDate,
     selectedStopDate,
-    toggleEditMode,
+    selectedEvent,
+    toggleSelectMode,
     setSelectedStartDate,
     setSelectedStopDate,
   } = React.useContext(SelectionContext);
+
+  const canAdd = !!(selectedStartDate && selectedStopDate);
+  const canEdit = !!(selectedEvent && selectedStartDate && selectedStopDate);
+  const canDelete = !!selectedEvent;
 
   const onChangeStartDate = React.useCallback((text: string) => {
     return setStartDate((prev) => formatDate(prev, text));
@@ -31,12 +36,29 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
     return setStopDate((prev) => formatDate(prev, text));
   }, []);
 
-  const onPressAdd = React.useCallback(() => {
-    if (selectedStartDate && selectedStopDate) {
+  const onPressAdd = () => {
+    if (canAdd) {
       addEvent(selectedStartDate, selectedStopDate);
-      toggleEditMode();
+      toggleSelectMode();
     }
-  }, [selectedStartDate, selectedStopDate, addEvent, toggleEditMode]);
+  };
+
+  const onPressEdit = () => {
+    if (canEdit) {
+      editEvent(selectedEvent, {
+        start: selectedStartDate,
+        stop: selectedStopDate,
+      });
+      toggleSelectMode();
+    }
+  };
+
+  const onPressDelete = () => {
+    if (canDelete) {
+      deleteEvent(selectedEvent);
+      toggleSelectMode();
+    }
+  };
 
   React.useEffect(() => {
     if (selectedStartDate === undefined) {
@@ -69,7 +91,7 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
   }, [stopDate, setSelectedStopDate]);
 
   return (
-    <BottomSheet visible={editMode} height={130}>
+    <BottomSheet visible={!!selectMode} height={130}>
       <View style={[styles.container, style]}>
         <View style={styles.row}>
           <TextInput
@@ -87,13 +109,31 @@ const AddEventView: React.FC<IProps> = ({ style }) => {
             inputMode="numeric"
           />
         </View>
-        <View>
-          <MyButton
-            title="Add"
-            onPress={onPressAdd}
-            disabled={!selectedStartDate || !selectedStopDate}
-          />
-        </View>
+        {selectMode == "add" ? (
+          <View style={styles.row}>
+            <MyButton
+              style={styles.button}
+              title="Add"
+              onPress={onPressAdd}
+              disabled={!canAdd}
+            />
+          </View>
+        ) : (
+          <View style={styles.row}>
+            <MyButton
+              style={styles.button}
+              title="Delete"
+              onPress={onPressDelete}
+              disabled={!canDelete}
+            />
+            <MyButton
+              style={styles.button}
+              title="Confirm"
+              onPress={onPressEdit}
+              disabled={!canEdit}
+            />
+          </View>
+        )}
       </View>
     </BottomSheet>
   );
@@ -107,8 +147,11 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    marginVertical: 10,
+    marginTop: 10,
     columnGap: 10,
+  },
+  button: {
+    flex: 1,
   },
   input: {
     flex: 1,

@@ -1,19 +1,17 @@
 import React from "react";
+import { AppEvent } from "../helpers/ApplicationStorage";
 
 type State = {
-  editMode: boolean;
+  selectMode: "add" | "edit" | undefined;
   selectedStartDate: number | undefined;
   selectedStopDate: number | undefined;
+  selectedEvent: AppEvent | undefined;
 };
 
 type Action =
-  | {
-      type: "SELECT_DATE";
-      payload: { datetime: number };
-    }
-  | {
-      type: "TOGGLE_EDIT_MODE";
-    }
+  | { type: "SELECT_DATE"; payload: { datetime: number; event?: AppEvent } }
+  | { type: "SELECT_EVENT"; payload: { event: AppEvent } }
+  | { type: "TOGGLE_SELECT_MODE" }
   | {
       type: "SET_SELECTED_DATE";
       payload: { datetime: number; type: "START" | "STOP" };
@@ -22,14 +20,15 @@ type Action =
 type Context = State & {
   setSelectedStartDate: (datetime: number) => void;
   setSelectedStopDate: (datetime: number) => void;
-  selectDate: (datetime: number) => void;
-  toggleEditMode: () => void;
+  selectDate: (datetime: number, event?: AppEvent) => void;
+  toggleSelectMode: () => void;
 };
 
 const initialState: State = {
-  editMode: false,
+  selectMode: undefined,
   selectedStartDate: undefined,
   selectedStopDate: undefined,
+  selectedEvent: undefined,
 };
 
 export const SelectionContext = React.createContext<Context>({
@@ -37,52 +36,81 @@ export const SelectionContext = React.createContext<Context>({
   setSelectedStartDate: () => undefined,
   setSelectedStopDate: () => undefined,
   selectDate: () => undefined,
-  toggleEditMode: () => undefined,
+  toggleSelectMode: () => undefined,
 });
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "SELECT_DATE":
-      if (!state.editMode) {
-        return state;
-      }
-      if (
-        state.selectedStartDate &&
-        !state.selectedStopDate &&
-        state.selectedStartDate <= action.payload.datetime
-      ) {
-        return { ...state, selectedStopDate: action.payload.datetime };
-      }
-      return {
-        ...state,
-        selectedStartDate: action.payload.datetime,
-        selectedStopDate: undefined,
-      };
-    case "TOGGLE_EDIT_MODE":
-      if (state.editMode) {
+    case "SELECT_DATE": {
+      const { datetime, event } = action.payload;
+
+      if (state.selectMode === "add") {
+        // If start date is already selected and before this selection
+        if (
+          state.selectedStartDate &&
+          !state.selectedStopDate &&
+          state.selectedStartDate <= datetime
+        ) {
+          return { ...state, selectedStopDate: datetime };
+        }
+
+        // Othewise select start date
         return {
           ...state,
-          editMode: false,
-          selectedStartDate: undefined,
+          selectedStartDate: datetime,
           selectedStopDate: undefined,
         };
       }
-      return { ...state, editMode: true };
-    case "SET_SELECTED_DATE":
-      if (action.payload.type === "START") {
-        return { ...state, selectedStartDate: action.payload.datetime };
-      }
-      if (
-        state.selectedStartDate &&
-        state.selectedStartDate > action.payload.datetime
-      ) {
+
+      if (event) {
         return {
           ...state,
-          selectedStartDate: action.payload.datetime,
-          selectedStopDate: action.payload.datetime,
+          selectMode: "edit",
+          selectedStartDate: event.start,
+          selectedStopDate: event.stop,
+          selectedEvent: event,
+        };
+      }
+
+      if (state.selectMode === "edit") {
+        return {
+          ...state,
+          selectMode: undefined,
+          selectedStartDate: undefined,
+          selectedStopDate: undefined,
+          selectedEvent: undefined,
+        };
+      }
+
+      return state;
+    }
+    case "TOGGLE_SELECT_MODE": {
+      if (state.selectMode) {
+        return {
+          ...state,
+          selectMode: undefined,
+          selectedStartDate: undefined,
+          selectedStopDate: undefined,
+          selectedEvent: undefined,
+        };
+      }
+      return { ...state, selectMode: "add" };
+    }
+    case "SET_SELECTED_DATE": {
+      const { datetime } = action.payload;
+
+      if (action.payload.type === "START") {
+        return { ...state, selectedStartDate: datetime };
+      }
+      if (state.selectedStartDate && state.selectedStartDate > datetime) {
+        return {
+          ...state,
+          selectedStartDate: datetime,
+          selectedStopDate: datetime,
         };
       }
       return { ...state, selectedStopDate: action.payload.datetime };
+    }
     default:
       return state;
   }
@@ -91,8 +119,8 @@ function reducer(state: State, action: Action): State {
 const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  const selectDate = React.useCallback((datetime: number) => {
-    dispatch({ type: "SELECT_DATE", payload: { datetime } });
+  const selectDate = React.useCallback((datetime: number, event?: AppEvent) => {
+    dispatch({ type: "SELECT_DATE", payload: { datetime, event } });
   }, []);
 
   const setSelectedStartDate = React.useCallback((datetime: number) => {
@@ -109,8 +137,8 @@ const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     });
   }, []);
 
-  const toggleEditMode = React.useCallback(() => {
-    dispatch({ type: "TOGGLE_EDIT_MODE" });
+  const toggleSelectMode = React.useCallback(() => {
+    dispatch({ type: "TOGGLE_SELECT_MODE" });
   }, []);
 
   return (
@@ -120,7 +148,7 @@ const SelectionProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         setSelectedStartDate,
         setSelectedStopDate,
         selectDate,
-        toggleEditMode,
+        toggleSelectMode,
       }}
     >
       {children}
