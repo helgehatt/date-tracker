@@ -1,23 +1,34 @@
 import "./src/extensions";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ViewStyle } from "react-native";
 import { COLORS } from "./src/constants";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
-import AddEventView from "./src/views/event/AddEventView";
 import SelectionProvider from "./src/components/SelectionProvider";
 import CalendarView from "./src/views/CalendarView";
 import EventProvider from "./src/components/EventProvider";
+import CategoryView from "./src/views/CategoryView";
 
 export default function App() {
+  const [page, setPage] = React.useState<"category" | "calendar" | "settings">(
+    "calendar"
+  );
+  const pageStyle = {
+    calendar: { display: "none" } as ViewStyle,
+    category: { display: "none" } as ViewStyle,
+    settings: { display: "none" } as ViewStyle,
+  };
+  pageStyle[page] = { flex: 1 };
+
   return (
     <SelectionProvider>
       <EventProvider>
         <View style={styles.container}>
           <HeaderView />
-          <CalendarView style={styles.calendar} />
-          <AddEventView style={styles.addevent} />
-          <AppbarView style={styles.appbar} />
+          <CalendarView style={pageStyle["calendar"]} />
+          <CategoryView style={pageStyle["category"]} />
+          <View style={pageStyle["settings"]} />
+          <AppbarView page={page} setPage={setPage} />
         </View>
       </EventProvider>
     </SelectionProvider>
@@ -28,12 +39,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  calendar: {
-    flex: 1,
-  },
-  addevent: {},
-  appbar: {
-    height: 100,
   },
 });

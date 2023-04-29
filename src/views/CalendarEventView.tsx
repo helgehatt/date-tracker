@@ -1,16 +1,16 @@
 import React from "react";
 import { StyleSheet, TextInput, View, ViewStyle } from "react-native";
-import BottomSheet from "../../components/BottomSheet";
-import MyButton from "../../components/MyButton";
-import { SelectionContext } from "../../components/SelectionProvider";
-import { COLORS } from "../../constants";
-import { EventContext } from "../../components/EventProvider";
+import BottomSheet from "../components/BottomSheet";
+import MyButton from "../components/MyButton";
+import { SelectionContext } from "../components/SelectionProvider";
+import { COLORS } from "../constants";
+import { EventContext } from "../components/EventProvider";
 
 interface IProps {
   style?: ViewStyle;
 }
 
-const AddEventView: React.FC<IProps> = ({ style }) => {
+const CalendarEventView: React.FC<IProps> = ({ style }) => {
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
   const { addEvent, editEvent, deleteEvent } = React.useContext(EventContext);
@@ -178,4 +178,4 @@ function formatDate(prev: string | undefined, date: string) {
   return date;
 }
 
-export default AddEventView;
+export default CalendarEventView;
