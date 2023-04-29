@@ -24,10 +24,11 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
+  const event = eventDates[datetime];
 
   const onPress = React.useCallback(
-    () => selectDate(datetime),
-    [datetime, selectDate]
+    () => selectDate(datetime, event),
+    [selectDate, datetime, event]
   );
 
   if (!isVisible) {
@@ -35,7 +36,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
   }
 
   const isToday = datetime == TODAY;
-  const isEvent = eventDates.has(datetime);
+  const isEvent = datetime in eventDates;
   const isSelected =
     datetime === selectedStartDate ||
     (selectedStartDate !== undefined &&

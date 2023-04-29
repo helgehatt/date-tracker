@@ -17,30 +17,42 @@ class DatetimeIntervalConstructor {
   }
 }
 
-class CountProfileMetadata {
+class CountProfile {
   constructor(
     public title: string,
     public limit: number,
-    public intervalConstructor: DatetimeIntervalConstructor
+    public intervalConstructor: DatetimeIntervalConstructor,
+    public count: number = 0
   ) {}
+
+  new(referenceDate: number, datetimes: number[]) {
+    const interval = this.intervalConstructor.new(referenceDate);
+
+    return new CountProfile(
+      this.title,
+      this.limit,
+      this.intervalConstructor,
+      datetimes.filter((dt) => interval.contains(dt)).length
+    );
+  }
 }
 
-const DEFAULT_COUNT_PROFILE_METADATA = [
-  new CountProfileMetadata(
+export const DEFAULT_COUNT_PROFILES = [
+  new CountProfile(
     "1 Y",
     61,
     new DatetimeIntervalConstructor(
       (y) => new Interval(Date.UTC(y, 0, 1), Date.UTC(y + 1, 0, 0))
     )
   ),
-  new CountProfileMetadata(
+  new CountProfile(
     "12 M",
     183,
     new DatetimeIntervalConstructor(
       (y, m, d) => new Interval(Date.UTC(y, m - 12, d + 1), Date.UTC(y, m, d))
     )
   ),
-  new CountProfileMetadata(
+  new CountProfile(
     "36 M",
     270,
     new DatetimeIntervalConstructor(
@@ -48,42 +60,5 @@ const DEFAULT_COUNT_PROFILE_METADATA = [
     )
   ),
 ];
-
-class CountProfile {
-  constructor(
-    public metadata: CountProfileMetadata,
-    public interval: Interval<number>,
-    public count: number
-  ) {}
-
-  static fromReferenceDate(
-    metadata: CountProfileMetadata,
-    referenceDate: number
-  ) {
-    return new CountProfile(
-      metadata,
-      metadata.intervalConstructor.new(referenceDate),
-      0
-    );
-  }
-
-  add(...datetimes: number[]) {
-    return new CountProfile(
-      this.metadata,
-      this.interval,
-      this.count + datetimes.filter((dt) => this.interval.contains(dt)).length
-    );
-  }
-
-  remove(...datetimes: number[]) {
-    return new CountProfile(
-      this.metadata,
-      this.interval,
-      this.count - datetimes.filter((dt) => this.interval.contains(dt)).length
-    );
-  }
-
-  static DEFAULT_METADATA = DEFAULT_COUNT_PROFILE_METADATA;
-}
 
 export default CountProfile;

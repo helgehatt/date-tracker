@@ -1,40 +1,41 @@
 import React from "react";
 import { TODAY, DAY_IN_MS } from "../constants";
-import CountProfile from "../helpers/CountProfile";
+import CountProfile, { DEFAULT_COUNT_PROFILES } from "../helpers/CountProfile";
 import ApplicationStorage, { AppEvent } from "../helpers/ApplicationStorage";
 
 type State = {
   events: AppEvent[];
   eventsLoaded: boolean;
-  eventDates: Set<number>;
+  eventDates: Record<number, AppEvent>;
   referenceDate: number;
   countProfiles: CountProfile[];
 };
 
 type Action =
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
-  | {
-      type: "ADD_EVENT";
-      payload: { event: AppEvent };
-    };
+  | { type: "ADD_EVENT"; payload: { event: AppEvent } }
+  | { type: "EDIT_EVENT"; payload: { prev: AppEvent; event: AppEvent } }
+  | { type: "DELETE_EVENT"; payload: { event: AppEvent } };
 
 type Context = State & {
   addEvent(start: number, stop: number): void;
+  editEvent(prev: AppEvent, event: AppEvent): void;
+  deleteEvent(event: AppEvent): void;
 };
 
 const initialState: State = {
   events: [],
   eventsLoaded: false,
-  eventDates: new Set<number>(),
+  eventDates: {},
   referenceDate: TODAY,
-  countProfiles: CountProfile.DEFAULT_METADATA.map((metadata) =>
-    CountProfile.fromReferenceDate(metadata, TODAY)
-  ),
+  countProfiles: DEFAULT_COUNT_PROFILES,
 };
 
 export const EventContext = React.createContext<Context>({
   ...initialState,
   addEvent: () => undefined,
+  editEvent: () => undefined,
+  deleteEvent: () => undefined,
 });
 
 function* dateRange(start: number, stop: number) {
@@ -43,34 +44,75 @@ function* dateRange(start: number, stop: number) {
   }
 }
 
-function updateDates(prev: Set<number>, ...events: AppEvent[]) {
-  const updated = new Set(prev);
+function getEventDates(events: AppEvent[]) {
+  const obj = {} as Record<number, AppEvent>;
 
   for (const event of events) {
     for (const date of dateRange(event.start, event.stop)) {
-      updated.add(date);
+      obj[date] = event;
     }
   }
 
-  return updated;
+  return obj;
 }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "LOAD_EVENTS":
-      return {
-        ...state,
-        events: action.payload.events,
-        eventsLoaded: true,
-        eventDates: updateDates(state.eventDates, ...action.payload.events),
-      };
-    case "ADD_EVENT":
-      return {
-        ...state,
-        events: [...state.events, action.payload.event],
-        eventDates: updateDates(state.eventDates, action.payload.event),
-      };
+    case "LOAD_EVENTS": {
+      const update = { ...state }; // New object reference
 
+      update.events = [...update.events, ...action.payload.events];
+      update.eventsLoaded = true;
+
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "ADD_EVENT": {
+      const update = { ...state }; // New object reference
+
+      update.events = [...update.events, action.payload.event];
+
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "EDIT_EVENT": {
+      const update = { ...state };
+
+      update.events = update.events.map((v) =>
+        v === action.payload.prev ? action.payload.event : v
+      );
+
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
+    case "DELETE_EVENT": {
+      const update = { ...state };
+
+      update.events = update.events.filter((v) => v !== action.payload.event);
+
+      update.eventDates = getEventDates(update.events);
+      const datetimes = Object.keys(update.eventDates).map(Number);
+      update.countProfiles = update.countProfiles.map((v) =>
+        v.new(update.referenceDate, datetimes)
+      );
+
+      return update;
+    }
     default:
       return state;
   }
@@ -95,8 +137,18 @@ const EventProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "ADD_EVENT", payload: { event: { start, stop } } });
   }, []);
 
+  const editEvent = React.useCallback((prev: AppEvent, event: AppEvent) => {
+    dispatch({ type: "EDIT_EVENT", payload: { prev, event } });
+  }, []);
+
+  const deleteEvent = React.useCallback((event: AppEvent) => {
+    dispatch({ type: "DELETE_EVENT", payload: { event } });
+  }, []);
+
   return (
-    <EventContext.Provider value={{ ...state, addEvent }}>
+    <EventContext.Provider
+      value={{ ...state, addEvent, editEvent, deleteEvent }}
+    >
       {children}
     </EventContext.Provider>
   );
