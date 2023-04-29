@@ -1,50 +1,48 @@
 import React from "react";
-import { StyleSheet, Text, View, ViewStyle } from "react-native";
+import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
-import MyButton from "../components/MyButton";
+import { CategoryContext } from "../components/CategoryProvider";
+import { EvilIcons } from "@expo/vector-icons";
 
 interface IProps {
   style?: ViewStyle;
 }
 
 const CategoryView: React.FC<IProps> = ({ style }) => {
-  const [categories] = React.useState([
-    {
-      id: 123123,
-      title: "Norge",
-      color: COLORS.primary,
-      selected: true,
-    },
-    {
-      id: 123124,
-      title: "Danmark",
-      color: "red",
-      selected: false,
-    },
-    {
-      id: 123125,
-      title: "Sverige",
-      color: "blue",
-      selected: false,
-    },
-  ]);
+  const { categories, selectedCategory, selectCategory } =
+    React.useContext(CategoryContext);
+
   return (
     <View style={[styles.container, style]}>
       {categories.map((category) => (
-        <View
+        <Pressable
           key={category.id}
-          style={[
-            styles.category,
-            category.selected && { backgroundColor: COLORS.secondary },
-          ]}
+          onPress={() => selectCategory(category.id)}
         >
           <View
-            style={[styles.categoryColor, { backgroundColor: category.color }]}
-          />
-          <Text style={styles.categoryText}>{category.title}</Text>
-        </View>
+            style={[
+              styles.category,
+              category.id === selectedCategory && {
+                backgroundColor: COLORS.secondary,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.categoryColor,
+                { backgroundColor: category.color },
+              ]}
+            />
+            <Text style={styles.categoryText}>{category.title}</Text>
+          </View>
+        </Pressable>
       ))}
-      <MyButton title="+ Add new category" color={COLORS.tertiary} />
+      <View style={styles.category}>
+        <View style={styles.categoryColor}>
+          <EvilIcons name="plus" size={55} color="white" />
+        </View>
+        <Text style={styles.categoryText}>Add category</Text>
+      </View>
     </View>
   );
 };
@@ -60,9 +58,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 10,
     columnGap: 20,
-    borderBottomWidth: 1,
-    borderColor: COLORS.background,
     borderRadius: 10,
+    borderBottomWidth: 1,
+    borderColor: COLORS.tertiary,
   },
   categoryColor: {
     height: 50,

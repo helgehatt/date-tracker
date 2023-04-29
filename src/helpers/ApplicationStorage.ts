@@ -1,5 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+export interface AppCategory {
+  id: string;
+  title: string;
+  color: string;
+}
+
 export interface AppEvent {
   start: number;
   stop: number;

@@ -8,6 +8,7 @@ import SelectionProvider from "./src/components/SelectionProvider";
 import CalendarView from "./src/views/CalendarView";
 import EventProvider from "./src/components/EventProvider";
 import CategoryView from "./src/views/CategoryView";
+import CategoryProvider from "./src/components/CategoryProvider";
 
 export default function App() {
   const [page, setPage] = React.useState<"category" | "calendar" | "settings">(
@@ -21,17 +22,19 @@ export default function App() {
   pageStyle[page] = { flex: 1 };
 
   return (
-    <SelectionProvider>
-      <EventProvider>
-        <View style={styles.container}>
-          <HeaderView />
-          <CalendarView style={pageStyle["calendar"]} />
-          <CategoryView style={pageStyle["category"]} />
-          <View style={pageStyle["settings"]} />
-          <AppbarView page={page} setPage={setPage} />
-        </View>
-      </EventProvider>
-    </SelectionProvider>
+    <CategoryProvider>
+      <SelectionProvider>
+        <EventProvider>
+          <View style={styles.container}>
+            <HeaderView />
+            <CalendarView style={pageStyle["calendar"]} />
+            <CategoryView style={pageStyle["category"]} />
+            <View style={pageStyle["settings"]} />
+            <AppbarView page={page} setPage={setPage} />
+          </View>
+        </EventProvider>
+      </SelectionProvider>
+    </CategoryProvider>
   );
 }
 
