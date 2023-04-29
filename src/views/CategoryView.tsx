@@ -1,6 +1,7 @@
 import React from "react";
-import { Button, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleSheet, Text, View, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
+import MyButton from "../components/MyButton";
 
 interface IProps {
   style?: ViewStyle;
@@ -12,13 +13,13 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
       id: 123123,
       title: "Norge",
       color: COLORS.primary,
-      selected: false,
+      selected: true,
     },
     {
       id: 123124,
       title: "Danmark",
       color: "red",
-      selected: true,
+      selected: false,
     },
     {
       id: 123125,
@@ -34,7 +35,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
           key={category.id}
           style={[
             styles.category,
-            category.selected && { backgroundColor: COLORS.background },
+            category.selected && { backgroundColor: COLORS.secondary },
           ]}
         >
           <View
@@ -43,7 +44,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
           <Text style={styles.categoryText}>{category.title}</Text>
         </View>
       ))}
-      <Button title="Add new category" />
+      <MyButton title="+ Add new category" color={COLORS.tertiary} />
     </View>
   );
 };
@@ -51,7 +52,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.tertiary,
+    backgroundColor: COLORS.background,
     padding: 10,
   },
   category: {
