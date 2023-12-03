@@ -4,6 +4,7 @@ import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
 import MonthGenerator from "../helpers/MonthGenerator";
 import { COLORS, MONTH_VIEW_HEIGHT } from "../constants";
+import CalendarEventView from "./CalendarEventView";
 
 interface IProps {
   style?: ViewStyle;
@@ -57,6 +58,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           />
         }
       />
+      <CalendarEventView />
     </View>
   );
 };
