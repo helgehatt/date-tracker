@@ -16,13 +16,13 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     <View style={[styles.container, style]}>
       {categories.map((category) => (
         <Pressable
-          key={category.id}
-          onPress={() => selectCategory(category.id)}
+          key={category.category_id}
+          onPress={() => selectCategory(category.category_id)}
         >
           <View
             style={[
               styles.category,
-              category.id === selectedCategory && {
+              category.category_id === selectedCategory?.category_id && {
                 backgroundColor: COLORS.secondary,
               },
             ]}
@@ -33,7 +33,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
                 { backgroundColor: category.color },
               ]}
             />
-            <Text style={styles.categoryText}>{category.title}</Text>
+            <Text style={styles.categoryText}>{category.name}</Text>
           </View>
         </Pressable>
       ))}
