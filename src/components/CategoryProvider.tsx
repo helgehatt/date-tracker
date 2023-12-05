@@ -5,13 +5,13 @@ import AppDatabase, {
   AppTracker,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
-import { SQLStatementCallback } from "expo-sqlite";
 
 const db = new AppDatabase();
 
 type State = {
   categories: AppCategory[];
   events: AppEvent[];
+  eventDates: Record<number, AppEvent>;
   trackers: AppTracker[];
   selectedCategory: AppCategory | undefined;
 };
@@ -19,19 +19,20 @@ type State = {
 type Action =
   | { type: "SELECT_CATEGORY"; payload: { id: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
-  | { type: "ADD_CATEGORY"; payload: { category: AppCategory } }
-  | { type: "EDIT_CATEGORY"; payload: { category: AppCategory } }
-  | { type: "DELETE_CATEGORY"; payload: { id: number } }
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "LOAD_TRACKERS"; payload: { trackers: AppTracker[] } };
 
 type Context = State & {
   selectCategory(id: number): void;
+  addEvent(start: number, stop: number): void;
+  editEvent(event: AppEvent): void;
+  deleteEvent(event: AppEvent): void;
 };
 
 const initialState: State = {
   categories: [],
   events: [],
+  eventDates: {},
   trackers: [],
   selectedCategory: undefined,
 };
@@ -39,7 +40,22 @@ const initialState: State = {
 export const CategoryContext = React.createContext<Context>({
   ...initialState,
   selectCategory: () => undefined,
+  addEvent: () => undefined,
+  editEvent: () => undefined,
+  deleteEvent: () => undefined,
 });
+
+function getEventDates(events: AppEvent[]) {
+  const obj = {} as Record<number, AppEvent>;
+
+  for (const event of events) {
+    for (const date of Date.range(event.start_date, event.stop_date)) {
+      obj[date] = event;
+    }
+  }
+
+  return obj;
+}
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -53,7 +69,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, categories: action.payload.categories };
     }
     case "LOAD_EVENTS": {
-      return { ...state, events: action.payload.events };
+      const { events } = action.payload;
+      return { ...state, events, eventDates: getEventDates(events) };
     }
     case "LOAD_TRACKERS": {
       return { ...state, trackers: action.payload.trackers };
@@ -66,38 +83,65 @@ function reducer(state: State, action: Action): State {
 const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  const setCategories: SQLStatementCallback = React.useCallback(
-    (tx, result) => {
-      dispatch({
-        type: "LOAD_CATEGORIES",
-        payload: { categories: result.rows._array },
-      });
+  const selectCategory = React.useCallback((id: number) => {
+    AppSettings.setSelectedCategory(id);
+    dispatch({ type: "SELECT_CATEGORY", payload: { id } });
+  }, []);
+
+  const setCategories = React.useCallback((categories: AppCategory[]) => {
+    dispatch({ type: "LOAD_CATEGORIES", payload: { categories } });
+  }, []);
+
+  const setEvents = React.useCallback((events: AppEvent[]) => {
+    dispatch({ type: "LOAD_EVENTS", payload: { events } });
+  }, []);
+
+  const setTrackers = React.useCallback((trackers: AppTracker[]) => {
+    dispatch({ type: "LOAD_TRACKERS", payload: { trackers } });
+  }, []);
+
+  const addEvent = React.useCallback(
+    (start: number, stop: number) => {
+      if (state.selectedCategory) {
+        const { category_id } = state.selectedCategory;
+        db.insertEvent(category_id, start, stop).then(setEvents);
+      }
     },
-    []
+    [setEvents, state.selectedCategory]
   );
 
-  const setEvents: SQLStatementCallback = React.useCallback((tx, result) => {
-    dispatch({ type: "LOAD_EVENTS", payload: { events: result.rows._array } });
-  }, []);
+  const editEvent = React.useCallback(
+    (event: AppEvent) => {
+      db.updateEvent(event).then(setEvents);
+    },
+    [setEvents]
+  );
 
-  const setTrackers: SQLStatementCallback = React.useCallback((tx, result) => {
-    dispatch({
-      type: "LOAD_TRACKERS",
-      payload: { trackers: result.rows._array },
-    });
-  }, []);
+  const deleteEvent = React.useCallback(
+    (event: AppEvent) => {
+      db.deleteEvent(event).then(setEvents);
+    },
+    [setEvents]
+  );
 
   React.useEffect(() => {
     AppSettings.getHasInitialized().then((hasInitialized) => {
       if (!hasInitialized) {
         AppSettings.setHasInitialized(true).then(() => {
-          db.init(setCategories);
+          console.log("DB: Initializing...");
+          db.init()
+            .then(setCategories)
+            .then(() => console.log("DB: Initialized"))
+            .catch((error) => {
+              console.error(`DB: ${error.message}`);
+              AppSettings.setHasInitialized(false);
+            });
         });
       } else {
-        db.loadCategories(setCategories);
+        db.loadCategories().then(setCategories);
       }
     });
-  }, []);
+  }, [setCategories]);
 
   React.useEffect(() => {
     if (state.selectedCategory === undefined && state.categories.length) {
@@ -107,22 +151,25 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         }
       });
     }
-  }, [state.selectedCategory, state.categories]);
+  }, [selectCategory, state.selectedCategory, state.categories]);
 
   React.useEffect(() => {
     if (state.selectedCategory) {
-      db.loadEvents(state.selectedCategory.category_id, setEvents);
-      db.loadTrackers(state.selectedCategory.category_id, setTrackers);
+      db.loadEvents(state.selectedCategory.category_id).then(setEvents);
+      db.loadTrackers(state.selectedCategory.category_id).then(setTrackers);
     }
-  }, [state.selectedCategory]);
-
-  const selectCategory = React.useCallback((id: number) => {
-    AppSettings.setSelectedCategory(id);
-    dispatch({ type: "SELECT_CATEGORY", payload: { id } });
-  }, []);
+  }, [setEvents, setTrackers, state.selectedCategory]);
 
   return (
-    <CategoryContext.Provider value={{ ...state, selectCategory }}>
+    <CategoryContext.Provider
+      value={{
+        ...state,
+        selectCategory,
+        addEvent,
+        editEvent,
+        deleteEvent,
+      }}
+    >
       {children}
     </CategoryContext.Provider>
   );

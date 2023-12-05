@@ -12,7 +12,7 @@ export interface AppTracker {
   tracker_id: number;
   category_id: number;
   name: string;
-  limit: number;
+  limit_: number;
   y1_is_rel: boolean;
   y1_offset: number;
   m1_is_rel: boolean;
@@ -34,23 +34,43 @@ export interface AppCategory {
 }
 
 class AppDatabase {
-  db: SQLite.Database;
+  db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.db");
+    this.db = SQLite.openDatabase("app.v1.0.3-beta.db");
   }
 
-  init(callback: SQLite.SQLStatementCallback) {
-    this.db.transaction(
-      (tx) => {
-        tx.executeSql(
-          `CREATE TABLE categories (
-          category_id       INTEGER PRIMARY KEY,
-          name              TEXT NOT NULL UNIQUE,
-          color             TEXT NOT NULL
-        );
+  execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
+    return new Promise((resolve, reject) => {
+      this.db.exec([{ sql, args }], false, (err, res) => {
+        if (err) {
+          return reject(err);
+        }
 
-        CREATE TABLE events (
+        if (res && res[0]) {
+          if ("error" in res[0]) return reject(res[0].error);
+          return resolve(res[0].rows as T[]);
+        }
+
+        return resolve([]);
+      });
+    });
+  }
+
+  async init() {
+    try {
+      await this.execute(`BEGIN TRANSACTION`);
+
+      await this.execute(
+        `CREATE TABLE categories (
+          category_id       INTEGER PRIMARY KEY,
+          name              TEXT NOT NULL,
+          color             TEXT NOT NULL
+        )`
+      );
+
+      await this.execute(
+        `CREATE TABLE events (
           event_id          INTEGER PRIMARY KEY,
           category_id       INTEGER NOT NULL,
           start_date        INTEGER NOT NULL,
@@ -60,13 +80,15 @@ class AppDatabase {
             REFERENCES categories (category_id)
               ON DELETE CASCADE
               ON UPDATE NO ACTION
-        );
+        )`
+      );
 
-        CREATE TABLE trackers (
+      await this.execute(
+        `CREATE TABLE trackers (
           tracker_id        INTEGER PRIMARY KEY,
           category_id       INTEGER NOT NULL,
           name              TEXT NOT NULL,
-          limit             INTEGER NOT NULL,
+          limit_            INTEGER NOT NULL,
           y1_is_rel         INTEGER NOT NULL,
           y1_offset         INTEGER NOT NULL,
           m1_is_rel         INTEGER NOT NULL,
@@ -84,65 +106,96 @@ class AppDatabase {
               ON DELETE CASCADE
               ON UPDATE NO ACTION
         )`
-        );
-        tx.executeSql(
-          `INSERT INTO categories (name, color) values ("Norge", "#FF4C29")`
-        );
-        tx.executeSql(`SELECT * FROM categories`, [], (_, result) => {
-          const { category_id } = result.rows._array[0];
-          tx.executeSql(
-            `INSERT INTO trackers (
-              category_id, name, limit,
-              y1_is_rel, y1_offset, m1_is_rel, m1_offset, d1_is_rel, d1_offset,
-              y2_is_rel, y2_offset, m2_is_rel, m2_offset, d2_is_rel, d2_offset
-            )
-            VALUES (
-              ?, "1 Y", 61,
-              1, 0, 0, 0, 0, 1,
-              1, 1, 0, 0, 0, 0
-            ), (
-              ?, "12 M", 183,
-              1, 0, 1, -12, 1, 1,
-              1, 0, 1, 0, 1, 0
-            ), (
-              ?, "36 M", 270,
-              1, 0, 1, -36, 1, 1,
-              1, 0, 1, 0, 1, 0
-            )
-          `,
-            [category_id, category_id, category_id]
-          );
-        });
-        tx.executeSql(`SELECT * FROM categories`, [], callback);
-      },
-      (error) => console.error(error.message)
+      );
+
+      await this.execute(
+        `INSERT INTO categories (name, color) values ("Norge", "#FF4C29")`
+      );
+
+      const result = await this.execute<AppCategory>(
+        `SELECT * FROM categories`
+      );
+
+      const { category_id } = result[0];
+      await this.execute(
+        `INSERT INTO trackers (
+          category_id, name, limit_,
+          y1_is_rel, y1_offset, m1_is_rel, m1_offset, d1_is_rel, d1_offset,
+          y2_is_rel, y2_offset, m2_is_rel, m2_offset, d2_is_rel, d2_offset
+        )
+        VALUES (
+          ?, "1 Y", 61,
+          1, 0, 0, 0, 0, 1,
+          1, 1, 0, 0, 0, 0
+        ), (
+          ?, "12 M", 183,
+          1, 0, 1, -12, 1, 1,
+          1, 0, 1, 0, 1, 0
+        ), (
+          ?, "36 M", 270,
+          1, 0, 1, -36, 1, 1,
+          1, 0, 1, 0, 1, 0
+        )`,
+        [category_id, category_id, category_id]
+      );
+
+      this.execute("COMMIT");
+      return result;
+    } catch (error) {
+      this.execute("ROLLBACK");
+      throw error;
+    }
+  }
+
+  loadCategories() {
+    return this.execute<AppCategory>(`SELECT * FROM categories`);
+  }
+
+  loadEvents(category_id: number) {
+    return this.execute<AppEvent>(
+      `SELECT * FROM events WHERE category_id = ?`,
+      [category_id]
     );
   }
 
-  loadCategories(callback: SQLite.SQLStatementCallback) {
-    this.db.transaction((tx) => {
-      tx.executeSql("SELECT * FROM categories", [], callback);
-    });
+  async insertEvent(
+    category_id: number,
+    start_date: number,
+    stop_date: number,
+    note: string = ""
+  ) {
+    await this.execute(
+      `INSERT INTO events (category_id, start_date, stop_date, note) values (?, ?, ?, ?)`,
+      [category_id, start_date, stop_date, note]
+    );
+    return this.loadEvents(category_id);
   }
 
-  loadEvents(category_id: number, callback: SQLite.SQLStatementCallback) {
-    this.db.transaction((tx) => {
-      tx.executeSql(
-        "SELECT * FROM events WHERE category_id = ?",
-        [category_id],
-        callback
-      );
-    });
+  async updateEvent(event: AppEvent) {
+    await this.execute(
+      `UPDATE events
+      SET 
+        start_date = ?,
+        stop_date = ?,
+        note = ?
+      WHERE event_id = ?`,
+      [event.start_date, event.stop_date, event.note, event.event_id]
+    );
+    return this.loadEvents(event.category_id);
   }
 
-  loadTrackers(category_id: number, callback: SQLite.SQLStatementCallback) {
-    this.db.transaction((tx) => {
-      tx.executeSql(
-        "SELECT * FROM trackers WHERE category_id = ?",
-        [category_id],
-        callback
-      );
-    });
+  async deleteEvent(event: AppEvent) {
+    await this.execute(`DELETE FROM events WHERE event_id = ?`, [
+      event.event_id,
+    ]);
+    return this.loadEvents(event.category_id);
+  }
+
+  loadTrackers(category_id: number) {
+    return this.execute<AppTracker>(
+      `SELECT * FROM trackers WHERE category_id = ?`,
+      [category_id]
+    );
   }
 }
 

@@ -37,3 +37,13 @@ Object.map = function (o, callbackfn) {
 Date.prototype.toISOMonthString = function () {
   return this.toISOString().slice(0, 7);
 };
+
+Date.range = function* (
+  start: number,
+  stop: number,
+  step: number = 1000 * 60 * 60 * 24
+) {
+  for (let i = start; i <= stop; i += step) {
+    yield i;
+  }
+};

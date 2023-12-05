@@ -4,7 +4,7 @@ import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS } from "../constants";
-import { EventContext } from "../components/EventProvider";
+import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
   style?: ViewStyle;
@@ -13,7 +13,8 @@ interface IProps {
 const CalendarEventView: React.FC<IProps> = ({ style }) => {
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
-  const { addEvent, editEvent, deleteEvent } = React.useContext(EventContext);
+  const { addEvent, editEvent, deleteEvent } =
+    React.useContext(CategoryContext);
   const {
     selectMode,
     selectedStartDate,
@@ -45,9 +46,10 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
 
   const onPressEdit = () => {
     if (canEdit) {
-      editEvent(selectedEvent, {
-        start: selectedStartDate,
-        stop: selectedStopDate,
+      editEvent({
+        ...selectedEvent,
+        start_date: selectedStartDate,
+        stop_date: selectedStopDate,
       });
       toggleSelectMode();
     }

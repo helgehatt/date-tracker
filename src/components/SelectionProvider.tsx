@@ -1,5 +1,5 @@
 import React from "react";
-import { AppEvent } from "../helpers/ApplicationStorage";
+import { AppEvent } from "../helpers/AppDatabase";
 
 type State = {
   selectMode: "add" | "edit" | undefined;
@@ -66,8 +66,8 @@ function reducer(state: State, action: Action): State {
         return {
           ...state,
           selectMode: "edit",
-          selectedStartDate: event.start,
-          selectedStopDate: event.stop,
+          selectedStartDate: event.start_date,
+          selectedStopDate: event.stop_date,
           selectedEvent: event,
         };
       }
