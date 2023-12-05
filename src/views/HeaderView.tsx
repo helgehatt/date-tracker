@@ -1,54 +1,33 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { SafeAreaView, StyleSheet, Text, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
-import { EventContext } from "../components/EventProvider";
+import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
   style?: ViewStyle;
 }
 
 const HeaderView: React.FC<IProps> = ({ style }) => {
-  const { countProfiles } = React.useContext(EventContext);
+  const { selectedCategory } = React.useContext(CategoryContext);
+
+  const name = selectedCategory?.name || "No category selected";
+  const color = selectedCategory?.color || COLORS.secondary;
 
   return (
-    <View style={[styles.container, style]}>
-      <SafeAreaView>
-        <StatusBar style="light" />
-      </SafeAreaView>
-      <View style={styles.content}>
-        {countProfiles.map((profile) => (
-          <View key={profile.title}>
-            <Text style={[styles.text, styles.textTop]}>{profile.title}</Text>
-            <Text style={[styles.text, styles.textBottom]}>
-              {profile.count} / {profile.limit}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </View>
+    <SafeAreaView style={[style, { backgroundColor: color }]}>
+      <StatusBar style="light" />
+      <Text style={styles.header}>{name}</Text>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.primary,
-  },
-  content: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-around",
+  header: {
     padding: 20,
-  },
-  text: {
+    fontSize: 20,
     color: COLORS.text,
     textAlign: "center",
-  },
-  textTop: {
-    fontSize: 20,
-  },
-  textBottom: {
-    marginTop: 10,
   },
 });
 
