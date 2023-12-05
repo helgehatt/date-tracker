@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS, TODAY } from "../constants";
-import { EventContext } from "../components/EventProvider";
+import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
   year: number;
@@ -19,7 +19,7 @@ interface IMemoizableProps {
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
-  const { eventDates } = React.useContext(EventContext);
+  const { eventDates } = React.useContext(CategoryContext);
   const { selectedStartDate, selectedStopDate, selectDate } =
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
   },
   isToday: {
     backgroundColor: COLORS.secondary,
+    borderRadius: 15,
   },
   text: {
     width: "70%",

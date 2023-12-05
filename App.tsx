@@ -6,7 +6,6 @@ import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import SelectionProvider from "./src/components/SelectionProvider";
 import CalendarView from "./src/views/CalendarView";
-import EventProvider from "./src/components/EventProvider";
 import CategoryView from "./src/views/CategoryView";
 import CategoryProvider from "./src/components/CategoryProvider";
 
@@ -24,7 +23,6 @@ export default function App() {
   return (
     <CategoryProvider>
       <SelectionProvider>
-        <EventProvider>
           <View style={styles.container}>
             <HeaderView />
             <CalendarView style={pageStyle["calendar"]} />
@@ -32,7 +30,6 @@ export default function App() {
             <View style={pageStyle["settings"]} />
             <AppbarView page={page} setPage={setPage} />
           </View>
-        </EventProvider>
       </SelectionProvider>
     </CategoryProvider>
   );
