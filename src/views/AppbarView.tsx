@@ -1,66 +1,61 @@
 import React from "react";
-import { Animated, Pressable, StyleSheet, View, ViewStyle } from "react-native";
+import { Pressable, SafeAreaView, StyleSheet, ViewStyle } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
-import { SelectionContext } from "../components/SelectionProvider";
 
 interface IProps {
   style?: ViewStyle;
-  page: "category" | "calendar" | "settings";
+  page: "category" | "calendar" | "stats" | "settings";
   setPage: React.Dispatch<
-    React.SetStateAction<"category" | "calendar" | "settings">
+    React.SetStateAction<"category" | "calendar" | "stats" | "settings">
   >;
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
-  const [rotationPct] = React.useState(new Animated.Value(0));
-  const { selectMode, toggleSelectMode } = React.useContext(SelectionContext);
-
-  React.useEffect(() => {
-    Animated.timing(rotationPct, {
-      useNativeDriver: true,
-      toValue: selectMode ? 1 : 0,
-    }).start();
-  }, [rotationPct, selectMode]);
-
-  const rotationDeg = rotationPct.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "45deg"],
-  });
-
   return (
-    <View style={[styles.container, style]}>
-      <Pressable onPress={() => setPage("category")}>
-        <EvilIcons name="navicon" size={50} color="white" />
+    <SafeAreaView style={[styles.container, style]}>
+      <Pressable
+        style={[styles.button, page === "calendar" && styles.buttonActive]}
+        onPress={() => setPage("calendar")}
+      >
+        <EvilIcons name="calendar" size={50} color="white" />
       </Pressable>
-      {page === "calendar" ? (
-        <View>
-          <Animated.View style={{ transform: [{ rotate: rotationDeg }] }}>
-            <Pressable onPress={toggleSelectMode}>
-              <EvilIcons name="plus" size={50} color="white" />
-            </Pressable>
-          </Animated.View>
-        </View>
-      ) : (
-        <Pressable onPress={() => setPage("calendar")}>
-          <EvilIcons name="calendar" size={50} color="white" />
-        </Pressable>
-      )}
-      <Pressable onPress={() => setPage("settings")}>
-        <EvilIcons name="gear" size={45} color="white" />
+      <Pressable
+        style={[styles.button, page === "category" && styles.buttonActive]}
+        onPress={() => setPage("category")}
+      >
+        <EvilIcons name="tag" size={50} color="white" />
       </Pressable>
-    </View>
+      <Pressable
+        style={[styles.button, page === "stats" && styles.buttonActive]}
+        onPress={() => setPage("stats")}
+      >
+        <EvilIcons name="chart" size={50} color="white" />
+      </Pressable>
+      <Pressable
+        style={[styles.button, page === "settings" && styles.buttonActive]}
+        onPress={() => setPage("settings")}
+      >
+        <EvilIcons name="gear" size={50} color="white" />
+      </Pressable>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.tertiary,
-    paddingTop: 10,
-    paddingBottom: 25,
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-evenly",
+  },
+  button: {
+    padding: 10,
+    borderBottomRightRadius: 15,
+    borderBottomLeftRadius: 15,
+  },
+  buttonActive: {
+    backgroundColor: COLORS.background,
   },
 });
 

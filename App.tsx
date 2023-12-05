@@ -10,12 +10,14 @@ import CategoryView from "./src/views/CategoryView";
 import CategoryProvider from "./src/components/CategoryProvider";
 
 export default function App() {
-  const [page, setPage] = React.useState<"category" | "calendar" | "settings">(
-    "calendar"
-  );
+  const [page, setPage] = React.useState<
+    "category" | "calendar" | "stats" | "settings"
+  >("calendar");
+
   const pageStyle = {
     calendar: { display: "none" } as ViewStyle,
     category: { display: "none" } as ViewStyle,
+    stats: { display: "none" } as ViewStyle,
     settings: { display: "none" } as ViewStyle,
   };
   pageStyle[page] = { flex: 1 };
@@ -23,13 +25,14 @@ export default function App() {
   return (
     <CategoryProvider>
       <SelectionProvider>
-          <View style={styles.container}>
-            <HeaderView />
-            <CalendarView style={pageStyle["calendar"]} />
-            <CategoryView style={pageStyle["category"]} />
-            <View style={pageStyle["settings"]} />
-            <AppbarView page={page} setPage={setPage} />
-          </View>
+        <View style={styles.container}>
+          <HeaderView />
+          <CalendarView style={pageStyle["calendar"]} />
+          <CategoryView style={pageStyle["category"]} />
+          <View style={pageStyle["stats"]} />
+          <View style={pageStyle["settings"]} />
+          <AppbarView page={page} setPage={setPage} />
+        </View>
       </SelectionProvider>
     </CategoryProvider>
   );

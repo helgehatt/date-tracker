@@ -93,7 +93,18 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
   }, [stopDate, setSelectedStopDate]);
 
   return (
-    <BottomSheet visible={!!selectMode} height={130}>
+    <BottomSheet
+      visible={!!selectMode}
+      height={300}
+      closeOnSwipeDown={true}
+      closeOnSwipeTrigger={toggleSelectMode}
+      customStyles={{
+        container: { marginBottom: -100 },
+        draggableContainer: {
+          backgroundColor: COLORS.tertiary,
+        },
+      }}
+    >
       <View style={[styles.container, style]}>
         <View style={styles.row}>
           <TextInput
@@ -111,16 +122,7 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
             inputMode="numeric"
           />
         </View>
-        {selectMode == "add" ? (
-          <View style={styles.row}>
-            <MyButton
-              style={styles.button}
-              title="Add"
-              onPress={onPressAdd}
-              disabled={!canAdd}
-            />
-          </View>
-        ) : (
+        {selectMode == "edit" ? (
           <View style={styles.row}>
             <MyButton
               style={styles.button}
@@ -133,6 +135,15 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
               title="Confirm"
               onPress={onPressEdit}
               disabled={!canEdit}
+            />
+          </View>
+        ) : (
+          <View style={styles.row}>
+            <MyButton
+              style={styles.button}
+              title="Add"
+              onPress={onPressAdd}
+              disabled={!canAdd}
             />
           </View>
         )}
