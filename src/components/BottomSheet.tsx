@@ -1,9 +1,10 @@
 import React from "react";
 import {
-  KeyboardAvoidingView,
   Animated,
-  Platform,
   StyleSheet,
+  PanResponder,
+  View,
+  ViewStyle,
 } from "react-native";
 
 interface IProps {
@@ -12,7 +13,14 @@ interface IProps {
   minClosingHeight?: number;
   openDuration?: number;
   closeDuration?: number;
+  closeOnSwipeDown?: boolean;
+  closeOnSwipeTrigger?: () => void;
   keyboardAvoidingViewEnabled?: boolean;
+  customStyles?: {
+    container?: ViewStyle;
+    draggableContainer?: ViewStyle;
+    draggableIcon?: ViewStyle;
+  };
 }
 
 const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
@@ -21,49 +29,84 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
   minClosingHeight = 0,
   openDuration = 300,
   closeDuration = 200,
-  keyboardAvoidingViewEnabled = Platform.OS === "ios",
+  closeOnSwipeDown = false,
+  closeOnSwipeTrigger = () => {},
+  customStyles = {},
   children,
 }) => {
-  const [animatedHeight] = React.useState(new Animated.Value(0));
+  const [panY] = React.useState(new Animated.Value(0));
+
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => closeOnSwipeDown,
+    onPanResponderMove: (e, gestureState) => {
+      if (gestureState.dy > 0) {
+        Animated.event([null, { dy: panY }], {
+          useNativeDriver: false,
+        })(e, gestureState);
+      }
+    },
+    onPanResponderRelease: (_e, gestureState) => {
+      if (gestureState.dy > height * 0.4 || gestureState.vy > 0.5) {
+        closeOnSwipeTrigger();
+      } else {
+        Animated.spring(panY, {
+          toValue: 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    },
+  });
 
   React.useEffect(() => {
     if (visible) {
-      Animated.timing(animatedHeight, {
+      Animated.timing(panY, {
         useNativeDriver: false,
-        toValue: height,
+        toValue: 0,
         duration: openDuration,
       }).start();
     } else {
-      Animated.timing(animatedHeight, {
+      Animated.timing(panY, {
         useNativeDriver: false,
-        toValue: minClosingHeight,
+        toValue: height,
         duration: closeDuration,
       }).start();
     }
-  }, [
-    animatedHeight,
-    height,
-    minClosingHeight,
-    visible,
-    closeDuration,
-    openDuration,
-  ]);
+  }, [panY, height, minClosingHeight, visible, closeDuration, openDuration]);
 
   return (
-    <KeyboardAvoidingView
-      enabled={keyboardAvoidingViewEnabled}
-      behavior="padding"
+    <Animated.View
+      style={[
+        styles.container,
+        customStyles.container,
+        { height: Animated.subtract(height, panY) },
+      ]}
     >
-      <Animated.View style={[styles.container, { height: animatedHeight }]}>
-        {children}
-      </Animated.View>
-    </KeyboardAvoidingView>
+      {closeOnSwipeDown && (
+        <View
+          {...panResponder.panHandlers}
+          style={[styles.draggableContainer, customStyles.draggableContainer]}
+        >
+          <View
+            style={[styles.draggableIcon, customStyles.draggableIcon]}
+          ></View>
+        </View>
+      )}
+      {children}
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    overflow: "hidden",
+  container: {},
+  draggableContainer: {
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  draggableIcon: {
+    height: 5,
+    width: 40,
+    backgroundColor: "white",
+    borderRadius: 15,
   },
 });
 
