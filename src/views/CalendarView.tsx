@@ -1,8 +1,6 @@
 import React from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -11,7 +9,7 @@ import {
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
 import MonthGenerator from "../helpers/MonthGenerator";
-import { COLORS, MONTH_VIEW_HEIGHT } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import CalendarEventView from "./CalendarEventView";
 import { EvilIcons } from "@expo/vector-icons";
 import { SelectionContext } from "../components/SelectionProvider";
@@ -36,12 +34,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   }, [monthGenerator]);
 
   return (
-    <KeyboardAvoidingView
-      enabled={Platform.OS === "ios"}
-      behavior="padding"
-      style={[styles.container, style]}
-    >
+    <View style={[styles.container, style]}>
       <BidirectionalFlatList
+        style={{ paddingHorizontal: 5 }}
         data={visibleMonths}
         renderItem={({ item: { year, month } }) => (
           <MonthView year={year} month={month} />
@@ -73,23 +68,18 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           />
         }
       />
-      <View style={styles.selectButtonContainer}>
+      <View style={STYLES.sheet.opener}>
         <Pressable onPress={toggleSelectMode}>
           <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
       </View>
       <CalendarEventView />
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {},
-  selectButtonContainer: {
-    position: "absolute",
-    bottom: 20,
-    alignSelf: "center",
-  },
 });
 
 export default CalendarView;

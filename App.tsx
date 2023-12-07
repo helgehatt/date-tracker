@@ -1,6 +1,12 @@
 import "./src/extensions";
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import { COLORS } from "./src/constants";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
@@ -27,10 +33,16 @@ export default function App() {
       <SelectionProvider>
         <View style={styles.container}>
           <HeaderView />
-          <CalendarView style={pageStyle["calendar"]} />
-          <CategoryView style={pageStyle["category"]} />
-          <View style={pageStyle["stats"]} />
-          <View style={pageStyle["settings"]} />
+          <KeyboardAvoidingView
+            style={styles.content}
+            enabled={Platform.OS === "ios"}
+            behavior="padding"
+          >
+            <CalendarView style={pageStyle["calendar"]} />
+            <CategoryView style={pageStyle["category"]} />
+            <View style={pageStyle["stats"]} />
+            <View style={pageStyle["settings"]} />
+          </KeyboardAvoidingView>
           <AppbarView page={page} setPage={setPage} />
         </View>
       </SelectionProvider>
@@ -42,5 +54,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  content: {
+    flex: 1,
   },
 });
