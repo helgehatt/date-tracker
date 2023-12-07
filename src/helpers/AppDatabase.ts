@@ -1,34 +1,34 @@
 import * as SQLite from "expo-sqlite";
 
 export interface AppEvent {
-  event_id: number;
-  category_id: number;
-  start_date: number;
-  stop_date: number;
+  eventId: number;
+  categoryId: number;
+  startDate: number;
+  stopDate: number;
   note: string;
 }
 
-export interface AppTracker {
-  tracker_id: number;
-  category_id: number;
+export interface AppLimit {
+  limitId: number;
+  categoryId: number;
   name: string;
-  limit_: number;
-  y1_is_rel: boolean;
-  y1_offset: number;
-  m1_is_rel: boolean;
-  m1_offset: number;
-  d1_is_rel: boolean;
-  d1_offset: number;
-  y2_is_rel: boolean;
-  y2_offset: number;
-  m2_is_rel: boolean;
-  m2_offset: number;
-  d2_is_rel: boolean;
-  d2_offset: number;
+  value: number;
+  fromYearRelative: boolean;
+  fromYearOffset: number;
+  fromMonthRelative: boolean;
+  fromMonthOffset: number;
+  fromDayRelative: boolean;
+  fromDayOffset: number;
+  toYearRelative: boolean;
+  toYearOffset: number;
+  toMonthRelative: boolean;
+  toMonthOffset: number;
+  toDayRelative: boolean;
+  toDayOffset: number;
 }
 
 export interface AppCategory {
-  category_id: number;
+  categoryId: number;
   name: string;
   color: string;
 }
@@ -37,7 +37,7 @@ class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.v1.0.3-beta.db");
+    this.db = SQLite.openDatabase("app.v1.0.4-beta.db");
   }
 
   execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
@@ -63,7 +63,7 @@ class AppDatabase {
 
       await this.execute(
         `CREATE TABLE categories (
-          category_id       INTEGER PRIMARY KEY,
+          categoryId        INTEGER PRIMARY KEY,
           name              TEXT NOT NULL,
           color             TEXT NOT NULL
         )`
@@ -71,38 +71,38 @@ class AppDatabase {
 
       await this.execute(
         `CREATE TABLE events (
-          event_id          INTEGER PRIMARY KEY,
-          category_id       INTEGER NOT NULL,
-          start_date        INTEGER NOT NULL,
-          stop_date         INTEGER NOT NULL,
+          eventId           INTEGER PRIMARY KEY,
+          categoryId        INTEGER NOT NULL,
+          startDate         INTEGER NOT NULL,
+          stopDate          INTEGER NOT NULL,
           note              TEXT NOT NULL,
-          FOREIGN KEY (category_id)
-            REFERENCES categories (category_id)
+          FOREIGN KEY (categoryId)
+            REFERENCES categories (categoryId)
               ON DELETE CASCADE
               ON UPDATE NO ACTION
         )`
       );
 
       await this.execute(
-        `CREATE TABLE trackers (
-          tracker_id        INTEGER PRIMARY KEY,
-          category_id       INTEGER NOT NULL,
+        `CREATE TABLE limits (
+          limitId           INTEGER PRIMARY KEY,
+          categoryId        INTEGER NOT NULL,
           name              TEXT NOT NULL,
-          limit_            INTEGER NOT NULL,
-          y1_is_rel         INTEGER NOT NULL,
-          y1_offset         INTEGER NOT NULL,
-          m1_is_rel         INTEGER NOT NULL,
-          m1_offset         INTEGER NOT NULL,
-          d1_is_rel         INTEGER NOT NULL,
-          d1_offset         INTEGER NOT NULL,
-          y2_is_rel         INTEGER NOT NULL,
-          y2_offset         INTEGER NOT NULL,
-          m2_is_rel         INTEGER NOT NULL,
-          m2_offset         INTEGER NOT NULL,
-          d2_is_rel         INTEGER NOT NULL,
-          d2_offset         INTEGER NOT NULL,
-          FOREIGN KEY (category_id)
-            REFERENCES categories (category_id)
+          value             INTEGER NOT NULL,
+          fromYearRelative  INTEGER NOT NULL,
+          fromYearOffset    INTEGER NOT NULL,
+          fromMonthRelative INTEGER NOT NULL,
+          fromMonthOffset   INTEGER NOT NULL,
+          fromDayRelative   INTEGER NOT NULL,
+          fromDayOffset     INTEGER NOT NULL,
+          toYearRelative    INTEGER NOT NULL,
+          toYearOffset      INTEGER NOT NULL,
+          toMonthRelative   INTEGER NOT NULL,
+          toMonthOffset     INTEGER NOT NULL,
+          toDayRelative     INTEGER NOT NULL,
+          toDayOffset       INTEGER NOT NULL,
+          FOREIGN KEY (categoryId)
+            REFERENCES categories (categoryId)
               ON DELETE CASCADE
               ON UPDATE NO ACTION
         )`
@@ -116,12 +116,16 @@ class AppDatabase {
         `SELECT * FROM categories`
       );
 
-      const { category_id } = result[0];
+      const { categoryId } = result[0];
       await this.execute(
-        `INSERT INTO trackers (
-          category_id, name, limit_,
-          y1_is_rel, y1_offset, m1_is_rel, m1_offset, d1_is_rel, d1_offset,
-          y2_is_rel, y2_offset, m2_is_rel, m2_offset, d2_is_rel, d2_offset
+        `INSERT INTO limits (
+          categoryId, name, value,
+          fromYearRelative,  fromYearOffset,
+          fromMonthRelative, fromMonthOffset,
+          fromDayRelative,   fromDayOffset,
+          toYearRelative,    toYearOffset,
+          toMonthRelative,   toMonthOffset,
+          toDayRelative,     toDayOffset
         )
         VALUES (
           ?, "1 Y", 61,
@@ -136,7 +140,7 @@ class AppDatabase {
           1, 0, 1, -36, 1, 1,
           1, 0, 1, 0, 1, 0
         )`,
-        [category_id, category_id, category_id]
+        [categoryId, categoryId, categoryId]
       );
 
       this.execute("COMMIT");
@@ -151,80 +155,80 @@ class AppDatabase {
     return this.execute<AppCategory>(`SELECT * FROM categories`);
   }
 
-  loadEvents(category_id: number) {
-    return this.execute<AppEvent>(
-      `SELECT * FROM events WHERE category_id = ?`,
-      [category_id]
-    );
+  loadEvents(categoryId: number) {
+    return this.execute<AppEvent>(`SELECT * FROM events WHERE categoryId = ?`, [
+      categoryId,
+    ]);
   }
 
   async insertCategory(name: string, color: string) {
-    await this.execute(`INSERT INTO categories (name, color) values (?, ?)`, [
-      name,
-      color,
-    ]);
+    await this.execute(
+      `INSERT INTO categories (
+        name, color
+      ) values (?, ?)`,
+      [name, color]
+    );
     return this.loadCategories();
   }
 
   async updateCategory(category: AppCategory) {
-    const { category_id, name, color } = category;
+    const { categoryId, name, color } = category;
     await this.execute(
       `UPDATE categories
       SET
         name = ?,
         color = ?
-      WHERE category_id = ?`,
-      [name, color, category_id]
+      WHERE categoryId = ?`,
+      [name, color, categoryId]
     );
     return this.loadCategories();
   }
 
-  async deleteCategory(category_id: number) {
-    await this.execute(`DELETE FROM categories WHERE category_id = ?`, [
-      category_id,
+  async deleteCategory(categoryId: number) {
+    await this.execute(`DELETE FROM categories WHERE categoryId = ?`, [
+      categoryId,
     ]);
     return this.loadCategories();
   }
 
   async insertEvent(
-    category_id: number,
-    start_date: number,
-    stop_date: number,
+    categoryId: number,
+    startDate: number,
+    stopDate: number,
     note: string = ""
   ) {
     await this.execute(
-      `INSERT INTO events (category_id, start_date, stop_date, note) values (?, ?, ?, ?)`,
-      [category_id, start_date, stop_date, note]
+      `INSERT INTO events (
+        categoryId, startDate, stopDate, note
+      ) values (?, ?, ?, ?)`,
+      [categoryId, startDate, stopDate, note]
     );
-    return this.loadEvents(category_id);
+    return this.loadEvents(categoryId);
   }
 
   async updateEvent(event: AppEvent) {
-    const { event_id, category_id, start_date, stop_date, note } = event;
+    const { eventId, categoryId, startDate, stopDate, note } = event;
     await this.execute(
       `UPDATE events
       SET 
-        start_date = ?,
-        stop_date = ?,
+        startDate = ?,
+        stopDate = ?,
         note = ?
-      WHERE event_id = ?`,
-      [start_date, stop_date, note, event_id]
+      WHERE eventId = ?`,
+      [startDate, stopDate, note, eventId]
     );
-    return this.loadEvents(category_id);
+    return this.loadEvents(categoryId);
   }
 
   async deleteEvent(event: AppEvent) {
-    await this.execute(`DELETE FROM events WHERE event_id = ?`, [
-      event.event_id,
-    ]);
-    return this.loadEvents(event.category_id);
+    await this.execute(`DELETE FROM events WHERE eventId = ?`, [event.eventId]);
+    return this.loadEvents(event.categoryId);
   }
 
-  loadTrackers(category_id: number) {
-    return this.execute<AppTracker>(
-      `SELECT * FROM trackers WHERE category_id = ?`,
-      [category_id]
-    );
+  loadLimits(categoryId: number) {
+    return this.execute<AppLimit>(`SELECT * FROM limits WHERE categoryId = ?`, [
+      categoryId,
+    ]);
   }
 }
 

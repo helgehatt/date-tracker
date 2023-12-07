@@ -61,8 +61,8 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
     if (selectedEvent && isValid) {
       editEvent({
         ...selectedEvent,
-        start_date: selectedStartDate,
-        stop_date: selectedStopDate,
+        startDate: selectedStartDate,
+        stopDate: selectedStopDate,
       });
       onClose();
     }

@@ -37,7 +37,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   } = React.useContext(CategoryContext);
 
   const [mode, setMode] = React.useState<Mode>("view");
-  const [category_id, setCategoryId] = React.useState<number>();
+  const [categoryId, setCategoryId] = React.useState<number>();
   const [name, setName] = React.useState("");
   const [color, setColor] = React.useState(generateRandomColor);
 
@@ -59,9 +59,9 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitEdit = () => {
-    if (isValid && category_id) {
+    if (isValid && categoryId) {
       editCategory({
-        category_id,
+        categoryId,
         name,
         color,
       });
@@ -71,8 +71,8 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitDelete = () => {
-    if (category_id) {
-      deleteCategory(category_id);
+    if (categoryId) {
+      deleteCategory(categoryId);
     }
     onClose();
     setColor(generateRandomColor);
@@ -84,15 +84,15 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         style={{ margin: 10, marginBottom: 15 }}
         data={categories}
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
-        renderItem={({ item: { category_id, name, color } }) => (
+        renderItem={({ item: { categoryId, name, color } }) => (
           <Pressable
-            key={category_id}
-            onPress={() => selectCategory(category_id)}
+            key={categoryId}
+            onPress={() => selectCategory(categoryId)}
           >
             <View
               style={[
                 styles.flatlistItem,
-                category_id === selectedCategory?.category_id && {
+                categoryId === selectedCategory?.categoryId && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}
@@ -105,7 +105,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
                 style={{ marginLeft: "auto" }}
                 onPress={() => {
                   setMode("edit");
-                  setCategoryId(category_id);
+                  setCategoryId(categoryId);
                   setName(name);
                   setColor(color);
                 }}
