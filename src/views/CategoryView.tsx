@@ -1,75 +1,196 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View, ViewStyle } from "react-native";
-import { COLORS } from "../constants";
+import {
+  FlatList,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  ViewStyle,
+} from "react-native";
+import { COLORS, STYLES } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
 import { EvilIcons } from "@expo/vector-icons";
+import BottomSheet from "../components/BottomSheet";
+import MyButton from "../components/MyButton";
 
 interface IProps {
   style?: ViewStyle;
 }
 
+type Mode = "view" | "add" | "edit";
+
+function generateRandomColor() {
+  // return "#" + ((Math.random() * 0xffffff) << 0);
+  return `hsla(${Math.random() * 360}, 100%, 50%, 1)`;
+}
+
 const CategoryView: React.FC<IProps> = ({ style }) => {
-  const { categories, selectedCategory, selectCategory } =
-    React.useContext(CategoryContext);
+  const {
+    categories,
+    selectedCategory,
+    selectCategory,
+    addCategory,
+    editCategory,
+    deleteCategory,
+  } = React.useContext(CategoryContext);
+
+  const [mode, setMode] = React.useState<Mode>("view");
+  const [category_id, setCategoryId] = React.useState<number>();
+  const [name, setName] = React.useState("");
+  const [color, setColor] = React.useState(generateRandomColor);
+
+  const isValid = name.length > 0;
+
+  const onClose = React.useCallback(() => {
+    Keyboard.dismiss();
+    setMode("view");
+    setCategoryId(undefined);
+    setName("");
+  }, []);
+
+  const onSubmitAdd = () => {
+    if (isValid) {
+      addCategory(name, color);
+      onClose();
+      setColor(generateRandomColor);
+    }
+  };
+
+  const onSubmitEdit = () => {
+    if (isValid && category_id) {
+      editCategory({
+        category_id,
+        name,
+        color,
+      });
+      onClose();
+      setColor(generateRandomColor);
+    }
+  };
+
+  const onSubmitDelete = () => {
+    if (category_id) {
+      deleteCategory(category_id);
+    }
+    onClose();
+    setColor(generateRandomColor);
+  };
 
   return (
     <View style={[styles.container, style]}>
-      {categories.map((category) => (
-        <Pressable
-          key={category.category_id}
-          onPress={() => selectCategory(category.category_id)}
-        >
-          <View
-            style={[
-              styles.category,
-              category.category_id === selectedCategory?.category_id && {
-                backgroundColor: COLORS.secondary,
-              },
-            ]}
+      <FlatList
+        style={{ margin: 10, marginBottom: 15 }}
+        data={categories}
+        ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
+        renderItem={({ item: { category_id, name, color } }) => (
+          <Pressable
+            key={category_id}
+            onPress={() => selectCategory(category_id)}
           >
             <View
               style={[
-                styles.categoryColor,
-                { backgroundColor: category.color },
+                styles.flatlistItem,
+                category_id === selectedCategory?.category_id && {
+                  backgroundColor: COLORS.secondary,
+                },
               ]}
-            />
-            <Text style={styles.categoryText}>{category.name}</Text>
-          </View>
+            >
+              <View
+                style={[styles.categoryColor, { backgroundColor: color }]}
+              />
+              <Text style={styles.categoryText}>{name}</Text>
+              <Pressable
+                style={{ marginLeft: "auto" }}
+                onPress={() => {
+                  setMode("edit");
+                  setCategoryId(category_id);
+                  setName(name);
+                  setColor(color);
+                }}
+              >
+                <EvilIcons name="pencil" size={30} color={COLORS.text} />
+              </Pressable>
+            </View>
+          </Pressable>
+        )}
+      />
+      <View style={STYLES.sheet.opener}>
+        <Pressable onPress={() => setMode("add")}>
+          <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
-      ))}
-      <View style={styles.category}>
-        <View style={styles.categoryColor}>
-          <EvilIcons name="plus" size={55} color="white" />
-        </View>
-        <Text style={styles.categoryText}>Add category</Text>
       </View>
+      <BottomSheet
+        visible={mode !== "view"}
+        height={200}
+        closeOnSwipeDown={true}
+        closeOnSwipeTrigger={onClose}
+        customStyles={{
+          container: { backgroundColor: COLORS.tertiary },
+        }}
+      >
+        <View style={STYLES.sheet.container}>
+          <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
+            <Text style={STYLES.sheet.headerText}>
+              {mode === "edit" ? "Edit category" : "Add category"}
+            </Text>
+            {mode === "edit" && (
+              <Pressable onPress={onSubmitDelete}>
+                <EvilIcons name="trash" size={30} color={COLORS.text} />
+              </Pressable>
+            )}
+          </View>
+          <View style={STYLES.sheet.row}>
+            <Pressable onPress={() => setColor(generateRandomColor())}>
+              <View
+                style={[styles.categoryColor, { backgroundColor: color }]}
+              />
+            </Pressable>
+            <TextInput
+              style={STYLES.sheet.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Name"
+            />
+          </View>
+          <View style={STYLES.sheet.row}>
+            <MyButton
+              style={STYLES.sheet.button}
+              title="Confirm"
+              onPress={mode === "edit" ? onSubmitEdit : onSubmitAdd}
+              disabled={!isValid}
+            />
+          </View>
+        </View>
+      </BottomSheet>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    padding: 10,
+  container: {},
+  flatlist: {
+    margin: 10,
   },
-  category: {
+  flatlistSeparator: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.tertiary,
+  },
+  flatlistItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     columnGap: 20,
     borderRadius: 10,
-    borderBottomWidth: 1,
-    borderColor: COLORS.tertiary,
   },
   categoryColor: {
     height: 50,
     width: 50,
     borderRadius: 10,
-    margin: 10,
   },
   categoryText: {
-    fontSize: 30,
+    fontSize: 20,
     color: COLORS.text,
   },
 });

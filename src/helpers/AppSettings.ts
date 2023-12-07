@@ -11,6 +11,10 @@ async function setItem(key: Setting, value: string) {
   return AsyncStorage.setItem(PREFIX + key, value).catch(console.warn);
 }
 
+async function removeItem(key: Setting) {
+  return AsyncStorage.removeItem(PREFIX + key).catch(console.warn);
+}
+
 class AppSettings {
   static async getHasInitialized() {
     return getItem("hasInitialized").then((value) => value === "true");
@@ -23,7 +27,10 @@ class AppSettings {
       value ? Number(value) : undefined
     );
   }
-  static async setSelectedCategory(category_id: number) {
+  static async setSelectedCategory(category_id: number | undefined) {
+    if (category_id === undefined) {
+      return removeItem("selectedCategory");
+    }
     return setItem("selectedCategory", String(category_id));
   }
 }

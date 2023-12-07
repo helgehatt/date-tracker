@@ -33,7 +33,7 @@ const MyButton: React.FC<IProps> = ({ style, title, color, ...props }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.background,
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 15,
