@@ -1,9 +1,18 @@
 import React from "react";
-import { StyleSheet, TextInput, View, ViewStyle } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  ViewStyle,
+} from "react-native";
+import { EvilIcons } from "@expo/vector-icons";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { SelectionContext } from "../components/SelectionProvider";
-import { COLORS } from "../constants";
+import { COLORS, STYLES } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
@@ -11,8 +20,6 @@ interface IProps {
 }
 
 const CalendarEventView: React.FC<IProps> = ({ style }) => {
-  const [startDate, setStartDate] = React.useState("");
-  const [stopDate, setStopDate] = React.useState("");
   const { addEvent, editEvent, deleteEvent } =
     React.useContext(CategoryContext);
   const {
@@ -25,9 +32,10 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
     setSelectedStopDate,
   } = React.useContext(SelectionContext);
 
-  const canAdd = !!(selectedStartDate && selectedStopDate);
-  const canEdit = !!(selectedEvent && selectedStartDate && selectedStopDate);
-  const canDelete = !!selectedEvent;
+  const [startDate, setStartDate] = React.useState("");
+  const [stopDate, setStopDate] = React.useState("");
+
+  const isValid = !!(selectedStartDate && selectedStopDate);
 
   const onChangeStartDate = React.useCallback((text: string) => {
     return setStartDate((prev) => formatDate(prev, text));
@@ -37,28 +45,33 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
     return setStopDate((prev) => formatDate(prev, text));
   }, []);
 
+  const onClose = React.useCallback(() => {
+    Keyboard.dismiss();
+    toggleSelectMode();
+  }, [toggleSelectMode]);
+
   const onPressAdd = () => {
-    if (canAdd) {
+    if (isValid) {
       addEvent(selectedStartDate, selectedStopDate);
-      toggleSelectMode();
+      onClose();
     }
   };
 
   const onPressEdit = () => {
-    if (canEdit) {
+    if (selectedEvent && isValid) {
       editEvent({
         ...selectedEvent,
         start_date: selectedStartDate,
         stop_date: selectedStopDate,
       });
-      toggleSelectMode();
+      onClose();
     }
   };
 
   const onPressDelete = () => {
-    if (canDelete) {
+    if (selectedEvent) {
       deleteEvent(selectedEvent);
-      toggleSelectMode();
+      onClose();
     }
   };
 
@@ -97,84 +110,53 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
       visible={!!selectMode}
       height={300}
       closeOnSwipeDown={true}
-      closeOnSwipeTrigger={toggleSelectMode}
+      closeOnSwipeTrigger={onClose}
       customStyles={{
-        container: { marginBottom: -100 },
-        draggableContainer: {
-          backgroundColor: COLORS.tertiary,
-        },
+        container: { marginBottom: -100, backgroundColor: COLORS.tertiary },
       }}
     >
-      <View style={[styles.container, style]}>
-        <View style={styles.row}>
+      <View style={[STYLES.sheet.container, styles.container, style]}>
+        <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
+          <Text style={STYLES.sheet.headerText}>
+            {selectMode === "edit" ? "Edit event" : "Add event"}
+          </Text>
+          {selectMode === "edit" && (
+            <Pressable onPress={onPressDelete}>
+              <EvilIcons name="trash" size={30} color={COLORS.text} />
+            </Pressable>
+          )}
+        </View>
+        <View style={STYLES.sheet.row}>
           <TextInput
-            style={styles.input}
+            style={STYLES.sheet.input}
             value={startDate}
             onChangeText={onChangeStartDate}
             placeholder="YYYY-MM-DD"
             inputMode="numeric"
           />
           <TextInput
-            style={styles.input}
+            style={STYLES.sheet.input}
             value={stopDate}
             onChangeText={onChangeStopDate}
             placeholder="YYYY-MM-DD"
             inputMode="numeric"
           />
         </View>
-        {selectMode == "edit" ? (
-          <View style={styles.row}>
-            <MyButton
-              style={styles.button}
-              title="Delete"
-              onPress={onPressDelete}
-              disabled={!canDelete}
-            />
-            <MyButton
-              style={styles.button}
-              title="Confirm"
-              onPress={onPressEdit}
-              disabled={!canEdit}
-            />
-          </View>
-        ) : (
-          <View style={styles.row}>
-            <MyButton
-              style={styles.button}
-              title="Add"
-              onPress={onPressAdd}
-              disabled={!canAdd}
-            />
-          </View>
-        )}
+        <View style={STYLES.sheet.row}>
+          <MyButton
+            style={STYLES.sheet.button}
+            title="Confirm"
+            onPress={selectMode === "edit" ? onPressEdit : onPressAdd}
+            disabled={!isValid}
+          />
+        </View>
       </View>
     </BottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.tertiary,
-    paddingHorizontal: 10,
-  },
-  row: {
-    flexDirection: "row",
-    marginTop: 10,
-    columnGap: 10,
-  },
-  button: {
-    flex: 1,
-  },
-  input: {
-    flex: 1,
-    fontSize: 20,
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 15,
-    backgroundColor: COLORS.secondary,
-    color: COLORS.text,
-  },
+  container: {},
 });
 
 function formatDate(prev: string | undefined, date: string) {

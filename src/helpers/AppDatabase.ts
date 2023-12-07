@@ -158,6 +158,34 @@ class AppDatabase {
     );
   }
 
+  async insertCategory(name: string, color: string) {
+    await this.execute(`INSERT INTO categories (name, color) values (?, ?)`, [
+      name,
+      color,
+    ]);
+    return this.loadCategories();
+  }
+
+  async updateCategory(category: AppCategory) {
+    const { category_id, name, color } = category;
+    await this.execute(
+      `UPDATE categories
+      SET
+        name = ?,
+        color = ?
+      WHERE category_id = ?`,
+      [name, color, category_id]
+    );
+    return this.loadCategories();
+  }
+
+  async deleteCategory(category_id: number) {
+    await this.execute(`DELETE FROM categories WHERE category_id = ?`, [
+      category_id,
+    ]);
+    return this.loadCategories();
+  }
+
   async insertEvent(
     category_id: number,
     start_date: number,
@@ -172,6 +200,7 @@ class AppDatabase {
   }
 
   async updateEvent(event: AppEvent) {
+    const { event_id, category_id, start_date, stop_date, note } = event;
     await this.execute(
       `UPDATE events
       SET 
@@ -179,9 +208,9 @@ class AppDatabase {
         stop_date = ?,
         note = ?
       WHERE event_id = ?`,
-      [event.start_date, event.stop_date, event.note, event.event_id]
+      [start_date, stop_date, note, event_id]
     );
-    return this.loadEvents(event.category_id);
+    return this.loadEvents(category_id);
   }
 
   async deleteEvent(event: AppEvent) {

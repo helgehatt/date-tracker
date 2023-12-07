@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SelectionContext } from "../components/SelectionProvider";
 import { COLORS, TODAY } from "../constants";
+import { SelectionContext } from "../components/SelectionProvider";
 import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
@@ -11,6 +11,7 @@ interface IProps {
 }
 
 interface IMemoizableProps {
+  color?: string;
   day: number;
   isToday: boolean;
   isEvent: boolean;
@@ -19,7 +20,7 @@ interface IMemoizableProps {
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
-  const { eventDates } = React.useContext(CategoryContext);
+  const { selectedCategory, eventDates } = React.useContext(CategoryContext);
   const { selectedStartDate, selectedStopDate, selectDate } =
     React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
@@ -46,6 +47,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
 
   return (
     <MemoizableDateView
+      color={selectedCategory?.color}
       day={day}
       isToday={isToday}
       isEvent={isEvent}
@@ -56,6 +58,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
 };
 
 const _MemoizableDateView: React.FC<IMemoizableProps> = ({
+  color,
   day,
   isToday,
   isEvent,
@@ -70,9 +73,8 @@ const _MemoizableDateView: React.FC<IMemoizableProps> = ({
       <Text
         style={[
           styles.text,
-          isEvent && styles.isEvent,
-          isSelected && styles.isEvent,
-          isSelected && styles.isSelected,
+          (isSelected || isEvent) && { backgroundColor: color },
+          isSelected && { opacity: 0.75 },
         ]}
       >
         {day}
@@ -95,21 +97,15 @@ const styles = StyleSheet.create({
   },
   isToday: {
     backgroundColor: COLORS.secondary,
-    borderRadius: 15,
+    borderRadius: 14,
   },
   text: {
     width: "70%",
     padding: 5,
     textAlign: "center",
     color: COLORS.text,
-  },
-  isEvent: {
-    backgroundColor: COLORS.primary,
     borderRadius: 14,
     overflow: "hidden",
-  },
-  isSelected: {
-    opacity: 0.75,
   },
 });
 
