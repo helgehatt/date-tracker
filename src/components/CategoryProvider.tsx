@@ -8,13 +8,15 @@ import AppSettings from "../helpers/AppSettings";
 
 const db = new AppDatabase();
 
+type EventCount = { date: string; value: number };
+
 type State = {
   categories: AppCategory[];
   categoryIds: Set<number>;
   events: AppEvent[];
-  eventDates: Record<number, AppEvent>; // eventDate, eventObject
+  eventDates: Record<number, AppEvent>;
   limits: AppLimit[];
-  eventCountsByLimit: Record<number, Record<number, number>>; // limitId, eventDate, limitValue
+  eventCountsByLimit: Record<number, EventCount[]>;
   selectedCategory: AppCategory | undefined;
 };
 
@@ -87,7 +89,7 @@ class DatetimeIntervalConstructor {
 }
 
 function getEventCountsByLimit(datetimes: number[], limits: AppLimit[]) {
-  const eventCountsByLimit: Record<number, Record<number, number>> = {};
+  const eventCountsByLimit: Record<number, EventCount[]> = {};
 
   for (const l of limits) {
     const constructor = new DatetimeIntervalConstructor(
@@ -106,14 +108,17 @@ function getEventCountsByLimit(datetimes: number[], limits: AppLimit[]) {
         )
     );
 
-    eventCountsByLimit[l.limitId] = {};
+    eventCountsByLimit[l.limitId] = [];
 
     for (const datetime of datetimes) {
       const interval = constructor.new(datetime);
 
-      const count = datetimes.filter((dt) => interval.contains(dt)).length;
+      const value = datetimes.filter((dt) => interval.contains(dt)).length;
 
-      eventCountsByLimit[l.limitId][datetime] = count;
+      eventCountsByLimit[l.limitId].push({
+        date: new Date(datetime).toISODateString(),
+        value,
+      });
     }
   }
 

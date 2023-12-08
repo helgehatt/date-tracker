@@ -13,6 +13,7 @@ interface DateConstructor {
 interface Date {
   getComponents(): { year: number; month: number; date: number };
   getISODay(): number;
+  toISODateString(): string;
   toISOMonthString(): string;
 }
 

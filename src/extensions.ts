@@ -32,6 +32,13 @@ Object.map = function (o, callbackfn) {
 };
 
 /**
+ * The month part of an ISO string is 2022-02-28
+ */
+Date.prototype.toISODateString = function () {
+  return this.toISOString().slice(0, 10);
+};
+
+/**
  * The month part of an ISO string is 2022-02
  */
 Date.prototype.toISOMonthString = function () {
