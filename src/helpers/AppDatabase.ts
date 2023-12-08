@@ -13,17 +13,17 @@ export interface AppLimit {
   categoryId: number;
   name: string;
   value: number;
-  fromYearRelative: boolean;
+  fromYearRelative: number;
   fromYearOffset: number;
-  fromMonthRelative: boolean;
+  fromMonthRelative: number;
   fromMonthOffset: number;
-  fromDayRelative: boolean;
+  fromDayRelative: number;
   fromDayOffset: number;
-  toYearRelative: boolean;
+  toYearRelative: number;
   toYearOffset: number;
-  toMonthRelative: boolean;
+  toMonthRelative: number;
   toMonthOffset: number;
-  toDayRelative: boolean;
+  toDayRelative: number;
   toDayOffset: number;
 }
 
@@ -73,8 +73,8 @@ class AppDatabase {
         `CREATE TABLE events (
           eventId           INTEGER PRIMARY KEY,
           categoryId        INTEGER NOT NULL,
-          startDate         INTEGER NOT NULL,
-          stopDate          INTEGER NOT NULL,
+          startDate         INTEGER NOT NULL CHECK(startDate >= 0),
+          stopDate          INTEGER NOT NULL CHECK(stopDate >= 0),
           note              TEXT NOT NULL,
           FOREIGN KEY (categoryId)
             REFERENCES categories (categoryId)
@@ -88,18 +88,18 @@ class AppDatabase {
           limitId           INTEGER PRIMARY KEY,
           categoryId        INTEGER NOT NULL,
           name              TEXT NOT NULL,
-          value             INTEGER NOT NULL,
-          fromYearRelative  INTEGER NOT NULL,
+          value             INTEGER NOT NULL CHECK(value >= 0),
+          fromYearRelative  INTEGER NOT NULL CHECK(fromYearRelative >= 0 AND fromYearRelative <= 1),
           fromYearOffset    INTEGER NOT NULL,
-          fromMonthRelative INTEGER NOT NULL,
+          fromMonthRelative INTEGER NOT NULL CHECK(fromMonthRelative >= 0 AND fromMonthRelative <= 1),
           fromMonthOffset   INTEGER NOT NULL,
-          fromDayRelative   INTEGER NOT NULL,
+          fromDayRelative   INTEGER NOT NULL CHECK(fromDayRelative >= 0 AND fromDayRelative <= 1),
           fromDayOffset     INTEGER NOT NULL,
-          toYearRelative    INTEGER NOT NULL,
+          toYearRelative    INTEGER NOT NULL CHECK(toYearRelative >= 0 AND toYearRelative <= 1),
           toYearOffset      INTEGER NOT NULL,
-          toMonthRelative   INTEGER NOT NULL,
+          toMonthRelative   INTEGER NOT NULL CHECK(toMonthRelative >= 0 AND toMonthRelative <= 1),
           toMonthOffset     INTEGER NOT NULL,
-          toDayRelative     INTEGER NOT NULL,
+          toDayRelative     INTEGER NOT NULL CHECK(toDayRelative >= 0 AND toDayRelative <= 1),
           toDayOffset       INTEGER NOT NULL,
           FOREIGN KEY (categoryId)
             REFERENCES categories (categoryId)
@@ -109,7 +109,7 @@ class AppDatabase {
       );
 
       await this.execute(
-        `INSERT INTO categories (name, color) values ("Norge", "#FF4C29")`
+        `INSERT INTO categories (name, color) VALUES ('Norge', '#FF4C29')`
       );
 
       const result = await this.execute<AppCategory>(
@@ -128,25 +128,25 @@ class AppDatabase {
           toDayRelative,     toDayOffset
         )
         VALUES (
-          ?, "1 Y", 61,
+          ?, '1 Y', 61,
           1, 0, 0, 0, 0, 1,
           1, 1, 0, 0, 0, 0
         ), (
-          ?, "12 M", 183,
+          ?, '12 M', 183,
           1, 0, 1, -12, 1, 1,
           1, 0, 1, 0, 1, 0
         ), (
-          ?, "36 M", 270,
+          ?, '36 M', 270,
           1, 0, 1, -36, 1, 1,
           1, 0, 1, 0, 1, 0
         )`,
         [categoryId, categoryId, categoryId]
       );
 
-      this.execute("COMMIT");
+      this.execute(`COMMIT`);
       return result;
     } catch (error) {
-      this.execute("ROLLBACK");
+      this.execute(`ROLLBACK`);
       throw error;
     }
   }
@@ -165,7 +165,7 @@ class AppDatabase {
     await this.execute(
       `INSERT INTO categories (
         name, color
-      ) values (?, ?)`,
+      ) VALUES (?, ?)`,
       [name, color]
     );
     return this.loadCategories();
@@ -200,7 +200,7 @@ class AppDatabase {
     await this.execute(
       `INSERT INTO events (
         categoryId, startDate, stopDate, note
-      ) values (?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?)`,
       [categoryId, startDate, stopDate, note]
     );
     return this.loadEvents(categoryId);

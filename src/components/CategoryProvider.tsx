@@ -12,8 +12,9 @@ type State = {
   categories: AppCategory[];
   categoryIds: Set<number>;
   events: AppEvent[];
-  eventDates: Record<number, AppEvent>;
+  eventDates: Record<number, AppEvent>; // eventDate, eventObject
   limits: AppLimit[];
+  eventCountsByLimit: Record<number, Record<number, number>>; // limitId, eventDate, limitValue
   selectedCategory: AppCategory | undefined;
 };
 
@@ -40,6 +41,7 @@ const initialState: State = {
   events: [],
   eventDates: {},
   limits: [],
+  eventCountsByLimit: {},
 };
 
 export const CategoryContext = React.createContext<Context>({
@@ -63,6 +65,59 @@ function getEventDates(events: AppEvent[]) {
   }
 
   return obj;
+}
+
+class Interval<T> {
+  constructor(private start: T, private stop: T) {}
+
+  contains(x: T) {
+    return this.start <= x && x <= this.stop;
+  }
+}
+
+class DatetimeIntervalConstructor {
+  constructor(
+    private fn: (year: number, month: number, day: number) => Interval<number>
+  ) {}
+
+  new(datetime: number) {
+    const { year, month, date: day } = new Date(datetime).getComponents();
+    return this.fn(year, month, day);
+  }
+}
+
+function getEventCountsByLimit(datetimes: number[], limits: AppLimit[]) {
+  const eventCountsByLimit: Record<number, Record<number, number>> = {};
+
+  for (const l of limits) {
+    const constructor = new DatetimeIntervalConstructor(
+      (y, m, d) =>
+        new Interval(
+          Date.UTC(
+            y * l.fromYearRelative + l.fromYearOffset,
+            m * l.fromMonthRelative + l.fromMonthOffset,
+            d * l.fromDayRelative + l.fromDayOffset
+          ),
+          Date.UTC(
+            y * l.toYearRelative + l.toYearOffset,
+            m * l.toMonthRelative + l.toMonthOffset,
+            d * l.toDayRelative + l.toDayOffset
+          )
+        )
+    );
+
+    eventCountsByLimit[l.limitId] = {};
+
+    for (const datetime of datetimes) {
+      const interval = constructor.new(datetime);
+
+      const count = datetimes.filter((dt) => interval.contains(dt)).length;
+
+      eventCountsByLimit[l.limitId][datetime] = count;
+    }
+  }
+
+  return eventCountsByLimit;
 }
 
 function reducer(state: State, action: Action): State {
@@ -90,10 +145,16 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      return { ...state, events, eventDates: getEventDates(events) };
+      const eventDates = getEventDates(events);
+      const datetimes = Object.keys(eventDates).map(Number);
+      const eventCountsByLimit = getEventCountsByLimit(datetimes, state.limits);
+      return { ...state, events, eventDates, eventCountsByLimit };
     }
     case "LOAD_LIMITS": {
-      return { ...state, limits: action.payload.limits };
+      const { limits } = action.payload;
+      const datetimes = Object.keys(state.eventDates).map(Number);
+      const eventCountsByLimit = getEventCountsByLimit(datetimes, limits);
+      return { ...state, limits, eventCountsByLimit };
     }
     default:
       return state;

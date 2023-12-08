@@ -81,7 +81,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   return (
     <View style={[styles.container, style]}>
       <FlatList
-        style={{ margin: 10, marginBottom: 15 }}
+        style={styles.flatlist}
         data={categories}
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: { categoryId, name, color } }) => (
@@ -172,8 +172,10 @@ const styles = StyleSheet.create({
   container: {},
   flatlist: {
     margin: 10,
+    marginBottom: 15,
   },
   flatlistSeparator: {
+    marginVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.tertiary,
   },

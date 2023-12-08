@@ -14,16 +14,17 @@ import SelectionProvider from "./src/components/SelectionProvider";
 import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
 import CategoryProvider from "./src/components/CategoryProvider";
+import LimitView from "./src/views/LimitView";
+
+type Pages = "category" | "calendar" | "limits" | "settings";
 
 export default function App() {
-  const [page, setPage] = React.useState<
-    "category" | "calendar" | "stats" | "settings"
-  >("calendar");
+  const [page, setPage] = React.useState<Pages>("calendar");
 
   const pageStyle = {
     calendar: { display: "none" } as ViewStyle,
     category: { display: "none" } as ViewStyle,
-    stats: { display: "none" } as ViewStyle,
+    limits: { display: "none" } as ViewStyle,
     settings: { display: "none" } as ViewStyle,
   };
   pageStyle[page] = { flex: 1 };
@@ -40,7 +41,7 @@ export default function App() {
           >
             <CalendarView style={pageStyle["calendar"]} />
             <CategoryView style={pageStyle["category"]} />
-            <View style={pageStyle["stats"]} />
+            <LimitView style={pageStyle["limits"]} />
             <View style={pageStyle["settings"]} />
           </KeyboardAvoidingView>
           <AppbarView page={page} setPage={setPage} />
