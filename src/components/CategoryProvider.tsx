@@ -8,7 +8,7 @@ import AppSettings from "../helpers/AppSettings";
 
 const db = new AppDatabase();
 
-type EventCount = { date: string; value: number };
+type EventCount = { date: string; value: number; label?: string };
 
 type State = {
   categories: AppCategory[];
@@ -88,7 +88,7 @@ class DatetimeIntervalConstructor {
   }
 }
 
-function getEventCountsByLimit(datetimes: number[], limits: AppLimit[]) {
+function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
   const eventCountsByLimit: Record<number, EventCount[]> = {};
 
   for (const l of limits) {
@@ -100,29 +100,32 @@ function getEventCountsByLimit(datetimes: number[], limits: AppLimit[]) {
             m * l.fromMonthRelative + l.fromMonthOffset,
             d * l.fromDayRelative + l.fromDayOffset
           ),
-          Date.UTC(
-            y * l.toYearRelative + l.toYearOffset,
-            m * l.toMonthRelative + l.toMonthOffset,
-            d * l.toDayRelative + l.toDayOffset
-          )
+          Date.UTC(y, m, d)
         )
     );
 
     eventCountsByLimit[l.limitId] = [];
 
-    for (const datetime of datetimes) {
-      const interval = constructor.new(datetime);
+    for (const date of Date.range(Math.min(...dates), Math.max(...dates))) {
+      const interval = constructor.new(date);
 
-      const value = datetimes.filter((dt) => interval.contains(dt)).length;
+      const value = dates.filter((x) => interval.contains(x)).length;
 
       eventCountsByLimit[l.limitId].push({
-        date: new Date(datetime).toISODateString(),
+        date: new Date(date).toISODateString(),
         value,
+        label:
+          new Date(date).getDate() == 1 ? getLabelFromDate(date) : undefined,
       });
     }
   }
 
   return eventCountsByLimit;
+}
+
+function getLabelFromDate(date: number | string) {
+  const options = { month: "short", day: "numeric" } as const;
+  return new Date(date).toLocaleDateString("en-gb", options);
 }
 
 function reducer(state: State, action: Action): State {
