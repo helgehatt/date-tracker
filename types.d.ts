@@ -1,3 +1,7 @@
+type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type Stringified<T> = { [P in keyof T]: string };
+
 interface Array<T> {
   groupBy<K extends keyof T>(key: K): Record<string, Omit<T, K>[]>;
 }

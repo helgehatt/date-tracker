@@ -20,7 +20,7 @@ interface IProps {
 }
 
 const CalendarEventView: React.FC<IProps> = ({ style }) => {
-  const { addEvent, editEvent, deleteEvent } =
+  const { selectedCategory, addEvent, editEvent, deleteEvent } =
     React.useContext(CategoryContext);
   const {
     selectMode,
@@ -51,8 +51,13 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
   }, [toggleSelectMode]);
 
   const onPressAdd = () => {
-    if (isValid) {
-      addEvent(selectedStartDate, selectedStopDate);
+    if (isValid && selectedCategory) {
+      addEvent({
+        categoryId: selectedCategory.categoryId,
+        startDate: selectedStartDate,
+        stopDate: selectedStopDate,
+        note: "",
+      });
       onClose();
     }
   };
@@ -70,7 +75,8 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
 
   const onPressDelete = () => {
     if (selectedEvent) {
-      deleteEvent(selectedEvent);
+      const { eventId, categoryId } = selectedEvent;
+      deleteEvent(eventId, categoryId);
       onClose();
     }
   };

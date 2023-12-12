@@ -3,6 +3,7 @@ import AppDatabase, {
   AppCategory,
   AppEvent,
   AppLimit,
+  getInterval,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
 
@@ -11,13 +12,13 @@ const db = new AppDatabase();
 type EventCount = { date: string; value: number; label?: string };
 
 type State = {
+  selectedCategory: AppCategory | undefined;
   categories: AppCategory[];
   categoryIds: Set<number>;
   events: AppEvent[];
   eventDates: Record<number, AppEvent>;
   limits: AppLimit[];
   eventCountsByLimit: Record<number, EventCount[]>;
-  selectedCategory: AppCategory | undefined;
 };
 
 type Action =
@@ -28,12 +29,15 @@ type Action =
 
 type Context = State & {
   selectCategory(id: number | undefined): void;
-  addCategory(name: string, color: string): void;
+  addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
-  deleteCategory(id: number): void;
-  addEvent(start: number, stop: number): void;
+  deleteCategory(categoryId: number): void;
+  addEvent(event: Omit<AppEvent, "eventId">): void;
   editEvent(event: AppEvent): void;
-  deleteEvent(event: AppEvent): void;
+  deleteEvent(eventId: number, categoryId: number): void;
+  addLimit(limit: Omit<AppLimit, "limitId">): void;
+  editLimit(limit: AppLimit): void;
+  deleteLimit(limitId: number, categoryId: number): void;
 };
 
 const initialState: State = {
@@ -55,6 +59,9 @@ export const CategoryContext = React.createContext<Context>({
   addEvent: () => undefined,
   editEvent: () => undefined,
   deleteEvent: () => undefined,
+  addLimit: () => undefined,
+  editLimit: () => undefined,
+  deleteLimit: () => undefined,
 });
 
 function getEventDates(events: AppEvent[]) {
@@ -69,53 +76,20 @@ function getEventDates(events: AppEvent[]) {
   return obj;
 }
 
-class Interval<T> {
-  constructor(private start: T, private stop: T) {}
-
-  contains(x: T) {
-    return this.start <= x && x <= this.stop;
-  }
-}
-
-class DatetimeIntervalConstructor {
-  constructor(
-    private fn: (year: number, month: number, day: number) => Interval<number>
-  ) {}
-
-  new(datetime: number) {
-    const { year, month, date: day } = new Date(datetime).getComponents();
-    return this.fn(year, month, day);
-  }
-}
-
 function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
   const eventCountsByLimit: Record<number, EventCount[]> = {};
 
   for (const l of limits) {
-    const constructor = new DatetimeIntervalConstructor(
-      (y, m, d) =>
-        new Interval(
-          Date.UTC(
-            y * l.fromYearRelative + l.fromYearOffset,
-            m * l.fromMonthRelative + l.fromMonthOffset,
-            d * l.fromDayRelative + l.fromDayOffset
-          ),
-          Date.UTC(y, m, d)
-        )
-    );
-
     eventCountsByLimit[l.limitId] = [];
 
-    for (const date of Date.range(Math.min(...dates), Math.max(...dates))) {
-      const interval = constructor.new(date);
+    for (const date of dates) {
+      const interval = getInterval(l, date);
 
-      const value = dates.filter((x) => interval.contains(x)).length;
+      const value = interval.filter(dates).length;
 
       eventCountsByLimit[l.limitId].push({
         date: new Date(date).toISODateString(),
         value,
-        label:
-          new Date(date).getDate() == 1 ? getLabelFromDate(date) : undefined,
       });
     }
   }
@@ -190,58 +164,101 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   }, []);
 
   const addCategory = React.useCallback(
-    (name: string, color: string) => {
-      db.insertCategory(name, color).then(setCategories);
+    (category: Omit<AppCategory, "categoryId">) => {
+      db.insertCategory(category.name, category.color)
+        .then(() => db.loadCategories())
+        .then(setCategories);
     },
     [setCategories]
   );
 
   const editCategory = React.useCallback(
     (category: AppCategory) => {
-      db.updateCategory(category).then((categories) => {
-        setCategories(categories);
-        if (state.selectedCategory?.categoryId === category.categoryId) {
-          selectCategory(category.categoryId);
-        }
-      });
+      db.updateCategory(category)
+        .then(() => db.loadCategories())
+        .then(setCategories)
+        .then(() => {
+          if (state.selectedCategory?.categoryId === category.categoryId) {
+            selectCategory(category.categoryId);
+          }
+        });
     },
     [setCategories, selectCategory, state.selectedCategory?.categoryId]
   );
 
   const deleteCategory = React.useCallback(
     (categoryId: number) => {
-      db.deleteCategory(categoryId).then((categories) => {
-        setCategories(categories);
-        if (state.selectedCategory?.categoryId === categoryId) {
-          selectCategory(undefined);
-        }
-      });
+      db.deleteCategory(categoryId)
+        .then(() => db.loadCategories())
+        .then(setCategories)
+        .then(() => {
+          if (state.selectedCategory?.categoryId === categoryId) {
+            selectCategory(undefined);
+          }
+        });
     },
     [setCategories, selectCategory, state.selectedCategory?.categoryId]
   );
 
   const addEvent = React.useCallback(
-    (start: number, stop: number) => {
-      if (state.selectedCategory) {
-        const { categoryId } = state.selectedCategory;
-        db.insertEvent(categoryId, start, stop).then(setEvents);
-      }
+    (event: Omit<AppEvent, "eventId">) => {
+      db.insertEvent(event.categoryId, event.startDate, event.stopDate).then(
+        () => db.loadEvents(event.categoryId).then(setEvents)
+      );
     },
-    [setEvents, state.selectedCategory]
+    [setEvents]
   );
 
   const editEvent = React.useCallback(
     (event: AppEvent) => {
-      db.updateEvent(event).then(setEvents);
+      db.updateEvent(event).then(() =>
+        db.loadEvents(event.categoryId).then(setEvents)
+      );
     },
     [setEvents]
   );
 
   const deleteEvent = React.useCallback(
-    (event: AppEvent) => {
-      db.deleteEvent(event).then(setEvents);
+    (eventId: number, categoryId: number) => {
+      db.deleteEvent(eventId).then(() =>
+        db.loadEvents(categoryId).then(setEvents)
+      );
     },
     [setEvents]
+  );
+
+  const addLimit = React.useCallback(
+    (limit: Omit<AppLimit, "limitId">) => {
+      db.insertLimit(
+        limit.categoryId,
+        limit.name,
+        limit.value,
+        limit.startOfYear,
+        limit.startOfMonth,
+        limit.yearOffset,
+        limit.monthOffset,
+        limit.dayOffset
+      ).then(() => db.loadLimits(limit.categoryId).then(setLimits));
+    },
+    [setLimits]
+  );
+
+  const editLimit = React.useCallback(
+    (limit: AppLimit) => {
+      db.updateLimit(limit).then(() =>
+        db.loadLimits(limit.categoryId).then(setLimits)
+      );
+    },
+    [setLimits]
+  );
+
+  const deleteLimit = React.useCallback(
+    (limitId: number, categoryId: number) => {
+      db.deleteLimit(limitId).then(() =>
+        db.loadLimits(categoryId).then(setLimits)
+      );
+    },
+    [setLimits]
   );
 
   React.useEffect(() => {
@@ -291,6 +308,9 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         addEvent,
         editEvent,
         deleteEvent,
+        addLimit,
+        editLimit,
+        deleteLimit,
       }}
     >
       {children}

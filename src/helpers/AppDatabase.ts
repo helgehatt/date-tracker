@@ -1,5 +1,11 @@
 import * as SQLite from "expo-sqlite";
 
+export interface AppCategory {
+  categoryId: number;
+  name: string;
+  color: string;
+}
+
 export interface AppEvent {
   eventId: number;
   categoryId: number;
@@ -13,31 +19,44 @@ export interface AppLimit {
   categoryId: number;
   name: string;
   value: number;
-  fromYearRelative: number;
-  fromYearOffset: number;
-  fromMonthRelative: number;
-  fromMonthOffset: number;
-  fromDayRelative: number;
-  fromDayOffset: number;
-  toYearRelative: number;
-  toYearOffset: number;
-  toMonthRelative: number;
-  toMonthOffset: number;
-  toDayRelative: number;
-  toDayOffset: number;
+  startOfYear: number;
+  startOfMonth: number;
+  yearOffset: number;
+  monthOffset: number;
+  dayOffset: number;
 }
 
-export interface AppCategory {
-  categoryId: number;
-  name: string;
-  color: string;
+class Interval<T> {
+  constructor(private start: T, private stop: T) {}
+
+  contains(x: T) {
+    return this.start <= x && x <= this.stop;
+  }
+
+  filter(xs: T[]) {
+    return xs.filter((x) => this.contains(x));
+  }
 }
+
+export function getInterval(l: AppLimit, date: string | number) {
+  const { year, month, date: day } = new Date(date).getComponents();
+  return new Interval(
+    Date.UTC(
+      year + l.yearOffset,
+      month * (1 - l.startOfYear) - l.monthOffset,
+      day * (1 - (l.startOfYear || l.startOfMonth)) - l.dayOffset
+    ),
+    Date.UTC(year, month, day)
+  );
+}
+
+export function getChangepoints(l: AppLimit, date: string | number) {}
 
 class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.v1.0.4-beta.db");
+    this.db = SQLite.openDatabase("app.v1.0.6-beta.db");
   }
 
   execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
@@ -89,18 +108,11 @@ class AppDatabase {
           categoryId        INTEGER NOT NULL,
           name              TEXT NOT NULL,
           value             INTEGER NOT NULL CHECK(value >= 0),
-          fromYearRelative  INTEGER NOT NULL CHECK(fromYearRelative >= 0 AND fromYearRelative <= 1),
-          fromYearOffset    INTEGER NOT NULL,
-          fromMonthRelative INTEGER NOT NULL CHECK(fromMonthRelative >= 0 AND fromMonthRelative <= 1),
-          fromMonthOffset   INTEGER NOT NULL,
-          fromDayRelative   INTEGER NOT NULL CHECK(fromDayRelative >= 0 AND fromDayRelative <= 1),
-          fromDayOffset     INTEGER NOT NULL,
-          toYearRelative    INTEGER NOT NULL CHECK(toYearRelative >= 0 AND toYearRelative <= 1),
-          toYearOffset      INTEGER NOT NULL,
-          toMonthRelative   INTEGER NOT NULL CHECK(toMonthRelative >= 0 AND toMonthRelative <= 1),
-          toMonthOffset     INTEGER NOT NULL,
-          toDayRelative     INTEGER NOT NULL CHECK(toDayRelative >= 0 AND toDayRelative <= 1),
-          toDayOffset       INTEGER NOT NULL,
+          startOfYear       INTEGER NOT NULL CHECK(startOfYear >= 0 AND startOfYear <= 1),
+          startOfMonth      INTEGER NOT NULL CHECK(startOfMonth >= 0 AND startOfMonth <= 1),
+          yearOffset        INTEGER NOT NULL CHECK(yearOffset >= 0),
+          monthOffset       INTEGER NOT NULL CHECK(monthOffset >= 0),
+          dayOffset         INTEGER NOT NULL CHECK(dayOffset >= 0),
           FOREIGN KEY (categoryId)
             REFERENCES categories (categoryId)
               ON DELETE CASCADE
@@ -120,45 +132,31 @@ class AppDatabase {
       await this.execute(
         `INSERT INTO limits (
           categoryId, name, value,
-          fromYearRelative,  fromYearOffset,
-          fromMonthRelative, fromMonthOffset,
-          fromDayRelative,   fromDayOffset,
-          toYearRelative,    toYearOffset,
-          toMonthRelative,   toMonthOffset,
-          toDayRelative,     toDayOffset
+          startOfYear, startOfMonth, yearOffset, monthOffset, dayOffset
         )
         VALUES (
-          ?, '1 Y', 61,
-          1, 0, 0, 0, 0, 1,
-          1, 1, 0, 0, 0, 0
+          ?, 'One Calendar Year', 61,
+          1, 0, 0, 0, 0
         ), (
-          ?, '12 M', 183,
-          1, 0, 1, -12, 1, 1,
-          1, 0, 1, 0, 1, 0
+          ?, '12-Month Rolling', 183,
+          0, 0, 0, 12, 0
         ), (
-          ?, '36 M', 270,
-          1, 0, 1, -36, 1, 1,
-          1, 0, 1, 0, 1, 0
+          ?, '36-Month Rolling', 270,
+          0, 0, 0, 36, 0
         )`,
         [categoryId, categoryId, categoryId]
       );
 
-      this.execute(`COMMIT`);
+      await this.execute(`COMMIT`);
       return result;
     } catch (error) {
-      this.execute(`ROLLBACK`);
+      await this.execute(`ROLLBACK`);
       throw error;
     }
   }
 
-  loadCategories() {
-    return this.execute<AppCategory>(`SELECT * FROM categories`);
-  }
-
-  loadEvents(categoryId: number) {
-    return this.execute<AppEvent>(`SELECT * FROM events WHERE categoryId = ?`, [
-      categoryId,
-    ]);
+  async loadCategories() {
+    return await this.execute<AppCategory>(`SELECT * FROM categories`);
   }
 
   async insertCategory(name: string, color: string) {
@@ -168,7 +166,6 @@ class AppDatabase {
       ) VALUES (?, ?)`,
       [name, color]
     );
-    return this.loadCategories();
   }
 
   async updateCategory(category: AppCategory) {
@@ -181,14 +178,19 @@ class AppDatabase {
       WHERE categoryId = ?`,
       [name, color, categoryId]
     );
-    return this.loadCategories();
   }
 
   async deleteCategory(categoryId: number) {
     await this.execute(`DELETE FROM categories WHERE categoryId = ?`, [
       categoryId,
     ]);
-    return this.loadCategories();
+  }
+
+  async loadEvents(categoryId: number) {
+    return await this.execute<AppEvent>(
+      `SELECT * FROM events WHERE categoryId = ?`,
+      [categoryId]
+    );
   }
 
   async insertEvent(
@@ -203,11 +205,10 @@ class AppDatabase {
       ) VALUES (?, ?, ?, ?)`,
       [categoryId, startDate, stopDate, note]
     );
-    return this.loadEvents(categoryId);
   }
 
   async updateEvent(event: AppEvent) {
-    const { eventId, categoryId, startDate, stopDate, note } = event;
+    const { eventId, startDate, stopDate, note } = event;
     await this.execute(
       `UPDATE events
       SET 
@@ -217,18 +218,75 @@ class AppDatabase {
       WHERE eventId = ?`,
       [startDate, stopDate, note, eventId]
     );
-    return this.loadEvents(categoryId);
   }
 
-  async deleteEvent(event: AppEvent) {
-    await this.execute(`DELETE FROM events WHERE eventId = ?`, [event.eventId]);
-    return this.loadEvents(event.categoryId);
+  async deleteEvent(eventId: number) {
+    await this.execute(`DELETE FROM events WHERE eventId = ?`, [eventId]);
   }
 
-  loadLimits(categoryId: number) {
-    return this.execute<AppLimit>(`SELECT * FROM limits WHERE categoryId = ?`, [
-      categoryId,
-    ]);
+  async loadLimits(categoryId: number) {
+    return await this.execute<AppLimit>(
+      `SELECT * FROM limits WHERE categoryId = ?`,
+      [categoryId]
+    );
+  }
+
+  async insertLimit(
+    categoryId: number,
+    name: string,
+    value: number,
+    startOfYear: number,
+    startOfMonth: number,
+    yearOffset: number,
+    monthOffset: number,
+    dayOffset: number
+  ) {
+    await this.execute(
+      `INSERT INTO limits (
+        categoryId, name, value,
+        startOfYear, startOfMonth,
+        yearOffset, monthOffset, dayOffset,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        categoryId,
+        name,
+        value,
+        startOfYear,
+        startOfMonth,
+        yearOffset,
+        monthOffset,
+        dayOffset,
+      ]
+    );
+  }
+
+  async updateLimit(limit: AppLimit) {
+    await this.execute(
+      `UPDATE limits
+      SET
+        name = ?,
+        value = ?,
+        startOfYear = ?,
+        startOfMonth = ?,
+        yearOffset = ?,
+        monthOffset = ?,
+        dayOffset = ?
+      WHERE limitId = ?`,
+      [
+        limit.name,
+        limit.value,
+        limit.startOfYear,
+        limit.startOfMonth,
+        limit.yearOffset,
+        limit.monthOffset,
+        limit.dayOffset,
+        limit.limitId,
+      ]
+    );
+  }
+
+  async deleteLimit(limitId: number) {
+    await this.execute(`DELETE FROM limits WHERE limitId = ?`, [limitId]);
   }
 }
 

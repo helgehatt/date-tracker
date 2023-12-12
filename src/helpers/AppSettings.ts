@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const PREFIX = "app.v1.0.4-beta.settings.";
+const PREFIX = "app.v1.0.6-beta.settings.";
 type Setting = "hasInitialized" | "selectedCategory";
 
 async function getItem(key: Setting) {

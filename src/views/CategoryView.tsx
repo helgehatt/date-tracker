@@ -14,12 +14,20 @@ import { CategoryContext } from "../components/CategoryProvider";
 import { EvilIcons } from "@expo/vector-icons";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
+import { AppCategory } from "../helpers/AppDatabase";
 
 interface IProps {
   style?: ViewStyle;
 }
 
 type Mode = "view" | "add" | "edit";
+type State = Optional<AppCategory, "categoryId">;
+
+const initialState: () => State = () => ({
+  categoryId: undefined,
+  name: "",
+  color: generateRandomColor(),
+});
 
 function generateRandomColor() {
   // return "#" + ((Math.random() * 0xffffff) << 0);
@@ -37,45 +45,47 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   } = React.useContext(CategoryContext);
 
   const [mode, setMode] = React.useState<Mode>("view");
-  const [categoryId, setCategoryId] = React.useState<number>();
-  const [name, setName] = React.useState("");
-  const [color, setColor] = React.useState(generateRandomColor);
+  const [state, setState] = React.useState<State>(initialState);
 
-  const isValid = name.length > 0;
+  const setName = React.useCallback((name: string) => {
+    setState((prev) => ({ ...prev, name }));
+  }, []);
+
+  const setColor = React.useCallback((color: string) => {
+    setState((prev) => ({ ...prev, color }));
+  }, []);
+
+  const isValid = state.name.length > 0;
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
     setMode("view");
-    setCategoryId(undefined);
-    setName("");
+    setState(initialState);
   }, []);
 
   const onSubmitAdd = () => {
     if (isValid) {
-      addCategory(name, color);
+      addCategory({ name: state.name, color: state.color });
       onClose();
-      setColor(generateRandomColor);
     }
   };
 
   const onSubmitEdit = () => {
-    if (isValid && categoryId) {
+    if (isValid && state.categoryId) {
       editCategory({
-        categoryId,
-        name,
-        color,
+        categoryId: state.categoryId,
+        name: state.name,
+        color: state.color,
       });
       onClose();
-      setColor(generateRandomColor);
     }
   };
 
   const onSubmitDelete = () => {
-    if (categoryId) {
-      deleteCategory(categoryId);
+    if (state.categoryId) {
+      deleteCategory(state.categoryId);
     }
     onClose();
-    setColor(generateRandomColor);
   };
 
   return (
@@ -84,30 +94,31 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         style={styles.flatlist}
         data={categories}
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
-        renderItem={({ item: { categoryId, name, color } }) => (
+        renderItem={({ item: category }) => (
           <Pressable
-            key={categoryId}
-            onPress={() => selectCategory(categoryId)}
+            key={category.categoryId}
+            onPress={() => selectCategory(category.categoryId)}
           >
             <View
               style={[
                 styles.flatlistItem,
-                categoryId === selectedCategory?.categoryId && {
+                category.categoryId === selectedCategory?.categoryId && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}
             >
               <View
-                style={[styles.categoryColor, { backgroundColor: color }]}
+                style={[
+                  styles.categoryColor,
+                  { backgroundColor: category.color },
+                ]}
               />
-              <Text style={styles.categoryText}>{name}</Text>
+              <Text style={styles.categoryText}>{category.name}</Text>
               <Pressable
                 style={{ marginLeft: "auto" }}
                 onPress={() => {
                   setMode("edit");
-                  setCategoryId(categoryId);
-                  setName(name);
-                  setColor(color);
+                  setState(category);
                 }}
               >
                 <EvilIcons name="pencil" size={30} color={COLORS.text} />
@@ -116,11 +127,13 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
           </Pressable>
         )}
       />
+
       <View style={STYLES.sheet.opener}>
         <Pressable onPress={() => setMode("add")}>
           <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
       </View>
+
       <BottomSheet
         visible={mode !== "view"}
         height={200}
@@ -144,12 +157,12 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <Pressable onPress={() => setColor(generateRandomColor())}>
               <View
-                style={[styles.categoryColor, { backgroundColor: color }]}
+                style={[styles.categoryColor, { backgroundColor: state.color }]}
               />
             </Pressable>
             <TextInput
               style={STYLES.sheet.input}
-              value={name}
+              value={state.name}
               onChangeText={setName}
               placeholder="Name"
             />
