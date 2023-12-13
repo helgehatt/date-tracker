@@ -20,8 +20,8 @@ interface IProps {
   style?: ViewStyle;
 }
 
-type Mode = "view" | "add" | "edit";
 type State = {
+  mode: "view" | "add" | "edit";
   limitId?: number;
   categoryId?: number;
   name: string;
@@ -35,6 +35,7 @@ type State = {
 };
 
 const initialState: State = {
+  mode: "view",
   name: "",
   maxDays: "",
   intervalType: "fixed",
@@ -55,7 +56,6 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     deleteLimit,
   } = React.useContext(CategoryContext);
 
-  const [mode, setMode] = React.useState<Mode>("view");
   const [state, setState] = React.useState<State>(initialState);
 
   const onChange = React.useCallback(
@@ -82,7 +82,6 @@ const LimitView: React.FC<IProps> = ({ style }) => {
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    setMode("view");
     setState(initialState);
   }, []);
 
@@ -131,8 +130,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
 
   const onSubmitDelete = () => {
     if (state.limitId && state.categoryId) {
-      const { limitId, categoryId } = state;
-      deleteLimit(limitId, categoryId);
+      deleteLimit(state.limitId, state.categoryId);
     }
     onClose();
   };
@@ -160,8 +158,8 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <Pressable
               style={{ marginLeft: "auto" }}
               onPress={() => {
-                setMode("edit");
                 setState({
+                  mode: "edit",
                   limitId: limit.limitId,
                   categoryId: limit.categoryId,
                   name: limit.name,
@@ -188,13 +186,13 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       />
 
       <View style={STYLES.sheet.opener}>
-        <Pressable onPress={() => setMode("add")}>
+        <Pressable onPress={() => onChange("mode")("add")}>
           <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
       </View>
 
       <BottomSheet
-        visible={mode !== "view"}
+        visible={state.mode !== "view"}
         height={328}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
@@ -205,9 +203,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         <View style={STYLES.sheet.container}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
             <Text style={STYLES.sheet.headerText}>
-              {mode === "edit" ? "Edit limit" : "Add limit"}
+              {state.mode === "edit" ? "Edit limit" : "Add limit"}
             </Text>
-            {mode === "edit" && (
+            {state.mode === "edit" && (
               <Pressable onPress={onSubmitDelete}>
                 <EvilIcons name="trash" size={30} color={COLORS.text} />
               </Pressable>
@@ -363,7 +361,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <MyButton
               style={STYLES.sheet.button}
               title="Confirm"
-              onPress={mode === "edit" ? onSubmitEdit : onSubmitAdd}
+              onPress={state.mode === "edit" ? onSubmitEdit : onSubmitAdd}
               disabled={!isValid}
             />
           </View>
