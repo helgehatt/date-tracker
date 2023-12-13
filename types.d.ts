@@ -7,17 +7,52 @@ interface Array<T> {
 }
 
 interface DateConstructor {
+  /**
+   * Generates a range from `start` to `stop` with the given `step` size.
+   * @param start Start of the range.
+   * @param stop Stop of the range (non-inclusive depending on the `step`).
+   * @param step The step size, defaulting to one full day.
+   */
   range(
     start: number,
     stop: number,
     step?: number
   ): Generator<number, void, unknown>;
+
+  /**
+   * Modifies an ISO date string by adding and subtracting `-` symbols.
+   *
+   * @param prev Previous string value
+   * @param now Current string value
+   */
+  onChangeFormat(prev: string, now: string): string;
 }
 
 interface Date {
-  getComponents(): { year: number; month: number; date: number };
+  /**
+   * Returns the object representation of a date
+   */
+  getComponents(): { year: number; month: number; day: number };
+
+  /**
+   * getUTCDay returns 0 to 6 representing Sunday to Saturday
+   *
+   * getISODay returns 1 to 7 representing Monday to Sunday
+   */
   getISODay(): number;
+
+  /**
+   * Returns the date part of an ISO string
+   *
+   * @Example 2022-02-28
+   */
   toISODateString(): string;
+
+  /**
+   * Returns the month part of an ISO string
+   *
+   * @Example 2022-02
+   */
   toISOMonthString(): string;
 }
 

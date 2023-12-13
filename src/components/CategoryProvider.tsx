@@ -3,6 +3,7 @@ import AppDatabase, {
   AppCategory,
   AppEvent,
   AppLimit,
+  AppLimitWithoutId,
   getInterval,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
@@ -14,7 +15,6 @@ type EventCount = { date: string; value: number; label?: string };
 type State = {
   selectedCategory: AppCategory | undefined;
   categories: AppCategory[];
-  categoryIds: Set<number>;
   events: AppEvent[];
   eventDates: Record<number, AppEvent>;
   limits: AppLimit[];
@@ -22,7 +22,13 @@ type State = {
 };
 
 type Action =
+  | {
+      type: "INITIAL_LOAD";
+      payload: { categories: AppCategory[]; categoryId: number | undefined };
+    }
   | { type: "SELECT_CATEGORY"; payload: { categoryId: number | undefined } }
+  | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
+  | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
@@ -42,7 +48,6 @@ type Context = State & {
 
 const initialState: State = {
   categories: [],
-  categoryIds: new Set(),
   selectedCategory: undefined,
   events: [],
   eventDates: {},
@@ -97,33 +102,46 @@ function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
   return eventCountsByLimit;
 }
 
-function getLabelFromDate(date: number | string) {
-  const options = { month: "short", day: "numeric" } as const;
-  return new Date(date).toLocaleDateString("en-gb", options);
-}
-
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "INITIAL_LOAD": {
+      const { categories, categoryId } = action.payload;
+      if (categoryId === undefined && categories.length) {
+        return { ...state, categories, selectedCategory: categories[0] };
+      }
+      const selectedCategory = categories.find(
+        (category) => category.categoryId == categoryId
+      );
+      return { ...state, categories, selectedCategory };
+    }
     case "SELECT_CATEGORY": {
       const { categoryId } = action.payload;
       if (categoryId === undefined) {
-        return {
-          ...state,
-          selectedCategory: undefined,
-          events: [],
-          eventDates: {},
-          limits: [],
-        };
+        return { ...initialState, categories: state.categories };
       }
       const selectedCategory = state.categories.find(
         (category) => category.categoryId == categoryId
       );
       return { ...state, selectedCategory };
     }
+    case "EDIT_CATEGORY": {
+      const { categoryId } = action.payload;
+      // Force state update if the selected category has changed
+      if (state.selectedCategory?.categoryId === categoryId) {
+        return { ...state };
+      }
+      return state;
+    }
+    case "DELETE_CATEGORY": {
+      const { categoryId } = action.payload;
+      if (state.selectedCategory?.categoryId === categoryId) {
+        return { ...initialState, categories: state.categories };
+      }
+      return state;
+    }
     case "LOAD_CATEGORIES": {
       const { categories } = action.payload;
-      const categoryIds = new Set(categories.map((x) => x.categoryId));
-      return { ...state, categories, categoryIds };
+      return { ...state, categories };
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
@@ -165,7 +183,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const addCategory = React.useCallback(
     (category: Omit<AppCategory, "categoryId">) => {
-      db.insertCategory(category.name, category.color)
+      db.insertCategory(category)
         .then(() => db.loadCategories())
         .then(setCategories);
     },
@@ -174,16 +192,15 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const editCategory = React.useCallback(
     (category: AppCategory) => {
+      const { categoryId } = category;
       db.updateCategory(category)
         .then(() => db.loadCategories())
         .then(setCategories)
-        .then(() => {
-          if (state.selectedCategory?.categoryId === category.categoryId) {
-            selectCategory(category.categoryId);
-          }
-        });
+        .then(() =>
+          dispatch({ type: "EDIT_CATEGORY", payload: { categoryId } })
+        );
     },
-    [setCategories, selectCategory, state.selectedCategory?.categoryId]
+    [setCategories]
   );
 
   const deleteCategory = React.useCallback(
@@ -191,19 +208,17 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
       db.deleteCategory(categoryId)
         .then(() => db.loadCategories())
         .then(setCategories)
-        .then(() => {
-          if (state.selectedCategory?.categoryId === categoryId) {
-            selectCategory(undefined);
-          }
-        });
+        .then(() =>
+          dispatch({ type: "DELETE_CATEGORY", payload: { categoryId } })
+        );
     },
-    [setCategories, selectCategory, state.selectedCategory?.categoryId]
+    [setCategories]
   );
 
   const addEvent = React.useCallback(
     (event: Omit<AppEvent, "eventId">) => {
-      db.insertEvent(event.categoryId, event.startDate, event.stopDate).then(
-        () => db.loadEvents(event.categoryId).then(setEvents)
+      db.insertEvent(event).then(() =>
+        db.loadEvents(event.categoryId).then(setEvents)
       );
     },
     [setEvents]
@@ -228,17 +243,10 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   const addLimit = React.useCallback(
-    (limit: Omit<AppLimit, "limitId">) => {
-      db.insertLimit(
-        limit.categoryId,
-        limit.name,
-        limit.value,
-        limit.startOfYear,
-        limit.startOfMonth,
-        limit.yearOffset,
-        limit.monthOffset,
-        limit.dayOffset
-      ).then(() => db.loadLimits(limit.categoryId).then(setLimits));
+    (limit: AppLimitWithoutId) => {
+      db.insertLimit(limit).then(() =>
+        db.loadLimits(limit.categoryId).then(setLimits)
+      );
     },
     [setLimits]
   );
@@ -262,33 +270,29 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   React.useEffect(() => {
-    AppSettings.getHasInitialized().then((hasInitialized) => {
-      if (!hasInitialized) {
-        AppSettings.setHasInitialized(true).then(() => {
+    AppSettings.getHasInitialized()
+      .then(async (hasInitialized) => {
+        if (!hasInitialized) {
+          await AppSettings.setHasInitialized(true);
           console.log("DB: Initializing...");
-          db.init()
-            .then(setCategories)
-            .then(() => console.log("DB: Initialized"))
-            .catch((error) => {
-              console.error(`DB: ${error.message}`);
-              AppSettings.setHasInitialized(false);
-            });
-        });
-      } else {
-        db.loadCategories().then(setCategories);
-      }
-    });
-  }, [setCategories]);
-
-  React.useEffect(() => {
-    if (state.selectedCategory === undefined && state.categories.length) {
-      AppSettings.getSelectedCategory().then((selectedCategory) => {
-        if (selectedCategory) {
-          selectCategory(selectedCategory);
+          try {
+            const categories = await db.init();
+            console.log("DB: Initialized");
+            return categories;
+          } catch (error) {
+            console.error(`DB: ${JSON.stringify(error)}`);
+            await AppSettings.setHasInitialized(false);
+            return [];
+          }
+        } else {
+          return await db.loadCategories();
         }
+      })
+      .then(async (categories) => {
+        let categoryId = await AppSettings.getSelectedCategory();
+        dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
       });
-    }
-  }, [selectCategory, state.selectedCategory, state.categories]);
+  }, []);
 
   React.useEffect(() => {
     if (state.selectedCategory) {

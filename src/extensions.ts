@@ -2,14 +2,10 @@ Date.prototype.getComponents = function () {
   return {
     year: this.getFullYear(),
     month: this.getMonth(),
-    date: this.getDate(),
+    day: this.getDate(),
   };
 };
 
-/**
- * getUTCDay returns 0..6 representing Sunday..Saturday
- * getISODay returns 1..7 representing Monday..Sunday
- */
 Date.prototype.getISODay = function () {
   return ((this.getUTCDay() + 6) % 7) + 1;
 };
@@ -31,16 +27,10 @@ Object.map = function (o, callbackfn) {
   ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
-/**
- * The month part of an ISO string is 2022-02-28
- */
 Date.prototype.toISODateString = function () {
   return this.toISOString().slice(0, 10);
 };
 
-/**
- * The month part of an ISO string is 2022-02
- */
 Date.prototype.toISOMonthString = function () {
   return this.toISOString().slice(0, 7);
 };
@@ -53,4 +43,18 @@ Date.range = function* (
   for (let i = start; i <= stop; i += step) {
     yield i;
   }
+};
+
+Date.onChangeFormat = function (prev: string, now: string) {
+  if (prev.endsWith("-") && now.length < prev.length) {
+    return now.slice(0, now.length - 1);
+  }
+  now = now.replaceAll(/\D/g, "");
+  if (now.length >= 6) {
+    return now.slice(0, 4) + "-" + now.slice(4, 6) + "-" + now.slice(6, 8);
+  }
+  if (now.length >= 4) {
+    return now.slice(0, 4) + "-" + now.slice(4, 6);
+  }
+  return now;
 };

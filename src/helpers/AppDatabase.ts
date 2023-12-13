@@ -14,17 +14,43 @@ export interface AppEvent {
   note: string;
 }
 
-export interface AppLimit {
+export type AppLimit = {
   limitId: number;
+} & AppLimitWithoutId;
+
+// Necessary since Omit<> doesn't work with intersection type
+export type AppLimitWithoutId = {
   categoryId: number;
   name: string;
-  value: number;
-  startOfYear: number;
-  startOfMonth: number;
-  yearOffset: number;
-  monthOffset: number;
-  dayOffset: number;
-}
+  maxDays: number;
+} & (AppLimitFixed | AppLimitRunning | AppLimitCustom);
+
+type AppLimitFixed = {
+  intervalType: "fixed";
+  fixedInterval: "yearly" | "monthly";
+  runningAmount: null;
+  runningUnit: null;
+  customStartDate: null;
+  customStopDate: null;
+};
+
+type AppLimitRunning = {
+  intervalType: "running";
+  fixedInterval: null;
+  runningAmount: number;
+  runningUnit: "year" | "month" | "day";
+  customStartDate: null;
+  customStopDate: null;
+};
+
+type AppLimitCustom = {
+  intervalType: "custom";
+  fixedInterval: null;
+  runningAmount: null;
+  runningUnit: null;
+  customStartDate: number;
+  customStopDate: number;
+};
 
 class Interval<T> {
   constructor(private start: T, private stop: T) {}
@@ -39,24 +65,40 @@ class Interval<T> {
 }
 
 export function getInterval(l: AppLimit, date: string | number) {
-  const { year, month, date: day } = new Date(date).getComponents();
-  return new Interval(
-    Date.UTC(
-      year + l.yearOffset,
-      month * (1 - l.startOfYear) - l.monthOffset,
-      day * (1 - (l.startOfYear || l.startOfMonth)) - l.dayOffset
-    ),
-    Date.UTC(year, month, day)
-  );
+  const { year, month, day } = new Date(date).getComponents();
+  if (l.intervalType === "fixed") {
+    if (l.fixedInterval === "yearly") {
+      return new Interval(Date.UTC(year, 0, 1), Date.UTC(year + 1, 0, 0));
+    }
+    if (l.fixedInterval === "monthly") {
+      return new Interval(
+        Date.UTC(year, month, 1),
+        Date.UTC(year, month + 1, 0)
+      );
+    }
+    throw new Error("Invalid AppLimit fixedInterval");
+  }
+  if (l.intervalType === "running") {
+    const yearOffset = l.runningUnit === "year" ? l.runningAmount : 0;
+    const monthOffset = l.runningUnit === "month" ? l.runningAmount : 0;
+    const dayOffset = l.runningUnit === "day" ? l.runningAmount : 0;
+    return new Interval(
+      Date.UTC(year - yearOffset, month - monthOffset, day - dayOffset),
+      Date.UTC(year, month, day)
+    );
+  }
+  if (l.intervalType === "custom") {
+    return new Interval(l.customStartDate, l.customStopDate);
+  }
+  throw new Error("Invalid AppLimit type");
 }
-
-export function getChangepoints(l: AppLimit, date: string | number) {}
 
 class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.v1.0.6-beta.db");
+    this.db = SQLite.openDatabase("app.v1.0.9-beta.db");
+    this.execute(`PRAGMA foreign_keys = ON`);
   }
 
   execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
@@ -107,12 +149,13 @@ class AppDatabase {
           limitId           INTEGER PRIMARY KEY,
           categoryId        INTEGER NOT NULL,
           name              TEXT NOT NULL,
-          value             INTEGER NOT NULL CHECK(value >= 0),
-          startOfYear       INTEGER NOT NULL CHECK(startOfYear >= 0 AND startOfYear <= 1),
-          startOfMonth      INTEGER NOT NULL CHECK(startOfMonth >= 0 AND startOfMonth <= 1),
-          yearOffset        INTEGER NOT NULL CHECK(yearOffset >= 0),
-          monthOffset       INTEGER NOT NULL CHECK(monthOffset >= 0),
-          dayOffset         INTEGER NOT NULL CHECK(dayOffset >= 0),
+          maxDays           INTEGER NOT NULL CHECK(maxDays >= 0),
+          intervalType      TEXT NOT NULL,
+          fixedInterval     TEXT,
+          runningAmount     INTEGER,
+          runningUnit       TEXT,
+          customStartDate   INTEGER,
+          customStopDate    INTEGER,
           FOREIGN KEY (categoryId)
             REFERENCES categories (categoryId)
               ON DELETE CASCADE
@@ -129,22 +172,22 @@ class AppDatabase {
       );
 
       const { categoryId } = result[0];
+
       await this.execute(
         `INSERT INTO limits (
-          categoryId, name, value,
-          startOfYear, startOfMonth, yearOffset, monthOffset, dayOffset
-        )
-        VALUES (
-          ?, 'One Calendar Year', 61,
-          1, 0, 0, 0, 0
-        ), (
-          ?, '12-Month Rolling', 183,
-          0, 0, 0, 12, 0
-        ), (
-          ?, '36-Month Rolling', 270,
-          0, 0, 0, 36, 0
-        )`,
-        [categoryId, categoryId, categoryId]
+          categoryId, name, maxDays, intervalType, fixedInterval
+        ) VALUES
+          (?, 'Yearly', 61, 'fixed', 'yearly')`,
+        [categoryId]
+      );
+
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays, intervalType, runningAmount, runningUnit
+        ) VALUES
+          (?, '12-Month Running', 183, 'running', 12, 'month'),
+          (?, '36-Month Running', 270, 'running', 36, 'month')`,
+        [categoryId, categoryId]
       );
 
       await this.execute(`COMMIT`);
@@ -159,24 +202,23 @@ class AppDatabase {
     return await this.execute<AppCategory>(`SELECT * FROM categories`);
   }
 
-  async insertCategory(name: string, color: string) {
+  async insertCategory(category: Omit<AppCategory, "categoryId">) {
     await this.execute(
       `INSERT INTO categories (
         name, color
       ) VALUES (?, ?)`,
-      [name, color]
+      [category.name, category.color]
     );
   }
 
   async updateCategory(category: AppCategory) {
-    const { categoryId, name, color } = category;
     await this.execute(
       `UPDATE categories
       SET
         name = ?,
         color = ?
       WHERE categoryId = ?`,
-      [name, color, categoryId]
+      [category.name, category.color, category.categoryId]
     );
   }
 
@@ -193,22 +235,16 @@ class AppDatabase {
     );
   }
 
-  async insertEvent(
-    categoryId: number,
-    startDate: number,
-    stopDate: number,
-    note: string = ""
-  ) {
+  async insertEvent(event: Omit<AppEvent, "eventId">) {
     await this.execute(
       `INSERT INTO events (
         categoryId, startDate, stopDate, note
       ) VALUES (?, ?, ?, ?)`,
-      [categoryId, startDate, stopDate, note]
+      [event.categoryId, event.startDate, event.stopDate, event.note]
     );
   }
 
   async updateEvent(event: AppEvent) {
-    const { eventId, startDate, stopDate, note } = event;
     await this.execute(
       `UPDATE events
       SET 
@@ -216,7 +252,7 @@ class AppDatabase {
         stopDate = ?,
         note = ?
       WHERE eventId = ?`,
-      [startDate, stopDate, note, eventId]
+      [event.startDate, event.stopDate, event.note, event.eventId]
     );
   }
 
@@ -231,58 +267,104 @@ class AppDatabase {
     );
   }
 
-  async insertLimit(
-    categoryId: number,
-    name: string,
-    value: number,
-    startOfYear: number,
-    startOfMonth: number,
-    yearOffset: number,
-    monthOffset: number,
-    dayOffset: number
-  ) {
-    await this.execute(
-      `INSERT INTO limits (
-        categoryId, name, value,
-        startOfYear, startOfMonth,
-        yearOffset, monthOffset, dayOffset,
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        categoryId,
-        name,
-        value,
-        startOfYear,
-        startOfMonth,
-        yearOffset,
-        monthOffset,
-        dayOffset,
-      ]
-    );
+  async insertLimit(limit: AppLimitWithoutId) {
+    if (limit.intervalType === "fixed") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, fixedInterval
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.fixedInterval,
+        ]
+      );
+    }
+    if (limit.intervalType === "running") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, runningAmount, runningUnit
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.runningAmount,
+          limit.runningUnit,
+        ]
+      );
+    }
+    if (limit.intervalType === "custom") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, customStartDate, customStopDate
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.customStartDate,
+          limit.customStopDate,
+        ]
+      );
+    }
   }
 
   async updateLimit(limit: AppLimit) {
-    await this.execute(
-      `UPDATE limits
-      SET
-        name = ?,
-        value = ?,
-        startOfYear = ?,
-        startOfMonth = ?,
-        yearOffset = ?,
-        monthOffset = ?,
-        dayOffset = ?
-      WHERE limitId = ?`,
-      [
-        limit.name,
-        limit.value,
-        limit.startOfYear,
-        limit.startOfMonth,
-        limit.yearOffset,
-        limit.monthOffset,
-        limit.dayOffset,
-        limit.limitId,
-      ]
-    );
+    if (limit.intervalType === "fixed") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          fixedInterval = ?
+        WHERE limitId = ?`,
+        [limit.name, limit.maxDays, limit.fixedInterval, limit.limitId]
+      );
+    }
+    if (limit.intervalType === "running") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          runningAmount = ?,
+          runningUnit = ?
+        WHERE limitId = ?`,
+        [
+          limit.name,
+          limit.maxDays,
+          limit.runningAmount,
+          limit.runningUnit,
+          limit.limitId,
+        ]
+      );
+    }
+    if (limit.intervalType === "custom") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          customStartDate = ?,
+          customStopDate = ?
+        WHERE limitId = ?`,
+        [
+          limit.name,
+          limit.maxDays,
+          limit.customStartDate,
+          limit.customStopDate,
+          limit.limitId,
+        ]
+      );
+    }
   }
 
   async deleteLimit(limitId: number) {
