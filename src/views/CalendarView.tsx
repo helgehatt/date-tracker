@@ -36,7 +36,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   return (
     <View style={[styles.container, style]}>
       <BidirectionalFlatList
-        style={{ paddingHorizontal: 5 }}
+        style={styles.flatlist}
         data={visibleMonths}
         renderItem={({ item: { year, month } }) => (
           <MonthView year={year} month={month} />
@@ -57,14 +57,14 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <ActivityIndicator
             size="large"
             color={COLORS.text}
-            style={{ marginVertical: 50 }}
+            style={styles.spinner}
           />
         }
         ListFooterComponent={
           <ActivityIndicator
             size="large"
             color={COLORS.text}
-            style={{ marginVertical: 50 }}
+            style={styles.spinner}
           />
         }
       />
@@ -80,6 +80,8 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {},
+  flatlist: { paddingHorizontal: 5 },
+  spinner: { marginVertical: 50 },
 });
 
 export default CalendarView;

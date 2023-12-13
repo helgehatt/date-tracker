@@ -142,6 +142,8 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       <FlatList
         style={styles.flatlist}
         data={limits}
+        ListHeaderComponent={<View style={{ height: 10 }} />}
+        ListFooterComponent={<View style={{ height: 10 }} />}
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: limit }) => (
           <View style={styles.flatlistItem}>
@@ -374,8 +376,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
 const styles = StyleSheet.create({
   container: {},
   flatlist: {
-    margin: 10,
-    marginBottom: 15,
+    paddingHorizontal: 10,
   },
   flatlistSeparator: {
     marginVertical: 10,
