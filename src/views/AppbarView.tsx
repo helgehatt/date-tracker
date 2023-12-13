@@ -3,12 +3,12 @@ import { Pressable, SafeAreaView, StyleSheet, ViewStyle } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 
+type Pages = "category" | "calendar" | "limits" | "settings";
+
 interface IProps {
   style?: ViewStyle;
-  page: "category" | "calendar" | "stats" | "settings";
-  setPage: React.Dispatch<
-    React.SetStateAction<"category" | "calendar" | "stats" | "settings">
-  >;
+  page: Pages;
+  setPage: React.Dispatch<React.SetStateAction<Pages>>;
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
@@ -18,25 +18,25 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
         style={[styles.button, page === "calendar" && styles.buttonActive]}
         onPress={() => setPage("calendar")}
       >
-        <EvilIcons name="calendar" size={50} color="white" />
+        <EvilIcons name="calendar" size={50} color={COLORS.text} />
       </Pressable>
       <Pressable
         style={[styles.button, page === "category" && styles.buttonActive]}
         onPress={() => setPage("category")}
       >
-        <EvilIcons name="tag" size={50} color="white" />
+        <EvilIcons name="tag" size={50} color={COLORS.text} />
       </Pressable>
       <Pressable
-        style={[styles.button, page === "stats" && styles.buttonActive]}
-        onPress={() => setPage("stats")}
+        style={[styles.button, page === "limits" && styles.buttonActive]}
+        onPress={() => setPage("limits")}
       >
-        <EvilIcons name="chart" size={50} color="white" />
+        <EvilIcons name="chart" size={50} color={COLORS.text} />
       </Pressable>
       <Pressable
         style={[styles.button, page === "settings" && styles.buttonActive]}
         onPress={() => setPage("settings")}
       >
-        <EvilIcons name="gear" size={50} color="white" />
+        <EvilIcons name="gear" size={50} color={COLORS.text} />
       </Pressable>
     </SafeAreaView>
   );

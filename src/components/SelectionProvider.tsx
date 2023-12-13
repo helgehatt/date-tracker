@@ -66,8 +66,8 @@ function reducer(state: State, action: Action): State {
         return {
           ...state,
           selectMode: "edit",
-          selectedStartDate: event.start_date,
-          selectedStopDate: event.stop_date,
+          selectedStartDate: event.startDate,
+          selectedStopDate: event.stopDate,
           selectedEvent: event,
         };
       }

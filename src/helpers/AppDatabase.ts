@@ -1,43 +1,104 @@
 import * as SQLite from "expo-sqlite";
 
+export interface AppCategory {
+  categoryId: number;
+  name: string;
+  color: string;
+}
+
 export interface AppEvent {
-  event_id: number;
-  category_id: number;
-  start_date: number;
-  stop_date: number;
+  eventId: number;
+  categoryId: number;
+  startDate: number;
+  stopDate: number;
   note: string;
 }
 
-export interface AppTracker {
-  tracker_id: number;
-  category_id: number;
+export type AppLimit = {
+  limitId: number;
+} & AppLimitWithoutId;
+
+// Necessary since Omit<> doesn't work with intersection type
+export type AppLimitWithoutId = {
+  categoryId: number;
   name: string;
-  limit_: number;
-  y1_is_rel: boolean;
-  y1_offset: number;
-  m1_is_rel: boolean;
-  m1_offset: number;
-  d1_is_rel: boolean;
-  d1_offset: number;
-  y2_is_rel: boolean;
-  y2_offset: number;
-  m2_is_rel: boolean;
-  m2_offset: number;
-  d2_is_rel: boolean;
-  d2_offset: number;
+  maxDays: number;
+} & (AppLimitFixed | AppLimitRunning | AppLimitCustom);
+
+type AppLimitFixed = {
+  intervalType: "fixed";
+  fixedInterval: "yearly" | "monthly";
+  runningAmount: null;
+  runningUnit: null;
+  customStartDate: null;
+  customStopDate: null;
+};
+
+type AppLimitRunning = {
+  intervalType: "running";
+  fixedInterval: null;
+  runningAmount: number;
+  runningUnit: "year" | "month" | "day";
+  customStartDate: null;
+  customStopDate: null;
+};
+
+type AppLimitCustom = {
+  intervalType: "custom";
+  fixedInterval: null;
+  runningAmount: null;
+  runningUnit: null;
+  customStartDate: number;
+  customStopDate: number;
+};
+
+class Interval<T> {
+  constructor(private start: T, private stop: T) {}
+
+  contains(x: T) {
+    return this.start <= x && x <= this.stop;
+  }
+
+  filter(xs: T[]) {
+    return xs.filter((x) => this.contains(x));
+  }
 }
 
-export interface AppCategory {
-  category_id: number;
-  name: string;
-  color: string;
+export function getInterval(l: AppLimit, date: string | number) {
+  const { year, month, day } = new Date(date).getComponents();
+  if (l.intervalType === "fixed") {
+    if (l.fixedInterval === "yearly") {
+      return new Interval(Date.UTC(year, 0, 1), Date.UTC(year + 1, 0, 0));
+    }
+    if (l.fixedInterval === "monthly") {
+      return new Interval(
+        Date.UTC(year, month, 1),
+        Date.UTC(year, month + 1, 0)
+      );
+    }
+    throw new Error("Invalid AppLimit fixedInterval");
+  }
+  if (l.intervalType === "running") {
+    const yearOffset = l.runningUnit === "year" ? l.runningAmount : 0;
+    const monthOffset = l.runningUnit === "month" ? l.runningAmount : 0;
+    const dayOffset = l.runningUnit === "day" ? l.runningAmount : 0;
+    return new Interval(
+      Date.UTC(year - yearOffset, month - monthOffset, day - dayOffset),
+      Date.UTC(year, month, day)
+    );
+  }
+  if (l.intervalType === "custom") {
+    return new Interval(l.customStartDate, l.customStopDate);
+  }
+  throw new Error("Invalid AppLimit type");
 }
 
 class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.v1.0.3-beta.db");
+    this.db = SQLite.openDatabase("app.v1.0.9-beta.db");
+    this.execute(`PRAGMA foreign_keys = ON`);
   }
 
   execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
@@ -63,7 +124,7 @@ class AppDatabase {
 
       await this.execute(
         `CREATE TABLE categories (
-          category_id       INTEGER PRIMARY KEY,
+          categoryId        INTEGER PRIMARY KEY,
           name              TEXT NOT NULL,
           color             TEXT NOT NULL
         )`
@@ -71,160 +132,243 @@ class AppDatabase {
 
       await this.execute(
         `CREATE TABLE events (
-          event_id          INTEGER PRIMARY KEY,
-          category_id       INTEGER NOT NULL,
-          start_date        INTEGER NOT NULL,
-          stop_date         INTEGER NOT NULL,
+          eventId           INTEGER PRIMARY KEY,
+          categoryId        INTEGER NOT NULL,
+          startDate         INTEGER NOT NULL CHECK(startDate >= 0),
+          stopDate          INTEGER NOT NULL CHECK(stopDate >= 0),
           note              TEXT NOT NULL,
-          FOREIGN KEY (category_id)
-            REFERENCES categories (category_id)
+          FOREIGN KEY (categoryId)
+            REFERENCES categories (categoryId)
               ON DELETE CASCADE
               ON UPDATE NO ACTION
         )`
       );
 
       await this.execute(
-        `CREATE TABLE trackers (
-          tracker_id        INTEGER PRIMARY KEY,
-          category_id       INTEGER NOT NULL,
+        `CREATE TABLE limits (
+          limitId           INTEGER PRIMARY KEY,
+          categoryId        INTEGER NOT NULL,
           name              TEXT NOT NULL,
-          limit_            INTEGER NOT NULL,
-          y1_is_rel         INTEGER NOT NULL,
-          y1_offset         INTEGER NOT NULL,
-          m1_is_rel         INTEGER NOT NULL,
-          m1_offset         INTEGER NOT NULL,
-          d1_is_rel         INTEGER NOT NULL,
-          d1_offset         INTEGER NOT NULL,
-          y2_is_rel         INTEGER NOT NULL,
-          y2_offset         INTEGER NOT NULL,
-          m2_is_rel         INTEGER NOT NULL,
-          m2_offset         INTEGER NOT NULL,
-          d2_is_rel         INTEGER NOT NULL,
-          d2_offset         INTEGER NOT NULL,
-          FOREIGN KEY (category_id)
-            REFERENCES categories (category_id)
+          maxDays           INTEGER NOT NULL CHECK(maxDays >= 0),
+          intervalType      TEXT NOT NULL,
+          fixedInterval     TEXT,
+          runningAmount     INTEGER,
+          runningUnit       TEXT,
+          customStartDate   INTEGER,
+          customStopDate    INTEGER,
+          FOREIGN KEY (categoryId)
+            REFERENCES categories (categoryId)
               ON DELETE CASCADE
               ON UPDATE NO ACTION
         )`
       );
 
       await this.execute(
-        `INSERT INTO categories (name, color) values ("Norge", "#FF4C29")`
+        `INSERT INTO categories (name, color) VALUES ('Norge', '#FF4C29')`
       );
 
       const result = await this.execute<AppCategory>(
         `SELECT * FROM categories`
       );
 
-      const { category_id } = result[0];
+      const { categoryId } = result[0];
+
       await this.execute(
-        `INSERT INTO trackers (
-          category_id, name, limit_,
-          y1_is_rel, y1_offset, m1_is_rel, m1_offset, d1_is_rel, d1_offset,
-          y2_is_rel, y2_offset, m2_is_rel, m2_offset, d2_is_rel, d2_offset
-        )
-        VALUES (
-          ?, "1 Y", 61,
-          1, 0, 0, 0, 0, 1,
-          1, 1, 0, 0, 0, 0
-        ), (
-          ?, "12 M", 183,
-          1, 0, 1, -12, 1, 1,
-          1, 0, 1, 0, 1, 0
-        ), (
-          ?, "36 M", 270,
-          1, 0, 1, -36, 1, 1,
-          1, 0, 1, 0, 1, 0
-        )`,
-        [category_id, category_id, category_id]
+        `INSERT INTO limits (
+          categoryId, name, maxDays, intervalType, fixedInterval
+        ) VALUES
+          (?, 'Yearly', 61, 'fixed', 'yearly')`,
+        [categoryId]
       );
 
-      this.execute("COMMIT");
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays, intervalType, runningAmount, runningUnit
+        ) VALUES
+          (?, '12-Month Running', 183, 'running', 12, 'month'),
+          (?, '36-Month Running', 270, 'running', 36, 'month')`,
+        [categoryId, categoryId]
+      );
+
+      await this.execute(`COMMIT`);
       return result;
     } catch (error) {
-      this.execute("ROLLBACK");
+      await this.execute(`ROLLBACK`);
       throw error;
     }
   }
 
-  loadCategories() {
-    return this.execute<AppCategory>(`SELECT * FROM categories`);
+  async loadCategories() {
+    return await this.execute<AppCategory>(`SELECT * FROM categories`);
   }
 
-  loadEvents(category_id: number) {
-    return this.execute<AppEvent>(
-      `SELECT * FROM events WHERE category_id = ?`,
-      [category_id]
+  async insertCategory(category: Omit<AppCategory, "categoryId">) {
+    await this.execute(
+      `INSERT INTO categories (
+        name, color
+      ) VALUES (?, ?)`,
+      [category.name, category.color]
     );
   }
 
-  async insertCategory(name: string, color: string) {
-    await this.execute(`INSERT INTO categories (name, color) values (?, ?)`, [
-      name,
-      color,
-    ]);
-    return this.loadCategories();
-  }
-
   async updateCategory(category: AppCategory) {
-    const { category_id, name, color } = category;
     await this.execute(
       `UPDATE categories
       SET
         name = ?,
         color = ?
-      WHERE category_id = ?`,
-      [name, color, category_id]
+      WHERE categoryId = ?`,
+      [category.name, category.color, category.categoryId]
     );
-    return this.loadCategories();
   }
 
-  async deleteCategory(category_id: number) {
-    await this.execute(`DELETE FROM categories WHERE category_id = ?`, [
-      category_id,
+  async deleteCategory(categoryId: number) {
+    await this.execute(`DELETE FROM categories WHERE categoryId = ?`, [
+      categoryId,
     ]);
-    return this.loadCategories();
   }
 
-  async insertEvent(
-    category_id: number,
-    start_date: number,
-    stop_date: number,
-    note: string = ""
-  ) {
-    await this.execute(
-      `INSERT INTO events (category_id, start_date, stop_date, note) values (?, ?, ?, ?)`,
-      [category_id, start_date, stop_date, note]
+  async loadEvents(categoryId: number) {
+    return await this.execute<AppEvent>(
+      `SELECT * FROM events WHERE categoryId = ?`,
+      [categoryId]
     );
-    return this.loadEvents(category_id);
+  }
+
+  async insertEvent(event: Omit<AppEvent, "eventId">) {
+    await this.execute(
+      `INSERT INTO events (
+        categoryId, startDate, stopDate, note
+      ) VALUES (?, ?, ?, ?)`,
+      [event.categoryId, event.startDate, event.stopDate, event.note]
+    );
   }
 
   async updateEvent(event: AppEvent) {
-    const { event_id, category_id, start_date, stop_date, note } = event;
     await this.execute(
       `UPDATE events
       SET 
-        start_date = ?,
-        stop_date = ?,
+        startDate = ?,
+        stopDate = ?,
         note = ?
-      WHERE event_id = ?`,
-      [start_date, stop_date, note, event_id]
+      WHERE eventId = ?`,
+      [event.startDate, event.stopDate, event.note, event.eventId]
     );
-    return this.loadEvents(category_id);
   }
 
-  async deleteEvent(event: AppEvent) {
-    await this.execute(`DELETE FROM events WHERE event_id = ?`, [
-      event.event_id,
-    ]);
-    return this.loadEvents(event.category_id);
+  async deleteEvent(eventId: number) {
+    await this.execute(`DELETE FROM events WHERE eventId = ?`, [eventId]);
   }
 
-  loadTrackers(category_id: number) {
-    return this.execute<AppTracker>(
-      `SELECT * FROM trackers WHERE category_id = ?`,
-      [category_id]
+  async loadLimits(categoryId: number) {
+    return await this.execute<AppLimit>(
+      `SELECT * FROM limits WHERE categoryId = ?`,
+      [categoryId]
     );
+  }
+
+  async insertLimit(limit: AppLimitWithoutId) {
+    if (limit.intervalType === "fixed") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, fixedInterval
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.fixedInterval,
+        ]
+      );
+    }
+    if (limit.intervalType === "running") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, runningAmount, runningUnit
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.runningAmount,
+          limit.runningUnit,
+        ]
+      );
+    }
+    if (limit.intervalType === "custom") {
+      await this.execute(
+        `INSERT INTO limits (
+          categoryId, name, maxDays,
+          intervalType, customStartDate, customStopDate
+        ) VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          limit.categoryId,
+          limit.name,
+          limit.maxDays,
+          limit.intervalType,
+          limit.customStartDate,
+          limit.customStopDate,
+        ]
+      );
+    }
+  }
+
+  async updateLimit(limit: AppLimit) {
+    if (limit.intervalType === "fixed") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          fixedInterval = ?
+        WHERE limitId = ?`,
+        [limit.name, limit.maxDays, limit.fixedInterval, limit.limitId]
+      );
+    }
+    if (limit.intervalType === "running") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          runningAmount = ?,
+          runningUnit = ?
+        WHERE limitId = ?`,
+        [
+          limit.name,
+          limit.maxDays,
+          limit.runningAmount,
+          limit.runningUnit,
+          limit.limitId,
+        ]
+      );
+    }
+    if (limit.intervalType === "custom") {
+      await this.execute(
+        `UPDATE limits
+        SET
+          name = ?,
+          maxDays = ?,
+          customStartDate = ?,
+          customStopDate = ?
+        WHERE limitId = ?`,
+        [
+          limit.name,
+          limit.maxDays,
+          limit.customStartDate,
+          limit.customStopDate,
+          limit.limitId,
+        ]
+      );
+    }
+  }
+
+  async deleteLimit(limitId: number) {
+    await this.execute(`DELETE FROM limits WHERE limitId = ?`, [limitId]);
   }
 }
 

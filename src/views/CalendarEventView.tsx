@@ -20,7 +20,7 @@ interface IProps {
 }
 
 const CalendarEventView: React.FC<IProps> = ({ style }) => {
-  const { addEvent, editEvent, deleteEvent } =
+  const { selectedCategory, addEvent, editEvent, deleteEvent } =
     React.useContext(CategoryContext);
   const {
     selectMode,
@@ -34,15 +34,16 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
 
   const [startDate, setStartDate] = React.useState("");
   const [stopDate, setStopDate] = React.useState("");
+  const [note, setNote] = React.useState("");
 
   const isValid = !!(selectedStartDate && selectedStopDate);
 
   const onChangeStartDate = React.useCallback((text: string) => {
-    return setStartDate((prev) => formatDate(prev, text));
+    return setStartDate((prev) => Date.onChangeFormat(prev, text));
   }, []);
 
   const onChangeStopDate = React.useCallback((text: string) => {
-    return setStopDate((prev) => formatDate(prev, text));
+    return setStopDate((prev) => Date.onChangeFormat(prev, text));
   }, []);
 
   const onClose = React.useCallback(() => {
@@ -51,8 +52,13 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
   }, [toggleSelectMode]);
 
   const onPressAdd = () => {
-    if (isValid) {
-      addEvent(selectedStartDate, selectedStopDate);
+    if (isValid && selectedCategory) {
+      addEvent({
+        categoryId: selectedCategory.categoryId,
+        startDate: selectedStartDate,
+        stopDate: selectedStopDate,
+        note: note,
+      });
       onClose();
     }
   };
@@ -61,8 +67,9 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
     if (selectedEvent && isValid) {
       editEvent({
         ...selectedEvent,
-        start_date: selectedStartDate,
-        stop_date: selectedStopDate,
+        startDate: selectedStartDate,
+        stopDate: selectedStopDate,
+        note: note,
       });
       onClose();
     }
@@ -70,7 +77,8 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
 
   const onPressDelete = () => {
     if (selectedEvent) {
-      deleteEvent(selectedEvent);
+      const { eventId, categoryId } = selectedEvent;
+      deleteEvent(eventId, categoryId);
       onClose();
     }
   };
@@ -108,11 +116,11 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
   return (
     <BottomSheet
       visible={!!selectMode}
-      height={300}
+      height={264}
       closeOnSwipeDown={true}
       closeOnSwipeTrigger={onClose}
       customStyles={{
-        container: { marginBottom: -100, backgroundColor: COLORS.tertiary },
+        container: { backgroundColor: COLORS.tertiary },
       }}
     >
       <View style={[STYLES.sheet.container, styles.container, style]}>
@@ -143,6 +151,14 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
           />
         </View>
         <View style={STYLES.sheet.row}>
+          <TextInput
+            style={STYLES.sheet.input}
+            value={note}
+            onChangeText={setNote}
+            placeholder="Write a small note..."
+          />
+        </View>
+        <View style={STYLES.sheet.row}>
           <MyButton
             style={STYLES.sheet.button}
             title="Confirm"
@@ -158,19 +174,5 @@ const CalendarEventView: React.FC<IProps> = ({ style }) => {
 const styles = StyleSheet.create({
   container: {},
 });
-
-function formatDate(prev: string | undefined, date: string) {
-  if (prev?.endsWith("-") && date.length < prev.length) {
-    return date.slice(0, date.length - 1);
-  }
-  date = date.replaceAll(/\D/g, "");
-  if (date.length >= 6) {
-    return date.slice(0, 4) + "-" + date.slice(4, 6) + "-" + date.slice(6, 8);
-  }
-  if (date.length >= 4) {
-    return date.slice(0, 4) + "-" + date.slice(4, 6);
-  }
-  return date;
-}
 
 export default CalendarEventView;

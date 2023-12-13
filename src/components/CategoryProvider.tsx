@@ -2,44 +2,57 @@ import React from "react";
 import AppDatabase, {
   AppCategory,
   AppEvent,
-  AppTracker,
+  AppLimit,
+  AppLimitWithoutId,
+  getInterval,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
 
 const db = new AppDatabase();
 
+type EventCount = { date: string; value: number; label?: string };
+
 type State = {
+  selectedCategory: AppCategory | undefined;
   categories: AppCategory[];
-  categoryIds: Set<number>;
   events: AppEvent[];
   eventDates: Record<number, AppEvent>;
-  trackers: AppTracker[];
-  selectedCategory: AppCategory | undefined;
+  limits: AppLimit[];
+  eventCountsByLimit: Record<number, EventCount[]>;
 };
 
 type Action =
+  | {
+      type: "INITIAL_LOAD";
+      payload: { categories: AppCategory[]; categoryId: number | undefined };
+    }
   | { type: "SELECT_CATEGORY"; payload: { categoryId: number | undefined } }
+  | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
+  | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
-  | { type: "LOAD_TRACKERS"; payload: { trackers: AppTracker[] } };
+  | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
   selectCategory(id: number | undefined): void;
-  addCategory(name: string, color: string): void;
+  addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
-  deleteCategory(id: number): void;
-  addEvent(start: number, stop: number): void;
+  deleteCategory(categoryId: number): void;
+  addEvent(event: Omit<AppEvent, "eventId">): void;
   editEvent(event: AppEvent): void;
-  deleteEvent(event: AppEvent): void;
+  deleteEvent(eventId: number, categoryId: number): void;
+  addLimit(limit: Omit<AppLimit, "limitId">): void;
+  editLimit(limit: AppLimit): void;
+  deleteLimit(limitId: number, categoryId: number): void;
 };
 
 const initialState: State = {
   categories: [],
-  categoryIds: new Set(),
   selectedCategory: undefined,
   events: [],
   eventDates: {},
-  trackers: [],
+  limits: [],
+  eventCountsByLimit: {},
 };
 
 export const CategoryContext = React.createContext<Context>({
@@ -51,13 +64,16 @@ export const CategoryContext = React.createContext<Context>({
   addEvent: () => undefined,
   editEvent: () => undefined,
   deleteEvent: () => undefined,
+  addLimit: () => undefined,
+  editLimit: () => undefined,
+  deleteLimit: () => undefined,
 });
 
 function getEventDates(events: AppEvent[]) {
   const obj = {} as Record<number, AppEvent>;
 
   for (const event of events) {
-    for (const date of Date.range(event.start_date, event.stop_date)) {
+    for (const date of Date.range(event.startDate, event.stopDate)) {
       obj[date] = event;
     }
   }
@@ -65,35 +81,80 @@ function getEventDates(events: AppEvent[]) {
   return obj;
 }
 
+function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
+  const eventCountsByLimit: Record<number, EventCount[]> = {};
+
+  for (const l of limits) {
+    eventCountsByLimit[l.limitId] = [];
+
+    for (const date of dates) {
+      const interval = getInterval(l, date);
+
+      const value = interval.filter(dates).length;
+
+      eventCountsByLimit[l.limitId].push({
+        date: new Date(date).toISODateString(),
+        value,
+      });
+    }
+  }
+
+  return eventCountsByLimit;
+}
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "INITIAL_LOAD": {
+      const { categories, categoryId } = action.payload;
+      if (categoryId === undefined && categories.length) {
+        return { ...state, categories, selectedCategory: categories[0] };
+      }
+      const selectedCategory = categories.find(
+        (category) => category.categoryId == categoryId
+      );
+      return { ...state, categories, selectedCategory };
+    }
     case "SELECT_CATEGORY": {
       const { categoryId } = action.payload;
       if (categoryId === undefined) {
-        return {
-          ...state,
-          selectedCategory: undefined,
-          events: [],
-          eventDates: {},
-          trackers: [],
-        };
+        return { ...initialState, categories: state.categories };
       }
       const selectedCategory = state.categories.find(
-        (category) => category.category_id == categoryId
+        (category) => category.categoryId == categoryId
       );
       return { ...state, selectedCategory };
     }
+    case "EDIT_CATEGORY": {
+      const { categoryId } = action.payload;
+      // Force state update if the selected category has changed
+      if (state.selectedCategory?.categoryId === categoryId) {
+        return { ...state };
+      }
+      return state;
+    }
+    case "DELETE_CATEGORY": {
+      const { categoryId } = action.payload;
+      if (state.selectedCategory?.categoryId === categoryId) {
+        return { ...initialState, categories: state.categories };
+      }
+      return state;
+    }
     case "LOAD_CATEGORIES": {
       const { categories } = action.payload;
-      const categoryIds = new Set(categories.map((x) => x.category_id));
-      return { ...state, categories, categoryIds };
+      return { ...state, categories };
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      return { ...state, events, eventDates: getEventDates(events) };
+      const eventDates = getEventDates(events);
+      const datetimes = Object.keys(eventDates).map(Number);
+      const eventCountsByLimit = getEventCountsByLimit(datetimes, state.limits);
+      return { ...state, events, eventDates, eventCountsByLimit };
     }
-    case "LOAD_TRACKERS": {
-      return { ...state, trackers: action.payload.trackers };
+    case "LOAD_LIMITS": {
+      const { limits } = action.payload;
+      const datetimes = Object.keys(state.eventDates).map(Number);
+      const eventCountsByLimit = getEventCountsByLimit(datetimes, limits);
+      return { ...state, limits, eventCountsByLimit };
     }
     default:
       return state;
@@ -116,100 +177,129 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "LOAD_EVENTS", payload: { events } });
   }, []);
 
-  const setTrackers = React.useCallback((trackers: AppTracker[]) => {
-    dispatch({ type: "LOAD_TRACKERS", payload: { trackers } });
+  const setLimits = React.useCallback((limits: AppLimit[]) => {
+    dispatch({ type: "LOAD_LIMITS", payload: { limits } });
   }, []);
 
   const addCategory = React.useCallback(
-    (name: string, color: string) => {
-      db.insertCategory(name, color).then(setCategories);
+    (category: Omit<AppCategory, "categoryId">) => {
+      db.insertCategory(category)
+        .then(() => db.loadCategories())
+        .then(setCategories);
     },
     [setCategories]
   );
 
   const editCategory = React.useCallback(
     (category: AppCategory) => {
-      db.updateCategory(category).then((categories) => {
-        setCategories(categories);
-        if (state.selectedCategory?.category_id === category.category_id) {
-          selectCategory(category.category_id);
-        }
-      });
+      const { categoryId } = category;
+      db.updateCategory(category)
+        .then(() => db.loadCategories())
+        .then(setCategories)
+        .then(() =>
+          dispatch({ type: "EDIT_CATEGORY", payload: { categoryId } })
+        );
     },
-    [setCategories, selectCategory, state.selectedCategory?.category_id]
+    [setCategories]
   );
 
   const deleteCategory = React.useCallback(
     (categoryId: number) => {
-      db.deleteCategory(categoryId).then((categories) => {
-        setCategories(categories);
-        if (state.selectedCategory?.category_id === categoryId) {
-          selectCategory(undefined);
-        }
-      });
+      db.deleteCategory(categoryId)
+        .then(() => db.loadCategories())
+        .then(setCategories)
+        .then(() =>
+          dispatch({ type: "DELETE_CATEGORY", payload: { categoryId } })
+        );
     },
-    [setCategories, selectCategory, state.selectedCategory?.category_id]
+    [setCategories]
   );
 
   const addEvent = React.useCallback(
-    (start: number, stop: number) => {
-      if (state.selectedCategory) {
-        const { category_id } = state.selectedCategory;
-        db.insertEvent(category_id, start, stop).then(setEvents);
-      }
+    (event: Omit<AppEvent, "eventId">) => {
+      db.insertEvent(event).then(() =>
+        db.loadEvents(event.categoryId).then(setEvents)
+      );
     },
-    [setEvents, state.selectedCategory]
+    [setEvents]
   );
 
   const editEvent = React.useCallback(
     (event: AppEvent) => {
-      db.updateEvent(event).then(setEvents);
+      db.updateEvent(event).then(() =>
+        db.loadEvents(event.categoryId).then(setEvents)
+      );
     },
     [setEvents]
   );
 
   const deleteEvent = React.useCallback(
-    (event: AppEvent) => {
-      db.deleteEvent(event).then(setEvents);
+    (eventId: number, categoryId: number) => {
+      db.deleteEvent(eventId).then(() =>
+        db.loadEvents(categoryId).then(setEvents)
+      );
     },
     [setEvents]
   );
 
-  React.useEffect(() => {
-    AppSettings.getHasInitialized().then((hasInitialized) => {
-      if (!hasInitialized) {
-        AppSettings.setHasInitialized(true).then(() => {
-          console.log("DB: Initializing...");
-          db.init()
-            .then(setCategories)
-            .then(() => console.log("DB: Initialized"))
-            .catch((error) => {
-              console.error(`DB: ${error.message}`);
-              AppSettings.setHasInitialized(false);
-            });
-        });
-      } else {
-        db.loadCategories().then(setCategories);
-      }
-    });
-  }, [setCategories]);
+  const addLimit = React.useCallback(
+    (limit: AppLimitWithoutId) => {
+      db.insertLimit(limit).then(() =>
+        db.loadLimits(limit.categoryId).then(setLimits)
+      );
+    },
+    [setLimits]
+  );
+
+  const editLimit = React.useCallback(
+    (limit: AppLimit) => {
+      db.updateLimit(limit).then(() =>
+        db.loadLimits(limit.categoryId).then(setLimits)
+      );
+    },
+    [setLimits]
+  );
+
+  const deleteLimit = React.useCallback(
+    (limitId: number, categoryId: number) => {
+      db.deleteLimit(limitId).then(() =>
+        db.loadLimits(categoryId).then(setLimits)
+      );
+    },
+    [setLimits]
+  );
 
   React.useEffect(() => {
-    if (state.selectedCategory === undefined && state.categories.length) {
-      AppSettings.getSelectedCategory().then((selectedCategory) => {
-        if (selectedCategory) {
-          selectCategory(selectedCategory);
+    AppSettings.getHasInitialized()
+      .then(async (hasInitialized) => {
+        if (!hasInitialized) {
+          await AppSettings.setHasInitialized(true);
+          console.log("DB: Initializing...");
+          try {
+            const categories = await db.init();
+            console.log("DB: Initialized");
+            return categories;
+          } catch (error) {
+            console.error(`DB: ${JSON.stringify(error)}`);
+            await AppSettings.setHasInitialized(false);
+            return [];
+          }
+        } else {
+          return await db.loadCategories();
         }
+      })
+      .then(async (categories) => {
+        let categoryId = await AppSettings.getSelectedCategory();
+        dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
       });
-    }
-  }, [selectCategory, state.selectedCategory, state.categories]);
+  }, []);
 
   React.useEffect(() => {
     if (state.selectedCategory) {
-      db.loadEvents(state.selectedCategory.category_id).then(setEvents);
-      db.loadTrackers(state.selectedCategory.category_id).then(setTrackers);
+      db.loadEvents(state.selectedCategory.categoryId).then(setEvents);
+      db.loadLimits(state.selectedCategory.categoryId).then(setLimits);
     }
-  }, [setEvents, setTrackers, state.selectedCategory]);
+  }, [setEvents, setLimits, state.selectedCategory]);
 
   return (
     <CategoryContext.Provider
@@ -222,6 +312,9 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         addEvent,
         editEvent,
         deleteEvent,
+        addLimit,
+        editLimit,
+        deleteLimit,
       }}
     >
       {children}
