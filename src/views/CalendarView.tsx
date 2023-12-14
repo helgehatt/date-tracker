@@ -14,38 +14,152 @@ import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
 import MonthGenerator from "../helpers/MonthGenerator";
 import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
-import { SelectionContext } from "../components/SelectionProvider";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { CategoryContext } from "../components/CategoryProvider";
+import { AppEvent } from "../helpers/AppDatabase";
+import SelectionContext from "../helpers/SelectionContext";
 
 interface IProps {
   style?: ViewStyle;
 }
 
-const CalendarView: React.FC<IProps> = ({ style }) => {
-  const { selectedCategory, addEvent, editEvent, deleteEvent } =
-    React.useContext(CategoryContext);
-  const {
-    selectMode,
-    selectedStartDate,
-    selectedStopDate,
-    selectedEvent,
-    toggleSelectMode,
-    setSelectedStartDate,
-    setSelectedStopDate,
-  } = React.useContext(SelectionContext);
+type State = {
+  mode: "view" | "add" | "edit";
+  eventsByDate: Record<number, AppEvent>;
+  selectedEvent: AppEvent | null;
+  selectedStartDate: number;
+  selectedStopDate: number;
+  noteInput: string;
+  startDateInput: string;
+  stopDateInput: string;
+};
 
+type Action =
+  | { type: "RESET" }
+  | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
+  | { type: "ON_CHANGE"; payload: { key: keyof State; value: string } }
+  | { type: "SELECT_DATE"; payload: { datetime: number } };
+
+const initialState: State = {
+  mode: "view",
+  eventsByDate: {},
+  selectedEvent: null,
+  selectedStartDate: NaN,
+  selectedStopDate: NaN,
+  noteInput: "",
+  startDateInput: "",
+  stopDateInput: "",
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "RESET": {
+      return { ...initialState, eventsByDate: state.eventsByDate };
+    }
+    case "UPDATE_EVENTS": {
+      const eventsByDate: Record<number, AppEvent> = {};
+
+      for (const event of action.payload.events) {
+        for (const date of Date.range(event.startDate, event.stopDate)) {
+          eventsByDate[date] = event;
+        }
+      }
+
+      return { ...state, eventsByDate };
+    }
+    case "ON_CHANGE": {
+      const { key } = action.payload;
+      let { value } = action.payload;
+
+      if (key === "startDateInput" || key === "stopDateInput") {
+        value = Date.onChangeFormat(state[key], value);
+
+        if (value.length == 10) {
+          const datetime = Date.parse(value);
+
+          if (datetime) {
+            if (key === "startDateInput") state.selectedStartDate = datetime;
+            if (key === "stopDateInput") state.selectedStopDate = datetime;
+          }
+        }
+      }
+
+      return { ...state, [key]: value };
+    }
+    case "SELECT_DATE": {
+      const { datetime } = action.payload;
+
+      if (state.mode === "view") {
+        if (datetime in state.eventsByDate) {
+          const event = state.eventsByDate[datetime];
+          return {
+            ...state,
+            mode: "edit",
+            selectedEvent: event,
+            selectedStartDate: event.startDate,
+            selectedStopDate: event.stopDate,
+            noteInput: event.note,
+            startDateInput: new Date(event.startDate).toISODateString(),
+            stopDateInput: new Date(event.stopDate).toISODateString(),
+          };
+        }
+        return state;
+      }
+
+      // Select stop date if start date is already selected
+      // and the selected date is after the start date
+      if (
+        state.selectedStartDate &&
+        !state.selectedStopDate &&
+        state.selectedStartDate <= datetime
+      ) {
+        return {
+          ...state,
+          selectedStopDate: datetime,
+          stopDateInput: new Date(datetime).toISODateString(),
+        };
+      }
+
+      // Otherwise select start date
+      return {
+        ...state,
+        selectedStartDate: datetime,
+        selectedStopDate: NaN,
+        startDateInput: new Date(datetime).toISODateString(),
+        stopDateInput: "",
+      };
+    }
+    default:
+      return state;
+  }
+}
+
+const CalendarView: React.FC<IProps> = ({ style }) => {
+  const { selectedCategory, events, addEvent, editEvent, deleteEvent } =
+    React.useContext(CategoryContext);
+
+  const [state, dispatch] = React.useReducer(reducer, initialState);
   const [monthGenerator] = React.useState(() => new MonthGenerator());
   const [visibleMonths, setVisibleMonths] = React.useState(() =>
     monthGenerator.init(5, 5)
   );
 
-  const [startDate, setStartDate] = React.useState("");
-  const [stopDate, setStopDate] = React.useState("");
-  const [note, setNote] = React.useState("");
+  const isValid =
+    state.selectedStartDate > 0 &&
+    state.selectedStopDate > 0 &&
+    state.selectedStartDate <= state.selectedStopDate;
 
-  const isValid = !!(selectedStartDate && selectedStopDate);
+  const onChange = React.useCallback(
+    (key: keyof State) => (value: string) => {
+      dispatch({ type: "ON_CHANGE", payload: { key, value } });
+    },
+    []
+  );
+
+  const selectDate = React.useCallback((datetime: number) => {
+    dispatch({ type: "SELECT_DATE", payload: { datetime } });
+  }, []);
 
   const showPreviousMonth = React.useCallback(() => {
     setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
@@ -55,125 +169,98 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     setVisibleMonths((months) => [...months, monthGenerator.next()]);
   }, [monthGenerator]);
 
-  const onChangeStartDate = React.useCallback((text: string) => {
-    return setStartDate((prev) => Date.onChangeFormat(prev, text));
-  }, []);
-
-  const onChangeStopDate = React.useCallback((text: string) => {
-    return setStopDate((prev) => Date.onChangeFormat(prev, text));
-  }, []);
-
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    toggleSelectMode();
-  }, [toggleSelectMode]);
+    dispatch({ type: "RESET" });
+  }, []);
 
   const onPressAdd = () => {
     if (isValid && selectedCategory) {
       addEvent({
         categoryId: selectedCategory.categoryId,
-        startDate: selectedStartDate,
-        stopDate: selectedStopDate,
-        note: note,
+        startDate: state.selectedStartDate,
+        stopDate: state.selectedStopDate,
+        note: state.noteInput,
       });
-      onClose();
     }
   };
 
   const onPressEdit = () => {
-    if (selectedEvent && isValid) {
+    if (isValid && state.selectedEvent) {
       editEvent({
-        ...selectedEvent,
-        startDate: selectedStartDate,
-        stopDate: selectedStopDate,
-        note: note,
+        ...state.selectedEvent,
+        startDate: state.selectedStartDate,
+        stopDate: state.selectedStopDate,
+        note: state.noteInput,
       });
-      onClose();
     }
   };
 
   const onPressDelete = () => {
-    if (selectedEvent) {
-      const { eventId, categoryId } = selectedEvent;
-      deleteEvent(eventId, categoryId);
-      onClose();
+    if (state.selectedEvent) {
+      deleteEvent(state.selectedEvent.eventId, state.selectedEvent.categoryId);
     }
   };
 
   React.useEffect(() => {
-    if (selectedStartDate === undefined) {
-      setStartDate("");
-    } else {
-      setStartDate(new Date(selectedStartDate).toISODateString());
-    }
-  }, [selectedStartDate]);
-
-  React.useEffect(() => {
-    if (selectedStopDate === undefined) {
-      setStopDate("");
-    } else {
-      setStopDate(new Date(selectedStopDate).toISODateString());
-    }
-  }, [selectedStopDate]);
-
-  React.useEffect(() => {
-    if (startDate.length == 10) {
-      const datetime = Date.parse(startDate);
-      if (datetime) setSelectedStartDate(datetime);
-    }
-  }, [startDate, setSelectedStartDate]);
-
-  React.useEffect(() => {
-    if (stopDate.length == 10) {
-      const datetime = Date.parse(stopDate);
-      if (datetime) setSelectedStopDate(datetime);
-    }
-  }, [stopDate, setSelectedStopDate]);
+    dispatch({ type: "UPDATE_EVENTS", payload: { events } });
+    onClose();
+  }, [events]);
 
   return (
     <View style={[styles.container, style]}>
-      <BidirectionalFlatList
-        style={styles.flatlist}
-        data={visibleMonths}
-        renderItem={({ item: { year, month } }) => (
-          <MonthView year={year} month={month} />
-        )}
-        getItemLayout={(_, index) => ({
-          length: MONTH_VIEW_HEIGHT,
-          offset: MONTH_VIEW_HEIGHT * index,
-          index,
-        })}
-        initialScrollIndex={5}
-        keyExtractor={({ year, month }) => `${year}.${month}`}
-        onStartReached={showPreviousMonth}
-        onStartReachedThreshold={1000}
-        onEndReached={showNextMonth}
-        onEndReachedThreshold={1000}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <ActivityIndicator
-            size="large"
-            color={COLORS.text}
-            style={styles.spinner}
-          />
-        }
-        ListFooterComponent={
-          <ActivityIndicator
-            size="large"
-            color={COLORS.text}
-            style={styles.spinner}
-          />
-        }
-      />
+      <SelectionContext.Provider
+        value={{
+          eventsByDate: state.eventsByDate,
+          selectedEvent: state.selectedEvent,
+          selectedStartDate: state.selectedStartDate,
+          selectedStopDate: state.selectedStopDate,
+          selectDate,
+        }}
+      >
+        <BidirectionalFlatList
+          style={styles.flatlist}
+          data={visibleMonths}
+          renderItem={({ item: { year, month } }) => (
+            <MonthView year={year} month={month} />
+          )}
+          getItemLayout={(_, index) => ({
+            length: MONTH_VIEW_HEIGHT,
+            offset: MONTH_VIEW_HEIGHT * index,
+            index,
+          })}
+          initialScrollIndex={5}
+          keyExtractor={({ year, month }) => `${year}.${month}`}
+          onStartReached={showPreviousMonth}
+          onStartReachedThreshold={1000}
+          onEndReached={showNextMonth}
+          onEndReachedThreshold={1000}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <ActivityIndicator
+              size="large"
+              color={COLORS.text}
+              style={styles.spinner}
+            />
+          }
+          ListFooterComponent={
+            <ActivityIndicator
+              size="large"
+              color={COLORS.text}
+              style={styles.spinner}
+            />
+          }
+        />
+      </SelectionContext.Provider>
 
       <View style={STYLES.sheet.opener}>
-        <Pressable onPress={toggleSelectMode}>
+        <Pressable onPress={() => onChange("mode")("add")}>
           <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
       </View>
 
       <BottomSheet
-        visible={!!selectMode}
+        visible={state.mode !== "view"}
         height={264}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
@@ -184,9 +271,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         <View style={[STYLES.sheet.container]}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
             <Text style={STYLES.sheet.headerText}>
-              {selectMode === "edit" ? "Edit event" : "Add event"}
+              {state.mode === "edit" ? "Edit event" : "Add event"}
             </Text>
-            {selectMode === "edit" && (
+            {state.mode === "edit" && (
               <Pressable onPress={onPressDelete}>
                 <EvilIcons name="trash" size={30} color={COLORS.text} />
               </Pressable>
@@ -195,15 +282,15 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={startDate}
-              onChangeText={onChangeStartDate}
+              value={state.startDateInput}
+              onChangeText={onChange("startDateInput")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
             <TextInput
               style={STYLES.sheet.input}
-              value={stopDate}
-              onChangeText={onChangeStopDate}
+              value={state.stopDateInput}
+              onChangeText={onChange("stopDateInput")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
@@ -211,8 +298,8 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={note}
-              onChangeText={setNote}
+              value={state.noteInput}
+              onChangeText={onChange("noteInput")}
               placeholder="Write a small note..."
             />
           </View>
@@ -220,7 +307,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             <MyButton
               style={STYLES.sheet.button}
               title="Confirm"
-              onPress={selectMode === "edit" ? onPressEdit : onPressAdd}
+              onPress={state.mode === "edit" ? onPressEdit : onPressAdd}
               disabled={!isValid}
             />
           </View>
