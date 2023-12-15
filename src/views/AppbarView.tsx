@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, SafeAreaView, StyleSheet, ViewStyle } from "react-native";
 import { EvilIcons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
+import { CategoryContext } from "../components/CategoryProvider";
 
 type Pages = "category" | "calendar" | "limits" | "settings";
 
@@ -12,10 +13,19 @@ interface IProps {
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
+  const { selectedCategory } = React.useContext(CategoryContext);
+
+  const disabled = selectedCategory === undefined;
+
   return (
     <SafeAreaView style={[styles.container, style]}>
       <Pressable
-        style={[styles.button, page === "calendar" && styles.buttonActive]}
+        style={[
+          styles.button,
+          page === "calendar" && styles.buttonActive,
+          disabled && { opacity: 0.5 },
+        ]}
+        disabled={disabled}
         onPress={() => setPage("calendar")}
       >
         <EvilIcons name="calendar" size={50} color={COLORS.text} />
@@ -27,17 +37,22 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
         <EvilIcons name="tag" size={50} color={COLORS.text} />
       </Pressable>
       <Pressable
-        style={[styles.button, page === "limits" && styles.buttonActive]}
+        style={[
+          styles.button,
+          page === "limits" && styles.buttonActive,
+          disabled && { opacity: 0.5 },
+        ]}
+        disabled={disabled}
         onPress={() => setPage("limits")}
       >
         <EvilIcons name="chart" size={50} color={COLORS.text} />
       </Pressable>
-      <Pressable
+      {/* <Pressable
         style={[styles.button, page === "settings" && styles.buttonActive]}
         onPress={() => setPage("settings")}
       >
         <EvilIcons name="gear" size={50} color={COLORS.text} />
-      </Pressable>
+      </Pressable> */}
     </SafeAreaView>
   );
 };
