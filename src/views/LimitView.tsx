@@ -50,7 +50,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const {
     selectedCategory,
     limits,
-    eventCountsByLimit,
+    limitCounts,
     addLimit,
     editLimit,
     deleteLimit,
@@ -147,11 +147,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
           <View style={styles.flatlistItem}>
             <View style={styles.flatlistLimit}>
               <Text style={styles.flatlistLimitText}>
-                {Math.max(
-                  0,
-                  ...eventCountsByLimit[limit.limitId].map((x) => x.value)
-                )}
-                /{limit.maxDays}
+                {limitCounts[limit.limitId]}/{limit.maxDays}
               </Text>
             </View>
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>

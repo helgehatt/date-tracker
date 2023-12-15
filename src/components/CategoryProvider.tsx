@@ -7,18 +7,16 @@ import AppDatabase, {
   getInterval,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
+import { TODAY } from "../constants";
 
 const db = new AppDatabase();
-
-type EventCount = { date: string; value: number; label?: string };
 
 type State = {
   selectedCategory: AppCategory | undefined;
   categories: AppCategory[];
   events: AppEvent[];
-  eventDates: Record<number, AppEvent>;
   limits: AppLimit[];
-  eventCountsByLimit: Record<number, EventCount[]>;
+  limitCounts: Record<number, number>;
 };
 
 type Action =
@@ -50,9 +48,8 @@ const initialState: State = {
   categories: [],
   selectedCategory: undefined,
   events: [],
-  eventDates: {},
   limits: [],
-  eventCountsByLimit: {},
+  limitCounts: {},
 };
 
 export const CategoryContext = React.createContext<Context>({
@@ -69,37 +66,24 @@ export const CategoryContext = React.createContext<Context>({
   deleteLimit: () => undefined,
 });
 
-function getEventDates(events: AppEvent[]) {
-  const obj = {} as Record<number, AppEvent>;
+function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
+  const dates = new Set<number>();
 
   for (const event of events) {
     for (const date of Date.range(event.startDate, event.stopDate)) {
-      obj[date] = event;
+      dates.add(date);
     }
   }
 
-  return obj;
-}
+  const counts: Record<number, number> = {};
 
-function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
-  const eventCountsByLimit: Record<number, EventCount[]> = {};
+  for (const limit of limits) {
+    const interval = getInterval(limit, TODAY);
 
-  for (const l of limits) {
-    eventCountsByLimit[l.limitId] = [];
-
-    for (const date of dates) {
-      const interval = getInterval(l, date);
-
-      const value = interval.filter(dates).length;
-
-      eventCountsByLimit[l.limitId].push({
-        date: new Date(date).toISODateString(),
-        value,
-      });
-    }
+    counts[limit.limitId] = interval.filter([...dates]).length;
   }
 
-  return eventCountsByLimit;
+  return counts;
 }
 
 function reducer(state: State, action: Action): State {
@@ -145,16 +129,13 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      const eventDates = getEventDates(events);
-      const datetimes = Object.keys(eventDates).map(Number);
-      const eventCountsByLimit = getEventCountsByLimit(datetimes, state.limits);
-      return { ...state, events, eventDates, eventCountsByLimit };
+      const limitCounts = getLimitCounts(events, state.limits);
+      return { ...state, events, limitCounts };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
-      const datetimes = Object.keys(state.eventDates).map(Number);
-      const eventCountsByLimit = getEventCountsByLimit(datetimes, limits);
-      return { ...state, limits, eventCountsByLimit };
+      const limitCounts = getLimitCounts(state.events, limits);
+      return { ...state, limits, limitCounts };
     }
     default:
       return state;
