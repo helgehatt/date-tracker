@@ -22,8 +22,7 @@ interface IProps {
 
 type State = {
   mode: "view" | "add" | "edit";
-  limitId?: number;
-  categoryId?: number;
+  selectedLimit: AppLimit | null;
   name: string;
   maxDays: string;
   intervalType: "fixed" | "running" | "custom";
@@ -36,6 +35,7 @@ type State = {
 
 const initialState: State = {
   mode: "view",
+  selectedLimit: null,
   name: "",
   maxDays: "",
   intervalType: "fixed",
@@ -107,10 +107,10 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitEdit = () => {
-    if (isValid && state.limitId && state.categoryId) {
+    if (isValid && state.selectedLimit) {
       editLimit({
-        limitId: state.limitId,
-        categoryId: state.categoryId,
+        limitId: state.selectedLimit.limitId,
+        categoryId: state.selectedLimit.categoryId,
         name: state.name,
         maxDays: Number(state.maxDays),
         intervalType: state.intervalType,
@@ -129,8 +129,8 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitDelete = () => {
-    if (state.limitId && state.categoryId) {
-      deleteLimit(state.limitId, state.categoryId);
+    if (state.selectedLimit) {
+      deleteLimit(state.selectedLimit.limitId, state.selectedLimit.categoryId);
     }
     onClose();
   };
@@ -156,8 +156,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               onPress={() => {
                 setState({
                   mode: "edit",
-                  limitId: limit.limitId,
-                  categoryId: limit.categoryId,
+                  selectedLimit: limit,
                   name: limit.name,
                   maxDays: String(limit.maxDays),
                   intervalType: limit.intervalType,
