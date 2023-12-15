@@ -12,8 +12,11 @@ import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
-import CategoryProvider from "./src/components/CategoryProvider";
+import CategoryProvider, {
+  CategoryContext,
+} from "./src/components/CategoryProvider";
 import LimitView from "./src/views/LimitView";
+import GraphView from "./src/views/GraphView";
 
 type Pages = "category" | "calendar" | "limits" | "settings";
 
@@ -44,6 +47,11 @@ export default function App() {
         </KeyboardAvoidingView>
         <AppbarView page={page} setPage={setPage} />
       </View>
+      <CategoryContext.Consumer>
+        {(value) =>
+          value.selectedLimit && <GraphView limit={value.selectedLimit} />
+        }
+      </CategoryContext.Consumer>
     </CategoryProvider>
   );
 }

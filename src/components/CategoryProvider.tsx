@@ -7,18 +7,17 @@ import AppDatabase, {
   getInterval,
 } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
+import { TODAY } from "../constants";
 
 const db = new AppDatabase();
 
-type EventCount = { date: string; value: number; label?: string };
-
 type State = {
   selectedCategory: AppCategory | undefined;
+  selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
   events: AppEvent[];
-  eventDates: Record<number, AppEvent>;
   limits: AppLimit[];
-  eventCountsByLimit: Record<number, EventCount[]>;
+  limitCounts: Record<number, number>;
 };
 
 type Action =
@@ -26,7 +25,8 @@ type Action =
       type: "INITIAL_LOAD";
       payload: { categories: AppCategory[]; categoryId: number | undefined };
     }
-  | { type: "SELECT_CATEGORY"; payload: { categoryId: number | undefined } }
+  | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
+  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit | undefined } }
   | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
   | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
@@ -34,7 +34,8 @@ type Action =
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
-  selectCategory(id: number | undefined): void;
+  selectCategory(category: AppCategory | undefined): void;
+  selectLimit(limit: AppLimit | undefined): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
   deleteCategory(categoryId: number): void;
@@ -49,15 +50,16 @@ type Context = State & {
 const initialState: State = {
   categories: [],
   selectedCategory: undefined,
+  selectedLimit: undefined,
   events: [],
-  eventDates: {},
   limits: [],
-  eventCountsByLimit: {},
+  limitCounts: {},
 };
 
 export const CategoryContext = React.createContext<Context>({
   ...initialState,
   selectCategory: () => undefined,
+  selectLimit: () => undefined,
   addCategory: () => undefined,
   editCategory: () => undefined,
   deleteCategory: () => undefined,
@@ -69,37 +71,24 @@ export const CategoryContext = React.createContext<Context>({
   deleteLimit: () => undefined,
 });
 
-function getEventDates(events: AppEvent[]) {
-  const obj = {} as Record<number, AppEvent>;
+function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
+  const dates = new Set<number>();
 
   for (const event of events) {
     for (const date of Date.range(event.startDate, event.stopDate)) {
-      obj[date] = event;
+      dates.add(date);
     }
   }
 
-  return obj;
-}
+  const counts: Record<number, number> = {};
 
-function getEventCountsByLimit(dates: number[], limits: AppLimit[]) {
-  const eventCountsByLimit: Record<number, EventCount[]> = {};
+  for (const limit of limits) {
+    const interval = getInterval(limit, TODAY);
 
-  for (const l of limits) {
-    eventCountsByLimit[l.limitId] = [];
-
-    for (const date of dates) {
-      const interval = getInterval(l, date);
-
-      const value = interval.filter(dates).length;
-
-      eventCountsByLimit[l.limitId].push({
-        date: new Date(date).toISODateString(),
-        value,
-      });
-    }
+    counts[limit.limitId] = interval.filter([...dates]).length;
   }
 
-  return eventCountsByLimit;
+  return counts;
 }
 
 function reducer(state: State, action: Action): State {
@@ -115,14 +104,14 @@ function reducer(state: State, action: Action): State {
       return { ...state, categories, selectedCategory };
     }
     case "SELECT_CATEGORY": {
-      const { categoryId } = action.payload;
-      if (categoryId === undefined) {
+      const { category } = action.payload;
+      if (category === undefined) {
         return { ...initialState, categories: state.categories };
       }
-      const selectedCategory = state.categories.find(
-        (category) => category.categoryId == categoryId
-      );
-      return { ...state, selectedCategory };
+      return { ...state, selectedCategory: category };
+    }
+    case "SELECT_LIMIT": {
+      return { ...state, selectedLimit: action.payload.limit };
     }
     case "EDIT_CATEGORY": {
       const { categoryId } = action.payload;
@@ -145,16 +134,13 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      const eventDates = getEventDates(events);
-      const datetimes = Object.keys(eventDates).map(Number);
-      const eventCountsByLimit = getEventCountsByLimit(datetimes, state.limits);
-      return { ...state, events, eventDates, eventCountsByLimit };
+      const limitCounts = getLimitCounts(events, state.limits);
+      return { ...state, events, limitCounts };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
-      const datetimes = Object.keys(state.eventDates).map(Number);
-      const eventCountsByLimit = getEventCountsByLimit(datetimes, limits);
-      return { ...state, limits, eventCountsByLimit };
+      const limitCounts = getLimitCounts(state.events, limits);
+      return { ...state, limits, limitCounts };
     }
     default:
       return state;
@@ -164,9 +150,13 @@ function reducer(state: State, action: Action): State {
 const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  const selectCategory = React.useCallback((categoryId: number | undefined) => {
-    AppSettings.setSelectedCategory(categoryId);
-    dispatch({ type: "SELECT_CATEGORY", payload: { categoryId } });
+  const selectCategory = React.useCallback((category?: AppCategory) => {
+    AppSettings.setSelectedCategory(category?.categoryId);
+    dispatch({ type: "SELECT_CATEGORY", payload: { category } });
+  }, []);
+
+  const selectLimit = React.useCallback((limit?: AppLimit) => {
+    dispatch({ type: "SELECT_LIMIT", payload: { limit } });
   }, []);
 
   const setCategories = React.useCallback((categories: AppCategory[]) => {
@@ -306,6 +296,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
       value={{
         ...state,
         selectCategory,
+        selectLimit,
         addCategory,
         editCategory,
         deleteCategory,
