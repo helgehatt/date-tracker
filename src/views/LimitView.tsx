@@ -174,7 +174,11 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             </View>
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <Pressable
-              style={{ marginLeft: "auto" }}
+              style={[
+                { marginLeft: "auto" },
+                limit.intervalType === "custom" && { opacity: 0.5 },
+              ]}
+              disabled={limit.intervalType === "custom"}
               onPress={() => selectLimit(limit)}
             >
               <EvilIcons name="external-link" size={30} color={COLORS.text} />

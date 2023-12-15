@@ -156,10 +156,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     ...{ top: 0, bottom: 0, left: 0, right: 0 },
     backgroundColor: COLORS.background,
-    justifyContent: "center",
   },
   header: {
     flexDirection: "row",
+    marginTop: 30,
     paddingBottom: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.text,
@@ -169,7 +169,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   graph: {
-    alignSelf: "center",
+    flex: 1,
+    paddingLeft: 30,
+    justifyContent: "center",
   },
 });
 
