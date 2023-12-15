@@ -102,6 +102,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     selectedCategory,
     limits,
     limitCounts,
+    selectLimit,
     addLimit,
     editLimit,
     deleteLimit,
@@ -174,6 +175,11 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <Pressable
               style={{ marginLeft: "auto" }}
+              onPress={() => selectLimit(limit)}
+            >
+              <EvilIcons name="external-link" size={30} color={COLORS.text} />
+            </Pressable>
+            <Pressable
               onPress={() =>
                 setState({
                   mode: "edit",

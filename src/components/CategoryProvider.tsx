@@ -13,6 +13,7 @@ const db = new AppDatabase();
 
 type State = {
   selectedCategory: AppCategory | undefined;
+  selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
   events: AppEvent[];
   limits: AppLimit[];
@@ -24,7 +25,8 @@ type Action =
       type: "INITIAL_LOAD";
       payload: { categories: AppCategory[]; categoryId: number | undefined };
     }
-  | { type: "SELECT_CATEGORY"; payload: { categoryId: number | undefined } }
+  | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
+  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit | undefined } }
   | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
   | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
@@ -32,7 +34,8 @@ type Action =
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
-  selectCategory(id: number | undefined): void;
+  selectCategory(category: AppCategory | undefined): void;
+  selectLimit(limit: AppLimit | undefined): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
   deleteCategory(categoryId: number): void;
@@ -47,6 +50,7 @@ type Context = State & {
 const initialState: State = {
   categories: [],
   selectedCategory: undefined,
+  selectedLimit: undefined,
   events: [],
   limits: [],
   limitCounts: {},
@@ -55,6 +59,7 @@ const initialState: State = {
 export const CategoryContext = React.createContext<Context>({
   ...initialState,
   selectCategory: () => undefined,
+  selectLimit: () => undefined,
   addCategory: () => undefined,
   editCategory: () => undefined,
   deleteCategory: () => undefined,
@@ -99,14 +104,14 @@ function reducer(state: State, action: Action): State {
       return { ...state, categories, selectedCategory };
     }
     case "SELECT_CATEGORY": {
-      const { categoryId } = action.payload;
-      if (categoryId === undefined) {
+      const { category } = action.payload;
+      if (category === undefined) {
         return { ...initialState, categories: state.categories };
       }
-      const selectedCategory = state.categories.find(
-        (category) => category.categoryId == categoryId
-      );
-      return { ...state, selectedCategory };
+      return { ...state, selectedCategory: category };
+    }
+    case "SELECT_LIMIT": {
+      return { ...state, selectedLimit: action.payload.limit };
     }
     case "EDIT_CATEGORY": {
       const { categoryId } = action.payload;
@@ -145,9 +150,13 @@ function reducer(state: State, action: Action): State {
 const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
-  const selectCategory = React.useCallback((categoryId: number | undefined) => {
-    AppSettings.setSelectedCategory(categoryId);
-    dispatch({ type: "SELECT_CATEGORY", payload: { categoryId } });
+  const selectCategory = React.useCallback((category?: AppCategory) => {
+    AppSettings.setSelectedCategory(category?.categoryId);
+    dispatch({ type: "SELECT_CATEGORY", payload: { category } });
+  }, []);
+
+  const selectLimit = React.useCallback((limit?: AppLimit) => {
+    dispatch({ type: "SELECT_LIMIT", payload: { limit } });
   }, []);
 
   const setCategories = React.useCallback((categories: AppCategory[]) => {
@@ -287,6 +296,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
       value={{
         ...state,
         selectCategory,
+        selectLimit,
         addCategory,
         editCategory,
         deleteCategory,
