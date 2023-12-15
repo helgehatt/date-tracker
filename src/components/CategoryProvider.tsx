@@ -289,7 +289,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         }
       })
       .then(async (categories) => {
-        let categoryId = await AppSettings.getSelectedCategory();
+        const categoryId = await AppSettings.getSelectedCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
       });
   }, []);

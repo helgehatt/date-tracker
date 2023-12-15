@@ -10,7 +10,6 @@ import {
 import { COLORS } from "./src/constants";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
-import SelectionProvider from "./src/components/SelectionProvider";
 import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
 import CategoryProvider from "./src/components/CategoryProvider";
@@ -31,22 +30,20 @@ export default function App() {
 
   return (
     <CategoryProvider>
-      <SelectionProvider>
-        <View style={styles.container}>
-          <HeaderView />
-          <KeyboardAvoidingView
-            style={styles.content}
-            enabled={Platform.OS === "ios"}
-            behavior="padding"
-          >
-            <CalendarView style={pageStyle["calendar"]} />
-            <CategoryView style={pageStyle["category"]} />
-            <LimitView style={pageStyle["limits"]} />
-            <View style={pageStyle["settings"]} />
-          </KeyboardAvoidingView>
-          <AppbarView page={page} setPage={setPage} />
-        </View>
-      </SelectionProvider>
+      <View style={styles.container}>
+        <HeaderView />
+        <KeyboardAvoidingView
+          style={styles.content}
+          enabled={Platform.OS === "ios"}
+          behavior="padding"
+        >
+          <CalendarView style={pageStyle["calendar"]} />
+          <CategoryView style={pageStyle["category"]} />
+          <LimitView style={pageStyle["limits"]} />
+          <View style={pageStyle["settings"]} />
+        </KeyboardAvoidingView>
+        <AppbarView page={page} setPage={setPage} />
+      </View>
     </CategoryProvider>
   );
 }

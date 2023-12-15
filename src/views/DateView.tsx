@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { COLORS, TODAY } from "../constants";
-import { SelectionContext } from "../components/SelectionProvider";
+import SelectionContext from "../helpers/SelectionContext";
 import { CategoryContext } from "../components/CategoryProvider";
 
 interface IProps {
@@ -14,22 +14,25 @@ interface IMemoizableProps {
   color?: string;
   day: number;
   isToday: boolean;
-  isEvent: boolean;
   isSelected: boolean;
   onPress: () => void;
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
-  const { selectedCategory, eventDates } = React.useContext(CategoryContext);
-  const { selectedStartDate, selectedStopDate, selectDate } =
-    React.useContext(SelectionContext);
+  const { selectedCategory } = React.useContext(CategoryContext);
+  const {
+    eventsByDate,
+    selectedEvent,
+    selectedStartDate,
+    selectedStopDate,
+    selectDate,
+  } = React.useContext(SelectionContext);
   const datetime = Date.UTC(year, month, day);
   const isVisible = new Date(datetime).getMonth() == month;
-  const event = eventDates[datetime];
 
   const onPress = React.useCallback(
-    () => selectDate(datetime, event),
-    [selectDate, datetime, event]
+    () => selectDate(datetime),
+    [selectDate, datetime]
   );
 
   if (!isVisible) {
@@ -37,20 +40,30 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
   }
 
   const isToday = datetime == TODAY;
-  const isEvent = datetime in eventDates;
+  const isEvent = datetime in eventsByDate;
+  const isSelectedEvent =
+    selectedEvent != null &&
+    datetime >= selectedEvent.startDate &&
+    datetime <= selectedEvent.stopDate;
   const isSelected =
     datetime === selectedStartDate ||
     (selectedStartDate !== undefined &&
       selectedStopDate !== undefined &&
       datetime >= selectedStartDate &&
       datetime <= selectedStopDate);
+  const color = isSelected
+    ? selectedCategory?.color
+    : isSelectedEvent
+    ? COLORS.tertiary
+    : isEvent
+    ? selectedCategory?.color
+    : undefined;
 
   return (
     <MemoizableDateView
-      color={selectedCategory?.color}
+      color={color}
       day={day}
       isToday={isToday}
-      isEvent={isEvent}
       isSelected={isSelected}
       onPress={onPress}
     />
@@ -61,7 +74,6 @@ const _MemoizableDateView: React.FC<IMemoizableProps> = ({
   color,
   day,
   isToday,
-  isEvent,
   isSelected,
   onPress,
 }) => {
@@ -73,7 +85,7 @@ const _MemoizableDateView: React.FC<IMemoizableProps> = ({
       <Text
         style={[
           styles.text,
-          (isSelected || isEvent) && { backgroundColor: color },
+          color !== undefined && { backgroundColor: color },
           isSelected && { opacity: 0.75 },
         ]}
       >
