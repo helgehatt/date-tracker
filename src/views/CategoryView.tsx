@@ -99,7 +99,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         renderItem={({ item: category }) => (
           <Pressable
             key={category.categoryId}
-            onPress={() => selectCategory(category.categoryId)}
+            onPress={() => selectCategory(category)}
           >
             <View
               style={[
