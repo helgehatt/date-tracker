@@ -23,28 +23,79 @@ interface IProps {
 type State = {
   mode: "view" | "add" | "edit";
   selectedLimit: AppLimit | null;
-  name: string;
-  maxDays: string;
-  intervalType: "fixed" | "running" | "custom";
-  fixedInterval: "yearly" | "monthly" | null;
-  runningAmount: string;
-  runningUnit: "year" | "month" | "day" | null;
-  customStartDate: string;
-  customStopDate: string;
+  input: {
+    name: string;
+    maxDays: string;
+    intervalType: "fixed" | "running" | "custom";
+    fixedInterval: "yearly" | "monthly" | null;
+    runningAmount: string;
+    runningUnit: "year" | "month" | "day" | null;
+    customStartDate: string;
+    customStopDate: string;
+  };
 };
 
 const initialState: State = {
   mode: "view",
   selectedLimit: null,
-  name: "",
-  maxDays: "",
-  intervalType: "fixed",
-  fixedInterval: null,
-  runningAmount: "",
-  runningUnit: null,
-  customStartDate: "",
-  customStopDate: "",
+  input: {
+    name: "",
+    maxDays: "",
+    intervalType: "fixed",
+    fixedInterval: null,
+    runningAmount: "",
+    runningUnit: null,
+    customStartDate: "",
+    customStopDate: "",
+  },
 };
+
+function convertLimit(limit: AppLimit): State["input"] {
+  return {
+    name: limit.name,
+    maxDays: String(limit.maxDays),
+    intervalType: limit.intervalType,
+    fixedInterval: limit.fixedInterval,
+    runningAmount: limit.runningAmount ? String(limit.runningAmount) : "",
+    runningUnit: limit.runningUnit,
+    customStartDate: limit.customStartDate
+      ? new Date(limit.customStartDate).toISODateString()
+      : "",
+    customStopDate: limit.customStopDate
+      ? new Date(limit.customStopDate).toISODateString()
+      : "",
+  };
+}
+
+function convertInput(input: State["input"]) {
+  return {
+    name: input.name,
+    maxDays: Number(input.maxDays),
+    intervalType: input.intervalType,
+    fixedInterval: input.fixedInterval,
+    runningAmount: input.runningAmount ? Number(input.runningAmount) : null,
+    runningUnit: input.runningUnit,
+    customStartDate: input.customStartDate
+      ? Date.parse(input.customStartDate)
+      : null,
+    customStopDate: input.customStopDate
+      ? Date.parse(input.customStopDate)
+      : null,
+  };
+}
+
+function isInputValid(input: State["input"]) {
+  return (
+    input.name.length > 0 &&
+    Number(input.maxDays) > 0 &&
+    (input.intervalType !== "fixed" || input.fixedInterval !== null) &&
+    (input.intervalType !== "running" ||
+      (Number(input.runningAmount) > 0 && input.runningUnit !== null)) &&
+    (input.intervalType !== "custom" ||
+      (Date.parse(input.customStartDate) > 0 &&
+        Date.parse(input.customStopDate) > 0))
+  );
+}
 
 const LimitView: React.FC<IProps> = ({ style }) => {
   const {
@@ -59,26 +110,18 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const [state, setState] = React.useState<State>(initialState);
 
   const onChange = React.useCallback(
-    (key: keyof State) => (value: State[typeof key]) => {
+    (key: keyof State["input"]) => (value: State["input"][typeof key]) => {
       setState((prev) => {
         if (key === "customStartDate" || key === "customStopDate") {
-          value = Date.onChangeFormat(prev[key], value as string);
+          value = Date.onChangeFormat(prev["input"][key], value as string);
         }
-        return { ...prev, [key]: value };
+        return { ...prev, input: { ...prev.input, [key]: value } };
       });
     },
     []
   );
 
-  const isValid =
-    state.name.length > 0 &&
-    Number(state.maxDays) > 0 &&
-    (state.intervalType !== "fixed" || state.fixedInterval !== null) &&
-    (state.intervalType !== "running" ||
-      (Number(state.runningAmount) > 0 && state.runningUnit !== null)) &&
-    (state.intervalType !== "custom" ||
-      (Date.parse(state.customStartDate) > 0 &&
-        Date.parse(state.customStopDate) > 0));
+  const isValid = isInputValid(state.input);
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
@@ -89,18 +132,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     if (isValid && selectedCategory) {
       addLimit({
         categoryId: selectedCategory.categoryId,
-        name: state.name,
-        maxDays: Number(state.maxDays),
-        intervalType: state.intervalType,
-        fixedInterval: state.fixedInterval,
-        runningAmount: state.runningAmount ? Number(state.runningAmount) : null,
-        runningUnit: state.runningUnit,
-        customStartDate: state.customStartDate
-          ? Date.parse(state.customStartDate)
-          : null,
-        customStopDate: state.customStopDate
-          ? Date.parse(state.customStopDate)
-          : null,
+        ...convertInput(state.input),
       });
       onClose();
     }
@@ -111,18 +143,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       editLimit({
         limitId: state.selectedLimit.limitId,
         categoryId: state.selectedLimit.categoryId,
-        name: state.name,
-        maxDays: Number(state.maxDays),
-        intervalType: state.intervalType,
-        fixedInterval: state.fixedInterval,
-        runningAmount: state.runningAmount ? Number(state.runningAmount) : null,
-        runningUnit: state.runningUnit,
-        customStartDate: state.customStartDate
-          ? Date.parse(state.customStartDate)
-          : null,
-        customStopDate: state.customStopDate
-          ? Date.parse(state.customStopDate)
-          : null,
+        ...convertInput(state.input),
       } as AppLimit);
       onClose();
     }
@@ -153,26 +174,13 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <Pressable
               style={{ marginLeft: "auto" }}
-              onPress={() => {
+              onPress={() =>
                 setState({
                   mode: "edit",
                   selectedLimit: limit,
-                  name: limit.name,
-                  maxDays: String(limit.maxDays),
-                  intervalType: limit.intervalType,
-                  fixedInterval: limit.fixedInterval,
-                  runningAmount: limit.runningAmount
-                    ? String(limit.runningAmount)
-                    : "",
-                  runningUnit: limit.runningUnit,
-                  customStartDate: limit.customStartDate
-                    ? new Date(limit.customStartDate).toISODateString()
-                    : "",
-                  customStopDate: limit.customStopDate
-                    ? new Date(limit.customStopDate).toISODateString()
-                    : "",
-                });
-              }}
+                  input: convertLimit(limit),
+                })
+              }
             >
               <EvilIcons name="pencil" size={30} color={COLORS.text} />
             </Pressable>
@@ -181,7 +189,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       />
 
       <View style={STYLES.sheet.opener}>
-        <Pressable onPress={() => onChange("mode")("add")}>
+        <Pressable
+          onPress={() => setState((prev) => ({ ...prev, mode: "add" }))}
+        >
           <EvilIcons name="plus" size={75} color="white" />
         </Pressable>
       </View>
@@ -209,14 +219,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={[STYLES.sheet.input, { flex: 5 }]}
-              value={state.name}
+              value={state.input.name}
               onChangeText={onChange("name")}
               placeholder="Name"
             />
             <TextInput
               inputMode="numeric"
               style={[STYLES.sheet.input, { textAlign: "center" }]}
-              value={state.maxDays}
+              value={state.input.maxDays}
               onChangeText={onChange("maxDays")}
               placeholder="Limit"
             />
@@ -227,7 +237,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               style={[
                 styles.typePressable,
                 { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
-                state.intervalType === "fixed" && {
+                state.input.intervalType === "fixed" && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}
@@ -238,7 +248,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               onPress={() => onChange("intervalType")("running")}
               style={[
                 styles.typePressable,
-                state.intervalType === "running" && {
+                state.input.intervalType === "running" && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}
@@ -250,7 +260,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               style={[
                 styles.typePressable,
                 { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
-                state.intervalType === "custom" && {
+                state.input.intervalType === "custom" && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}
@@ -258,14 +268,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               <Text style={styles.typeText}>Custom</Text>
             </Pressable>
           </View>
-          {state.intervalType === "fixed" && (
+          {state.input.intervalType === "fixed" && (
             <View style={[STYLES.sheet.row, styles.typeContainer]}>
               <Pressable
                 onPress={() => onChange("fixedInterval")("yearly")}
                 style={[
                   styles.typePressable,
                   { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
-                  state.fixedInterval === "yearly" && {
+                  state.input.fixedInterval === "yearly" && {
                     backgroundColor: COLORS.secondary,
                   },
                 ]}
@@ -277,7 +287,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 style={[
                   styles.typePressable,
                   { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
-                  state.fixedInterval === "monthly" && {
+                  state.input.fixedInterval === "monthly" && {
                     backgroundColor: COLORS.secondary,
                   },
                 ]}
@@ -286,12 +296,12 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               </Pressable>
             </View>
           )}
-          {state.intervalType === "running" && (
+          {state.input.intervalType === "running" && (
             <View style={STYLES.sheet.row}>
               <TextInput
                 inputMode="numeric"
                 style={[STYLES.sheet.input, { textAlign: "center" }]}
-                value={state.runningAmount}
+                value={state.input.runningAmount}
                 onChangeText={onChange("runningAmount")}
                 placeholder="X"
               />
@@ -301,7 +311,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   style={[
                     styles.typePressable,
                     { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
-                    state.runningUnit === "year" && {
+                    state.input.runningUnit === "year" && {
                       backgroundColor: COLORS.secondary,
                     },
                   ]}
@@ -312,7 +322,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   onPress={() => onChange("runningUnit")("month")}
                   style={[
                     styles.typePressable,
-                    state.runningUnit === "month" && {
+                    state.input.runningUnit === "month" && {
                       backgroundColor: COLORS.secondary,
                     },
                   ]}
@@ -324,7 +334,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   style={[
                     styles.typePressable,
                     { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
-                    state.runningUnit === "day" && {
+                    state.input.runningUnit === "day" && {
                       backgroundColor: COLORS.secondary,
                     },
                   ]}
@@ -334,18 +344,18 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               </View>
             </View>
           )}
-          {state.intervalType === "custom" && (
+          {state.input.intervalType === "custom" && (
             <View style={STYLES.sheet.row}>
               <TextInput
                 style={STYLES.sheet.input}
-                value={state.customStartDate}
+                value={state.input.customStartDate}
                 onChangeText={onChange("customStartDate")}
                 placeholder="YYYY-MM-DD"
                 inputMode="numeric"
               />
               <TextInput
                 style={STYLES.sheet.input}
-                value={state.customStopDate}
+                value={state.input.customStopDate}
                 onChangeText={onChange("customStopDate")}
                 placeholder="YYYY-MM-DD"
                 inputMode="numeric"
