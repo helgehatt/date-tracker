@@ -204,7 +204,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   React.useEffect(() => {
     dispatch({ type: "UPDATE_EVENTS", payload: { events } });
     onClose();
-  }, [events]);
+  }, [onClose, events]);
 
   return (
     <View style={[styles.container, style]}>
