@@ -132,6 +132,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     if (isValid && selectedCategory) {
       addLimit({
         categoryId: selectedCategory.categoryId,
+        isFavorite: 0,
         ...convertInput(state.input),
       });
       onClose();
@@ -141,10 +142,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const onSubmitEdit = () => {
     if (isValid && state.selectedLimit) {
       editLimit({
-        limitId: state.selectedLimit.limitId,
-        categoryId: state.selectedLimit.categoryId,
+        ...state.selectedLimit,
         ...convertInput(state.input),
-      } as AppLimit);
+      });
       onClose();
     }
   };
@@ -154,6 +154,15 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       deleteLimit(state.selectedLimit.limitId, state.selectedLimit.categoryId);
     }
     onClose();
+  };
+
+  const onFavorite = () => {
+    if (state.selectedLimit) {
+      editLimit({
+        ...state.selectedLimit,
+        isFavorite: 1 - state.selectedLimit.isFavorite,
+      });
+    }
   };
 
   return (
@@ -220,9 +229,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               {state.mode === "edit" ? "Edit limit" : "Add limit"}
             </Text>
             {state.mode === "edit" && (
-              <Pressable onPress={onSubmitDelete}>
-                <EvilIcons name="trash" size={30} color={COLORS.text} />
-              </Pressable>
+              <>
+                <Pressable onPress={onFavorite} style={{ marginLeft: "auto" }}>
+                  <EvilIcons name="star" size={30} color={COLORS.text} />
+                </Pressable>
+                <Pressable onPress={onSubmitDelete}>
+                  <EvilIcons name="trash" size={30} color={COLORS.text} />
+                </Pressable>
+              </>
             )}
           </View>
           <View style={STYLES.sheet.row}>

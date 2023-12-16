@@ -30,6 +30,7 @@ interface AppLimit {
   categoryId: number;
   name: string;
   maxDays: number;
+  isFavorite: number;
   intervalType: "fixed" | "running" | "custom";
   fixedInterval: "yearly" | "monthly" | null;
   runningAmount: number | null;

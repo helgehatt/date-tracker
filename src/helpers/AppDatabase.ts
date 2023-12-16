@@ -223,9 +223,16 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           fixedInterval = ?
         WHERE limitId = ?`,
-        [limit.name, limit.maxDays, limit.fixedInterval, limit.limitId]
+        [
+          limit.name,
+          limit.maxDays,
+          limit.isFavorite,
+          limit.fixedInterval,
+          limit.limitId,
+        ]
       );
     }
     if (limit.intervalType === "running") {
@@ -234,12 +241,14 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           runningAmount = ?,
           runningUnit = ?
         WHERE limitId = ?`,
         [
           limit.name,
           limit.maxDays,
+          limit.isFavorite,
           limit.runningAmount,
           limit.runningUnit,
           limit.limitId,
@@ -252,12 +261,14 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           customStartDate = ?,
           customStopDate = ?
         WHERE limitId = ?`,
         [
           limit.name,
           limit.maxDays,
+          limit.isFavorite,
           limit.customStartDate,
           limit.customStopDate,
           limit.limitId,
