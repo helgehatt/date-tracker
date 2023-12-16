@@ -17,7 +17,6 @@ import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { CategoryContext } from "../components/CategoryProvider";
-import { AppEvent } from "../helpers/AppDatabase";
 import SelectionContext from "../helpers/SelectionContext";
 
 interface IProps {

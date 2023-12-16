@@ -13,7 +13,6 @@ import { EvilIcons } from "@expo/vector-icons";
 import { CategoryContext } from "../components/CategoryProvider";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
-import { AppLimit } from "../helpers/AppDatabase";
 import MyButton from "../components/MyButton";
 
 interface IProps {

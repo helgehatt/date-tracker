@@ -13,7 +13,7 @@ import {
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
-import { AppEvent, AppLimit, getInterval } from "../helpers/AppDatabase";
+import { getInterval } from "../helpers/AppDatabase";
 
 interface IProps {
   limit: AppLimit;

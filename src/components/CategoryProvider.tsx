@@ -1,11 +1,5 @@
 import React from "react";
-import AppDatabase, {
-  AppCategory,
-  AppEvent,
-  AppLimit,
-  AppLimitWithoutId,
-  getInterval,
-} from "../helpers/AppDatabase";
+import AppDatabase, { getInterval } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
 import { TODAY } from "../constants";
 
@@ -233,7 +227,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   const addLimit = React.useCallback(
-    (limit: AppLimitWithoutId) => {
+    (limit: Omit<AppLimit, "limitId">) => {
       db.insertLimit(limit).then(() =>
         db.loadLimits(limit.categoryId).then(setLimits)
       );
@@ -260,24 +254,8 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   React.useEffect(() => {
-    AppSettings.getHasInitialized()
-      .then(async (hasInitialized) => {
-        if (!hasInitialized) {
-          await AppSettings.setHasInitialized(true);
-          console.log("DB: Initializing...");
-          try {
-            const categories = await db.init();
-            console.log("DB: Initialized");
-            return categories;
-          } catch (error) {
-            console.error(`DB: ${JSON.stringify(error)}`);
-            await AppSettings.setHasInitialized(false);
-            return [];
-          }
-        } else {
-          return await db.loadCategories();
-        }
-      })
+    db.init()
+      .then(() => db.loadCategories())
       .then(async (categories) => {
         const categoryId = await AppSettings.getSelectedCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });

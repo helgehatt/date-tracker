@@ -14,7 +14,6 @@ import { CategoryContext } from "../components/CategoryProvider";
 import { EvilIcons } from "@expo/vector-icons";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
-import { AppCategory } from "../helpers/AppDatabase";
 
 interface IProps {
   style?: ViewStyle;
