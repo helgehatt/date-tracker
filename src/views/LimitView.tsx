@@ -100,6 +100,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const {
     selectedCategory,
     limits,
+    limitsById,
     limitCounts,
     selectLimit,
     addLimit,
@@ -164,6 +165,15 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       });
     }
   };
+
+  React.useEffect(() => {
+    if (state.selectedLimit) {
+      const selectedLimit = limitsById[state.selectedLimit.limitId];
+      if (selectedLimit !== state.selectedLimit) {
+        setState((prev) => ({ ...prev, selectedLimit }));
+      }
+    }
+  }, [limitsById, state.selectedLimit]);
 
   return (
     <View style={[styles.container, style]}>
@@ -230,8 +240,22 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             </Text>
             {state.mode === "edit" && (
               <>
-                <Pressable onPress={onFavorite} style={{ marginLeft: "auto" }}>
-                  <EvilIcons name="star" size={30} color={COLORS.text} />
+                <Pressable
+                  onPress={onFavorite}
+                  style={[
+                    { marginLeft: "auto", width: 25 },
+                    state.selectedLimit?.isFavorite === 1 && {
+                      backgroundColor: "#e2cb16",
+                      borderRadius: 15,
+                    },
+                  ]}
+                >
+                  <EvilIcons
+                    name="star"
+                    size={30}
+                    color={COLORS.text}
+                    style={{ marginLeft: -2.5 }}
+                  />
                 </Pressable>
                 <Pressable onPress={onSubmitDelete}>
                   <EvilIcons name="trash" size={30} color={COLORS.text} />

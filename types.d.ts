@@ -41,6 +41,7 @@ interface AppLimit {
 
 interface Array<T> {
   groupBy<K extends keyof T>(key: K): Record<string, Omit<T, K>[]>;
+  toObject<K extends keyof T>(key: K): Record<string, T>;
 }
 
 interface DateConstructor {

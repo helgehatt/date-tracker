@@ -11,6 +11,7 @@ type State = {
   categories: AppCategory[];
   events: AppEvent[];
   limits: AppLimit[];
+  limitsById: Record<number, AppLimit>;
   limitCounts: Record<number, number>;
 };
 
@@ -47,6 +48,7 @@ const initialState: State = {
   selectedLimit: undefined,
   events: [],
   limits: [],
+  limitsById: {},
   limitCounts: {},
 };
 
@@ -133,8 +135,9 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
+      const limitsById = limits.toObject("limitId");
       const limitCounts = getLimitCounts(state.events, limits);
-      return { ...state, limits, limitCounts };
+      return { ...state, limits, limitsById, limitCounts };
     }
     default:
       return state;
@@ -259,7 +262,8 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
       .then(async (categories) => {
         const categoryId = await AppSettings.getSelectedCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
-      });
+      })
+      .catch((error) => console.error(error.message));
   }, []);
 
   React.useEffect(() => {
