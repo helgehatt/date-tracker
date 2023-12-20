@@ -1,42 +1,31 @@
 import "./src/extensions";
 import React from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from "react-native";
-import { COLORS } from "./src/constants";
+import { KeyboardAvoidingView, Platform, View, ViewStyle } from "react-native";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
-import CategoryProvider, {
-  CategoryContext,
-} from "./src/components/CategoryProvider";
+import AppDataProvider, { AppDataContext } from "./src/helpers/AppDataProvider";
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
 
-type Pages = "category" | "calendar" | "limits" | "settings";
-
 export default function App() {
-  const [page, setPage] = React.useState<Pages>("calendar");
+  const [page, setPage] = React.useState<AppPage>("calendar");
 
-  const pageStyle = {
-    calendar: { display: "none" } as ViewStyle,
-    category: { display: "none" } as ViewStyle,
-    limits: { display: "none" } as ViewStyle,
-    settings: { display: "none" } as ViewStyle,
+  const pageStyle: Record<AppPage, ViewStyle> = {
+    calendar: { display: "none" },
+    category: { display: "none" },
+    limits: { display: "none" },
+    settings: { display: "none" },
   };
   pageStyle[page] = { flex: 1 };
 
   return (
-    <CategoryProvider>
-      <View style={styles.container}>
+    <AppDataProvider>
+      <View style={{ flex: 1 }}>
         <HeaderView />
         <KeyboardAvoidingView
-          style={styles.content}
+          style={{ flex: 1 }}
           enabled={Platform.OS === "ios"}
           behavior="padding"
         >
@@ -47,21 +36,11 @@ export default function App() {
         </KeyboardAvoidingView>
         <AppbarView page={page} setPage={setPage} />
       </View>
-      <CategoryContext.Consumer>
+      <AppDataContext.Consumer>
         {(value) =>
           value.selectedLimit && <GraphView limit={value.selectedLimit} />
         }
-      </CategoryContext.Consumer>
-    </CategoryProvider>
+      </AppDataContext.Consumer>
+    </AppDataProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    flex: 1,
-  },
-});

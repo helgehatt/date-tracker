@@ -1,6 +1,6 @@
 import React from "react";
-import AppDatabase, { getInterval } from "../helpers/AppDatabase";
-import AppSettings from "../helpers/AppSettings";
+import AppDatabase from "./AppDatabase";
+import AppSettings from "./AppSettings";
 import { TODAY } from "../constants";
 
 const db = new AppDatabase();
@@ -52,7 +52,7 @@ const initialState: State = {
   limitCounts: {},
 };
 
-export const CategoryContext = React.createContext<Context>({
+export const AppDataContext = React.createContext<Context>({
   ...initialState,
   selectCategory: () => undefined,
   selectLimit: () => undefined,
@@ -79,7 +79,7 @@ function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
   const counts: Record<number, number> = {};
 
   for (const limit of limits) {
-    const interval = getInterval(limit, TODAY);
+    const interval = DateInterval.getInterval(limit, TODAY);
 
     counts[limit.limitId] = interval.filter([...dates]).length;
   }
@@ -144,11 +144,15 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
   const selectCategory = React.useCallback((category?: AppCategory) => {
-    AppSettings.setSelectedCategory(category?.categoryId);
+    if (category) {
+      AppSettings.setSelectedCategory(category.categoryId);
+    } else {
+      AppSettings.removeSelectedCategory();
+    }
     dispatch({ type: "SELECT_CATEGORY", payload: { category } });
   }, []);
 
@@ -274,7 +278,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   }, [setEvents, setLimits, state.selectedCategory]);
 
   return (
-    <CategoryContext.Provider
+    <AppDataContext.Provider
       value={{
         ...state,
         selectCategory,
@@ -291,8 +295,8 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
       }}
     >
       {children}
-    </CategoryContext.Provider>
+    </AppDataContext.Provider>
   );
 };
 
-export default CategoryProvider;
+export default AppDataProvider;

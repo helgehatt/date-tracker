@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { COLORS, TODAY } from "../constants";
 import SelectionContext from "../helpers/SelectionContext";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 
 interface IProps {
   year: number;
@@ -19,7 +19,7 @@ interface IMemoizableProps {
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
-  const { selectedCategory } = React.useContext(CategoryContext);
+  const { selectedCategory } = React.useContext(AppDataContext);
   const {
     eventsByDate,
     selectedEvent,
