@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const PREFIX = "app.v1.0.9-beta.settings.";
-type Setting = "hasInitialized" | "selectedCategory";
+const PREFIX = "app.settings.";
+type Setting = "selectedCategory";
 
 async function getItem(key: Setting) {
   return AsyncStorage.getItem(PREFIX + key).catch(console.warn);
@@ -16,22 +16,16 @@ async function removeItem(key: Setting) {
 }
 
 class AppSettings {
-  static async getHasInitialized() {
-    return getItem("hasInitialized").then((value) => value === "true");
-  }
-  static async setHasInitialized(hasInitialized: boolean) {
-    return setItem("hasInitialized", String(hasInitialized));
-  }
   static async getSelectedCategory() {
     return getItem("selectedCategory").then((value) =>
       value ? Number(value) : undefined
     );
   }
-  static async setSelectedCategory(category_id: number | undefined) {
-    if (category_id === undefined) {
-      return removeItem("selectedCategory");
-    }
-    return setItem("selectedCategory", String(category_id));
+  static async setSelectedCategory(categoryId: number) {
+    return setItem("selectedCategory", String(categoryId));
+  }
+  static async removeSelectedCategory() {
+    return removeItem("selectedCategory");
   }
 }
 

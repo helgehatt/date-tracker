@@ -148,7 +148,11 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
   const selectCategory = React.useCallback((category?: AppCategory) => {
-    AppSettings.setSelectedCategory(category?.categoryId);
+    if (category) {
+      AppSettings.setSelectedCategory(category.categoryId);
+    } else {
+      AppSettings.removeSelectedCategory();
+    }
     dispatch({ type: "SELECT_CATEGORY", payload: { category } });
   }, []);
 
