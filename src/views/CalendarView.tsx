@@ -2,14 +2,12 @@ import React from "react";
 import {
   ActivityIndicator,
   Keyboard,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
   ViewStyle,
 } from "react-native";
-import { EvilIcons } from "@expo/vector-icons";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
 import MonthGenerator from "../helpers/MonthGenerator";
@@ -18,6 +16,7 @@ import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { CategoryContext } from "../components/CategoryProvider";
 import SelectionContext from "../helpers/SelectionContext";
+import MyIcon from "../components/MyIcon";
 
 interface IProps {
   style?: ViewStyle;
@@ -253,9 +252,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
       </SelectionContext.Provider>
 
       <View style={STYLES.sheet.opener}>
-        <Pressable onPress={() => onChange("mode")("add")}>
-          <EvilIcons name="plus" size={75} color="white" />
-        </Pressable>
+        <MyIcon onPress={() => onChange("mode")("add")} name="plus" size="lg" />
       </View>
 
       <BottomSheet
@@ -273,9 +270,11 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
               {state.mode === "edit" ? "Edit event" : "Add event"}
             </Text>
             {state.mode === "edit" && (
-              <Pressable onPress={onPressDelete}>
-                <EvilIcons name="trash" size={30} color={COLORS.text} />
-              </Pressable>
+              <MyIcon
+                style={{ marginLeft: "auto" }}
+                onPress={onPressDelete}
+                name="trash"
+              />
             )}
           </View>
           <View style={STYLES.sheet.row}>

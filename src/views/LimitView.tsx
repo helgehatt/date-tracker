@@ -9,11 +9,11 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { EvilIcons } from "@expo/vector-icons";
 import { CategoryContext } from "../components/CategoryProvider";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
+import MyIcon from "../components/MyIcon";
 
 interface IProps {
   style?: ViewStyle;
@@ -191,17 +191,13 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               </Text>
             </View>
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
-            <Pressable
-              style={[
-                { marginLeft: "auto" },
-                limit.intervalType === "custom" && { opacity: 0.5 },
-              ]}
+            <MyIcon
+              style={{ marginLeft: "auto" }}
               disabled={limit.intervalType === "custom"}
               onPress={() => selectLimit(limit)}
-            >
-              <EvilIcons name="external-link" size={30} color={COLORS.text} />
-            </Pressable>
-            <Pressable
+              name="external-link"
+            />
+            <MyIcon
               onPress={() =>
                 setState({
                   mode: "edit",
@@ -209,19 +205,18 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   input: convertLimit(limit),
                 })
               }
-            >
-              <EvilIcons name="pencil" size={30} color={COLORS.text} />
-            </Pressable>
+              name="pencil"
+            />
           </View>
         )}
       />
 
       <View style={STYLES.sheet.opener}>
-        <Pressable
+        <MyIcon
           onPress={() => setState((prev) => ({ ...prev, mode: "add" }))}
-        >
-          <EvilIcons name="plus" size={75} color="white" />
-        </Pressable>
+          name="plus"
+          size="lg"
+        />
       </View>
 
       <BottomSheet
@@ -240,7 +235,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             </Text>
             {state.mode === "edit" && (
               <>
-                <Pressable
+                <MyIcon
                   onPress={onFavorite}
                   style={[
                     { marginLeft: "auto", width: 25 },
@@ -249,17 +244,10 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                       borderRadius: 15,
                     },
                   ]}
-                >
-                  <EvilIcons
-                    name="star"
-                    size={30}
-                    color={COLORS.text}
-                    style={{ marginLeft: -2.5 }}
-                  />
-                </Pressable>
-                <Pressable onPress={onSubmitDelete}>
-                  <EvilIcons name="trash" size={30} color={COLORS.text} />
-                </Pressable>
+                  name="star"
+                  iconStyle={{ marginLeft: -2.5 }}
+                />
+                <MyIcon onPress={onSubmitDelete} name="trash" />
               </>
             )}
           </View>

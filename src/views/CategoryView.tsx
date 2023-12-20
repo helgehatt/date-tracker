@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
-import { EvilIcons } from "@expo/vector-icons";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
+import MyIcon from "../components/MyIcon";
 
 interface IProps {
   style?: ViewStyle;
@@ -115,24 +115,21 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
                 ]}
               />
               <Text style={styles.categoryText}>{category.name}</Text>
-              <Pressable
+              <MyIcon
                 style={{ marginLeft: "auto" }}
                 onPress={() => {
                   setMode("edit");
                   setState(category);
                 }}
-              >
-                <EvilIcons name="pencil" size={30} color={COLORS.text} />
-              </Pressable>
+                name="pencil"
+              />
             </View>
           </Pressable>
         )}
       />
 
       <View style={STYLES.sheet.opener}>
-        <Pressable onPress={() => setMode("add")}>
-          <EvilIcons name="plus" size={75} color="white" />
-        </Pressable>
+        <MyIcon onPress={() => setMode("add")} name="plus" size="lg" />
       </View>
 
       <BottomSheet
@@ -150,9 +147,11 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
               {mode === "edit" ? "Edit category" : "Add category"}
             </Text>
             {mode === "edit" && (
-              <Pressable onPress={onSubmitDelete}>
-                <EvilIcons name="trash" size={30} color={COLORS.text} />
-              </Pressable>
+              <MyIcon
+                style={{ marginLeft: "auto" }}
+                onPress={onSubmitDelete}
+                name="trash"
+              />
             )}
           </View>
           <View style={STYLES.sheet.row}>

@@ -1,7 +1,6 @@
 import React from "react";
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { EvilIcons } from "@expo/vector-icons";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
   BarChartPropsType,
@@ -14,6 +13,7 @@ import {
 import { COLORS } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
 import { getInterval } from "../helpers/AppDatabase";
+import MyIcon from "../components/MyIcon";
 
 interface IProps {
   limit: AppLimit;
@@ -102,9 +102,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>{limit.name}</Text>
-        <Pressable style={{ marginLeft: "auto" }} onPress={onClose}>
-          <EvilIcons name="close" size={30} color={COLORS.text} />
-        </Pressable>
+        <MyIcon style={{ marginLeft: "auto" }} onPress={onClose} name="close" />
       </View>
       <View style={styles.graph}>
         {limit.intervalType === "fixed" && (
