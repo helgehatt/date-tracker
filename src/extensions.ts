@@ -18,6 +18,10 @@ Array.prototype.groupBy = function (key) {
   }, {});
 };
 
+Array.prototype.toObject = function (key) {
+  return this.reduce((acc, obj) => ({ ...acc, [obj[key]]: obj }), {});
+};
+
 Object.map = function (o, callbackfn) {
   return Object.fromEntries(
     Object.entries(o).map(([key, value], index) => [

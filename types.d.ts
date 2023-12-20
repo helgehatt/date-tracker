@@ -2,8 +2,46 @@ type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 type Stringified<T> = { [P in keyof T]: string };
 
+interface AppDatabase {
+  execute<T>(sql: string, args: (string | number | null)[] = []): Promise<T[]>;
+}
+
+interface AppMigration {
+  version: number;
+  updatedTime: number;
+}
+
+interface AppCategory {
+  categoryId: number;
+  name: string;
+  color: string;
+}
+
+interface AppEvent {
+  eventId: number;
+  categoryId: number;
+  startDate: number;
+  stopDate: number;
+  note: string;
+}
+
+interface AppLimit {
+  limitId: number;
+  categoryId: number;
+  name: string;
+  maxDays: number;
+  isFavorite: number;
+  intervalType: "fixed" | "running" | "custom";
+  fixedInterval: "yearly" | "monthly" | null;
+  runningAmount: number | null;
+  runningUnit: "year" | "month" | "day" | null;
+  customStartDate: number | null;
+  customStopDate: number | null;
+}
+
 interface Array<T> {
   groupBy<K extends keyof T>(key: K): Record<string, Omit<T, K>[]>;
+  toObject<K extends keyof T>(key: K): Record<string, T>;
 }
 
 interface DateConstructor {

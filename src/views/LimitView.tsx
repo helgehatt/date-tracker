@@ -13,7 +13,6 @@ import { EvilIcons } from "@expo/vector-icons";
 import { CategoryContext } from "../components/CategoryProvider";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
-import { AppLimit } from "../helpers/AppDatabase";
 import MyButton from "../components/MyButton";
 
 interface IProps {
@@ -101,6 +100,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const {
     selectedCategory,
     limits,
+    limitsById,
     limitCounts,
     selectLimit,
     addLimit,
@@ -133,6 +133,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     if (isValid && selectedCategory) {
       addLimit({
         categoryId: selectedCategory.categoryId,
+        isFavorite: 0,
         ...convertInput(state.input),
       });
       onClose();
@@ -142,10 +143,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const onSubmitEdit = () => {
     if (isValid && state.selectedLimit) {
       editLimit({
-        limitId: state.selectedLimit.limitId,
-        categoryId: state.selectedLimit.categoryId,
+        ...state.selectedLimit,
         ...convertInput(state.input),
-      } as AppLimit);
+      });
       onClose();
     }
   };
@@ -156,6 +156,24 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     }
     onClose();
   };
+
+  const onFavorite = () => {
+    if (state.selectedLimit) {
+      editLimit({
+        ...state.selectedLimit,
+        isFavorite: 1 - state.selectedLimit.isFavorite,
+      });
+    }
+  };
+
+  React.useEffect(() => {
+    if (state.selectedLimit) {
+      const selectedLimit = limitsById[state.selectedLimit.limitId];
+      if (selectedLimit !== state.selectedLimit) {
+        setState((prev) => ({ ...prev, selectedLimit }));
+      }
+    }
+  }, [limitsById, state.selectedLimit]);
 
   return (
     <View style={[styles.container, style]}>
@@ -221,9 +239,28 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               {state.mode === "edit" ? "Edit limit" : "Add limit"}
             </Text>
             {state.mode === "edit" && (
-              <Pressable onPress={onSubmitDelete}>
-                <EvilIcons name="trash" size={30} color={COLORS.text} />
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={onFavorite}
+                  style={[
+                    { marginLeft: "auto", width: 25 },
+                    state.selectedLimit?.isFavorite === 1 && {
+                      backgroundColor: "#e2cb16",
+                      borderRadius: 15,
+                    },
+                  ]}
+                >
+                  <EvilIcons
+                    name="star"
+                    size={30}
+                    color={COLORS.text}
+                    style={{ marginLeft: -2.5 }}
+                  />
+                </Pressable>
+                <Pressable onPress={onSubmitDelete}>
+                  <EvilIcons name="trash" size={30} color={COLORS.text} />
+                </Pressable>
+              </>
             )}
           </View>
           <View style={STYLES.sheet.row}>

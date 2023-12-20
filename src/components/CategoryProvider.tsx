@@ -1,11 +1,5 @@
 import React from "react";
-import AppDatabase, {
-  AppCategory,
-  AppEvent,
-  AppLimit,
-  AppLimitWithoutId,
-  getInterval,
-} from "../helpers/AppDatabase";
+import AppDatabase, { getInterval } from "../helpers/AppDatabase";
 import AppSettings from "../helpers/AppSettings";
 import { TODAY } from "../constants";
 
@@ -17,6 +11,7 @@ type State = {
   categories: AppCategory[];
   events: AppEvent[];
   limits: AppLimit[];
+  limitsById: Record<number, AppLimit>;
   limitCounts: Record<number, number>;
 };
 
@@ -53,6 +48,7 @@ const initialState: State = {
   selectedLimit: undefined,
   events: [],
   limits: [],
+  limitsById: {},
   limitCounts: {},
 };
 
@@ -139,8 +135,9 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
+      const limitsById = limits.toObject("limitId");
       const limitCounts = getLimitCounts(state.events, limits);
-      return { ...state, limits, limitCounts };
+      return { ...state, limits, limitsById, limitCounts };
     }
     default:
       return state;
@@ -233,7 +230,7 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   const addLimit = React.useCallback(
-    (limit: AppLimitWithoutId) => {
+    (limit: Omit<AppLimit, "limitId">) => {
       db.insertLimit(limit).then(() =>
         db.loadLimits(limit.categoryId).then(setLimits)
       );
@@ -260,28 +257,13 @@ const CategoryProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   );
 
   React.useEffect(() => {
-    AppSettings.getHasInitialized()
-      .then(async (hasInitialized) => {
-        if (!hasInitialized) {
-          await AppSettings.setHasInitialized(true);
-          console.log("DB: Initializing...");
-          try {
-            const categories = await db.init();
-            console.log("DB: Initialized");
-            return categories;
-          } catch (error) {
-            console.error(`DB: ${JSON.stringify(error)}`);
-            await AppSettings.setHasInitialized(false);
-            return [];
-          }
-        } else {
-          return await db.loadCategories();
-        }
-      })
+    db.init()
+      .then(() => db.loadCategories())
       .then(async (categories) => {
         const categoryId = await AppSettings.getSelectedCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
-      });
+      })
+      .catch((error) => console.error(error.message));
   }, []);
 
   React.useEffect(() => {

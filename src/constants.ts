@@ -28,7 +28,6 @@ export const STYLES = {
     },
     row: {
       flexDirection: "row",
-      justifyContent: "space-between",
       columnGap: 10,
     },
     header: {

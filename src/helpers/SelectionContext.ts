@@ -1,5 +1,4 @@
 import React from "react";
-import { AppEvent } from "./AppDatabase";
 
 type Context = {
   eventsByDate: Record<number, AppEvent>;
