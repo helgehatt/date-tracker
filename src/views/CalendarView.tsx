@@ -28,15 +28,18 @@ type State = {
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
   selectedStopDate: number;
-  noteInput: string;
-  startDateInput: string;
-  stopDateInput: string;
+  input: {
+    startDate: string;
+    stopDate: string;
+    note: string;
+  };
 };
 
 type Action =
-  | { type: "RESET" }
+  | { type: "ON_OPEN" }
+  | { type: "ON_CLOSE" }
   | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
-  | { type: "ON_CHANGE"; payload: { key: keyof State; value: string } }
+  | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
   | { type: "SELECT_DATE"; payload: { datetime: number } };
 
 const initialState: State = {
@@ -45,14 +48,19 @@ const initialState: State = {
   selectedEvent: null,
   selectedStartDate: NaN,
   selectedStopDate: NaN,
-  noteInput: "",
-  startDateInput: "",
-  stopDateInput: "",
+  input: {
+    startDate: "",
+    stopDate: "",
+    note: "",
+  },
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "RESET": {
+    case "ON_OPEN": {
+      return { ...state, mode: "add" };
+    }
+    case "ON_CLOSE": {
       return { ...initialState, eventsByDate: state.eventsByDate };
     }
     case "UPDATE_EVENTS": {
@@ -70,20 +78,20 @@ function reducer(state: State, action: Action): State {
       const { key } = action.payload;
       let { value } = action.payload;
 
-      if (key === "startDateInput" || key === "stopDateInput") {
-        value = Date.onChangeFormat(state[key], value);
+      if (key === "startDate" || key === "stopDate") {
+        value = Date.onChangeFormat(state.input[key], value);
 
         if (value.length == 10) {
           const datetime = Date.parse(value);
 
           if (datetime) {
-            if (key === "startDateInput") state.selectedStartDate = datetime;
-            if (key === "stopDateInput") state.selectedStopDate = datetime;
+            if (key === "startDate") state.selectedStartDate = datetime;
+            if (key === "stopDate") state.selectedStopDate = datetime;
           }
         }
       }
 
-      return { ...state, [key]: value };
+      return { ...state, input: { ...state.input, [key]: value } };
     }
     case "SELECT_DATE": {
       const { datetime } = action.payload;
@@ -97,9 +105,11 @@ function reducer(state: State, action: Action): State {
             selectedEvent: event,
             selectedStartDate: event.startDate,
             selectedStopDate: event.stopDate,
-            noteInput: event.note,
-            startDateInput: new Date(event.startDate).toISODateString(),
-            stopDateInput: new Date(event.stopDate).toISODateString(),
+            input: {
+              startDate: new Date(event.startDate).toISODateString(),
+              stopDate: new Date(event.stopDate).toISODateString(),
+              note: event.note,
+            },
           };
         }
         return state;
@@ -115,7 +125,10 @@ function reducer(state: State, action: Action): State {
         return {
           ...state,
           selectedStopDate: datetime,
-          stopDateInput: new Date(datetime).toISODateString(),
+          input: {
+            ...state.input,
+            stopDate: new Date(datetime).toISODateString(),
+          },
         };
       }
 
@@ -124,8 +137,11 @@ function reducer(state: State, action: Action): State {
         ...state,
         selectedStartDate: datetime,
         selectedStopDate: NaN,
-        startDateInput: new Date(datetime).toISODateString(),
-        stopDateInput: "",
+        input: {
+          ...state.input,
+          startDate: new Date(datetime).toISODateString(),
+          stopDate: "",
+        },
       };
     }
     default:
@@ -149,7 +165,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     state.selectedStartDate <= state.selectedStopDate;
 
   const onChange = React.useCallback(
-    (key: keyof State) => (value: string) => {
+    (key: keyof State["input"]) => (value: string) => {
       dispatch({ type: "ON_CHANGE", payload: { key, value } });
     },
     []
@@ -167,9 +183,13 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     setVisibleMonths((months) => [...months, monthGenerator.next()]);
   }, [monthGenerator]);
 
+  const onOpen = React.useCallback(() => {
+    dispatch({ type: "ON_OPEN" });
+  }, []);
+
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "RESET" });
+    dispatch({ type: "ON_CLOSE" });
   }, []);
 
   const onPressAdd = () => {
@@ -178,7 +198,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         categoryId: selectedCategory.categoryId,
         startDate: state.selectedStartDate,
         stopDate: state.selectedStopDate,
-        note: state.noteInput,
+        note: state.input.note,
       });
     }
   };
@@ -189,7 +209,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         ...state.selectedEvent,
         startDate: state.selectedStartDate,
         stopDate: state.selectedStopDate,
-        note: state.noteInput,
+        note: state.input.note,
       });
     }
   };
@@ -252,7 +272,11 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
       </SelectionContext.Provider>
 
       <View style={STYLES.sheet.opener}>
-        <MyIcon onPress={() => onChange("mode")("add")} name="plus" size="lg" />
+        <MyIcon onPress={onOpen} name="plus" size="lg" />
+      </View>
+
+      <View>
+        <MyIcon name="close" size="lg" />
       </View>
 
       <BottomSheet
@@ -280,15 +304,15 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={state.startDateInput}
-              onChangeText={onChange("startDateInput")}
+              value={state.input.startDate}
+              onChangeText={onChange("startDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
             <TextInput
               style={STYLES.sheet.input}
-              value={state.stopDateInput}
-              onChangeText={onChange("stopDateInput")}
+              value={state.input.stopDate}
+              onChangeText={onChange("stopDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
@@ -296,8 +320,8 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={state.noteInput}
-              onChangeText={onChange("noteInput")}
+              value={state.input.note}
+              onChangeText={onChange("note")}
               placeholder="Write a small note..."
             />
           </View>
