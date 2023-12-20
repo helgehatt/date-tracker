@@ -5,9 +5,7 @@ import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
-import CategoryProvider, {
-  CategoryContext,
-} from "./src/components/CategoryProvider";
+import AppDataProvider, { AppDataContext } from "./src/helpers/AppDataProvider";
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
 
@@ -23,7 +21,7 @@ export default function App() {
   pageStyle[page] = { flex: 1 };
 
   return (
-    <CategoryProvider>
+    <AppDataProvider>
       <View style={{ flex: 1 }}>
         <HeaderView />
         <KeyboardAvoidingView
@@ -38,11 +36,11 @@ export default function App() {
         </KeyboardAvoidingView>
         <AppbarView page={page} setPage={setPage} />
       </View>
-      <CategoryContext.Consumer>
+      <AppDataContext.Consumer>
         {(value) =>
           value.selectedLimit && <GraphView limit={value.selectedLimit} />
         }
-      </CategoryContext.Consumer>
-    </CategoryProvider>
+      </AppDataContext.Consumer>
+    </AppDataProvider>
   );
 }

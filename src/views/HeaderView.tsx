@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { COLORS } from "../constants";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 
 interface IProps {
   style?: ViewStyle;
@@ -17,7 +17,7 @@ interface IProps {
 
 const HeaderView: React.FC<IProps> = ({ style }) => {
   const { selectedCategory, limits, limitCounts } =
-    React.useContext(CategoryContext);
+    React.useContext(AppDataContext);
 
   const crumbs = selectedCategory
     ? "Starred limits are shown here"

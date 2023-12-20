@@ -1,7 +1,7 @@
 import React from "react";
 import { SafeAreaView, StyleSheet, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {
@@ -11,7 +11,7 @@ interface IProps {
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
-  const { selectedCategory } = React.useContext(CategoryContext);
+  const { selectedCategory } = React.useContext(AppDataContext);
 
   const disabled = selectedCategory === undefined;
 

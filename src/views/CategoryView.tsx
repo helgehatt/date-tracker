@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
@@ -41,7 +41,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     addCategory,
     editCategory,
     deleteCategory,
-  } = React.useContext(CategoryContext);
+  } = React.useContext(AppDataContext);
 
   const [mode, setMode] = React.useState<Mode>("view");
   const [state, setState] = React.useState<State>(initialState);

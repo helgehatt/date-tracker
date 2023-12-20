@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
@@ -106,7 +106,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     addLimit,
     editLimit,
     deleteLimit,
-  } = React.useContext(CategoryContext);
+  } = React.useContext(AppDataContext);
 
   const [state, setState] = React.useState<State>(initialState);
 

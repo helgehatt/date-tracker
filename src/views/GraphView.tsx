@@ -11,7 +11,7 @@ import {
   itemType as LineItemType,
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 import { getInterval } from "../helpers/AppDatabase";
 import MyIcon from "../components/MyIcon";
 
@@ -80,7 +80,7 @@ const LabelComponent: React.FC<{ date: number }> = ({ date }) => {
 };
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { events, selectLimit } = React.useContext(CategoryContext);
+  const { events, selectLimit } = React.useContext(AppDataContext);
 
   const onClose = React.useCallback(() => {
     selectLimit(undefined);

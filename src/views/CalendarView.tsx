@@ -14,7 +14,7 @@ import MonthGenerator from "../helpers/MonthGenerator";
 import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
-import { CategoryContext } from "../components/CategoryProvider";
+import { AppDataContext } from "../helpers/AppDataProvider";
 import SelectionContext from "../helpers/SelectionContext";
 import MyIcon from "../components/MyIcon";
 
@@ -135,7 +135,7 @@ function reducer(state: State, action: Action): State {
 
 const CalendarView: React.FC<IProps> = ({ style }) => {
   const { selectedCategory, events, addEvent, editEvent, deleteEvent } =
-    React.useContext(CategoryContext);
+    React.useContext(AppDataContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
   const [monthGenerator] = React.useState(() => new MonthGenerator());
