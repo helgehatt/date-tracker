@@ -12,7 +12,6 @@ import {
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
-import { getInterval } from "../helpers/AppDatabase";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {
@@ -39,7 +38,7 @@ function getData(limit: AppLimit, events: AppEvent[]) {
       const years = new Set(dates.map((date) => new Date(date).getFullYear()));
 
       return Array.from(years).map((year): BarItemType => {
-        const interval = getInterval(limit, Date.UTC(year, 0, 1));
+        const interval = DateInterval.getInterval(limit, Date.UTC(year, 0, 1));
         const count = interval.filter(dates).length;
         return { value: count, label: String(year) };
       });
@@ -48,7 +47,7 @@ function getData(limit: AppLimit, events: AppEvent[]) {
       const range = Array.from(Date.range(dates[0], dates[dates.length - 1]));
 
       return range.map((date): LineItemType => {
-        const interval = getInterval(limit, date);
+        const interval = DateInterval.getInterval(limit, date);
         const count = interval.filter(dates).length;
         const labeled = new Date(date).getDate() === 1;
         return {

@@ -1,5 +1,5 @@
 import React from "react";
-import AppDatabase, { getInterval } from "./AppDatabase";
+import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
 import { TODAY } from "../constants";
 
@@ -79,7 +79,7 @@ function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
   const counts: Record<number, number> = {};
 
   for (const limit of limits) {
-    const interval = getInterval(limit, TODAY);
+    const interval = DateInterval.getInterval(limit, TODAY);
 
     counts[limit.limitId] = interval.filter([...dates]).length;
   }
