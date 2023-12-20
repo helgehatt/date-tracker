@@ -1,56 +1,5 @@
 import * as SQLite from "expo-sqlite";
-
-export interface AppCategory {
-  categoryId: number;
-  name: string;
-  color: string;
-}
-
-export interface AppEvent {
-  eventId: number;
-  categoryId: number;
-  startDate: number;
-  stopDate: number;
-  note: string;
-}
-
-export type AppLimit = {
-  limitId: number;
-} & AppLimitWithoutId;
-
-// Necessary since Omit<> doesn't work with intersection type
-export type AppLimitWithoutId = {
-  categoryId: number;
-  name: string;
-  maxDays: number;
-} & (AppLimitFixed | AppLimitRunning | AppLimitCustom);
-
-type AppLimitFixed = {
-  intervalType: "fixed";
-  fixedInterval: "yearly" | "monthly";
-  runningAmount: null;
-  runningUnit: null;
-  customStartDate: null;
-  customStopDate: null;
-};
-
-type AppLimitRunning = {
-  intervalType: "running";
-  fixedInterval: null;
-  runningAmount: number;
-  runningUnit: "year" | "month" | "day";
-  customStartDate: null;
-  customStopDate: null;
-};
-
-type AppLimitCustom = {
-  intervalType: "custom";
-  fixedInterval: null;
-  runningAmount: null;
-  runningUnit: null;
-  customStartDate: number;
-  customStopDate: number;
-};
+import migrations from "../migrations";
 
 class Interval<T> {
   constructor(private start: T, private stop: T) {}
@@ -79,16 +28,16 @@ export function getInterval(l: AppLimit, date: string | number) {
     throw new Error("Invalid AppLimit fixedInterval");
   }
   if (l.intervalType === "running") {
-    const yearOffset = l.runningUnit === "year" ? l.runningAmount : 0;
-    const monthOffset = l.runningUnit === "month" ? l.runningAmount : 0;
-    const dayOffset = l.runningUnit === "day" ? l.runningAmount : 0;
+    const yearOffset = l.runningUnit === "year" ? l.runningAmount! : 0;
+    const monthOffset = l.runningUnit === "month" ? l.runningAmount! : 0;
+    const dayOffset = l.runningUnit === "day" ? l.runningAmount! : 0;
     return new Interval(
       Date.UTC(year - yearOffset, month - monthOffset, day - dayOffset),
       Date.UTC(year, month, day)
     );
   }
   if (l.intervalType === "custom") {
-    return new Interval(l.customStartDate, l.customStopDate);
+    return new Interval(l.customStartDate!, l.customStopDate!);
   }
   throw new Error("Invalid AppLimit type");
 }
@@ -97,11 +46,10 @@ class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
   constructor() {
-    this.db = SQLite.openDatabase("app.v1.0.9-beta.db");
-    this.execute(`PRAGMA foreign_keys = ON`);
+    this.db = SQLite.openDatabase("date-tracker.db");
   }
 
-  execute<T>(sql: string, args: (string | number)[] = []): Promise<T[]> {
+  execute<T>(sql: string, args: (string | number | null)[] = []): Promise<T[]> {
     return new Promise((resolve, reject) => {
       this.db.exec([{ sql, args }], false, (err, res) => {
         if (err) {
@@ -120,78 +68,29 @@ class AppDatabase {
 
   async init() {
     try {
+      await this.execute(`PRAGMA foreign_keys = ON`);
+
       await this.execute(`BEGIN TRANSACTION`);
+      console.log("DB: Initializing...");
 
-      await this.execute(
-        `CREATE TABLE categories (
-          categoryId        INTEGER PRIMARY KEY,
-          name              TEXT NOT NULL,
-          color             TEXT NOT NULL
-        )`
-      );
+      await this.execute(`CREATE TABLE IF NOT EXISTS migrations (
+        version       INTEGER PRIMARY KEY,
+        updatedTime   NUMBER NOT NULL
+      )`);
 
-      await this.execute(
-        `CREATE TABLE events (
-          eventId           INTEGER PRIMARY KEY,
-          categoryId        INTEGER NOT NULL,
-          startDate         INTEGER NOT NULL CHECK(startDate >= 0),
-          stopDate          INTEGER NOT NULL CHECK(stopDate >= 0),
-          note              TEXT NOT NULL,
-          FOREIGN KEY (categoryId)
-            REFERENCES categories (categoryId)
-              ON DELETE CASCADE
-              ON UPDATE NO ACTION
-        )`
-      );
+      const version = (await this.execute(`SELECT * FROM migrations`)).length;
 
-      await this.execute(
-        `CREATE TABLE limits (
-          limitId           INTEGER PRIMARY KEY,
-          categoryId        INTEGER NOT NULL,
-          name              TEXT NOT NULL,
-          maxDays           INTEGER NOT NULL CHECK(maxDays >= 0),
-          intervalType      TEXT NOT NULL,
-          fixedInterval     TEXT,
-          runningAmount     INTEGER,
-          runningUnit       TEXT,
-          customStartDate   INTEGER,
-          customStopDate    INTEGER,
-          FOREIGN KEY (categoryId)
-            REFERENCES categories (categoryId)
-              ON DELETE CASCADE
-              ON UPDATE NO ACTION
-        )`
-      );
-
-      await this.execute(
-        `INSERT INTO categories (name, color) VALUES ('Norge', '#FF4C29')`
-      );
-
-      const result = await this.execute<AppCategory>(
-        `SELECT * FROM categories`
-      );
-
-      const { categoryId } = result[0];
-
-      await this.execute(
-        `INSERT INTO limits (
-          categoryId, name, maxDays, intervalType, fixedInterval
-        ) VALUES
-          (?, 'Yearly', 61, 'fixed', 'yearly')`,
-        [categoryId]
-      );
-
-      await this.execute(
-        `INSERT INTO limits (
-          categoryId, name, maxDays, intervalType, runningAmount, runningUnit
-        ) VALUES
-          (?, '12-Month Running', 183, 'running', 12, 'month'),
-          (?, '36-Month Running', 270, 'running', 36, 'month')`,
-        [categoryId, categoryId]
-      );
+      for (let i = version; i < migrations.length; i++) {
+        await migrations[i](this);
+        await this.execute(`INSERT INTO migrations VALUES (?, ?)`, [
+          i,
+          Date.now(),
+        ]);
+        console.log(`DB: Applied migration ${i}`);
+      }
 
       await this.execute(`COMMIT`);
-      return result;
+      console.log("DB: Initialized");
     } catch (error) {
       await this.execute(`ROLLBACK`);
       throw error;
@@ -267,7 +166,7 @@ class AppDatabase {
     );
   }
 
-  async insertLimit(limit: AppLimitWithoutId) {
+  async insertLimit(limit: Omit<AppLimit, "limitId">) {
     if (limit.intervalType === "fixed") {
       await this.execute(
         `INSERT INTO limits (
@@ -324,9 +223,16 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           fixedInterval = ?
         WHERE limitId = ?`,
-        [limit.name, limit.maxDays, limit.fixedInterval, limit.limitId]
+        [
+          limit.name,
+          limit.maxDays,
+          limit.isFavorite,
+          limit.fixedInterval,
+          limit.limitId,
+        ]
       );
     }
     if (limit.intervalType === "running") {
@@ -335,12 +241,14 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           runningAmount = ?,
           runningUnit = ?
         WHERE limitId = ?`,
         [
           limit.name,
           limit.maxDays,
+          limit.isFavorite,
           limit.runningAmount,
           limit.runningUnit,
           limit.limitId,
@@ -353,12 +261,14 @@ class AppDatabase {
         SET
           name = ?,
           maxDays = ?,
+          isFavorite = ?,
           customStartDate = ?,
           customStopDate = ?
         WHERE limitId = ?`,
         [
           limit.name,
           limit.maxDays,
+          limit.isFavorite,
           limit.customStartDate,
           limit.customStopDate,
           limit.limitId,

@@ -13,7 +13,7 @@ import {
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
-import { AppEvent, AppLimit, getInterval } from "../helpers/AppDatabase";
+import { getInterval } from "../helpers/AppDatabase";
 
 interface IProps {
   limit: AppLimit;
@@ -47,7 +47,7 @@ function getData(limit: AppLimit, events: AppEvent[]) {
     case "running": {
       const range = Array.from(Date.range(dates[0], dates[dates.length - 1]));
 
-      return range.map((date, index): LineItemType => {
+      return range.map((date): LineItemType => {
         const interval = getInterval(limit, date);
         const count = interval.filter(dates).length;
         const labeled = new Date(date).getDate() === 1;
@@ -84,7 +84,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
 
   const onClose = React.useCallback(() => {
     selectLimit(undefined);
-  }, []);
+  }, [selectLimit]);
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);

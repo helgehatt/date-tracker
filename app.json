@@ -4,6 +4,7 @@
     "slug": "date-tracker",
     "version": "1.0.4",
     "orientation": "portrait",
+    "backgroundColor": "#2C394B",
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
