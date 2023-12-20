@@ -4,12 +4,10 @@ import { COLORS } from "../constants";
 import { CategoryContext } from "../components/CategoryProvider";
 import MyIcon from "../components/MyIcon";
 
-type Pages = "category" | "calendar" | "limits" | "settings";
-
 interface IProps {
   style?: ViewStyle;
-  page: Pages;
-  setPage: React.Dispatch<React.SetStateAction<Pages>>;
+  page: AppPage;
+  setPage: React.Dispatch<React.SetStateAction<AppPage>>;
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {

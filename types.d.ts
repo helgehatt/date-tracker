@@ -2,6 +2,8 @@ type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 type Stringified<T> = { [P in keyof T]: string };
 
+type AppPage = "category" | "calendar" | "limits" | "settings";
+
 interface AppDatabase {
   execute<T>(sql: string, args: (string | number | null)[] = []): Promise<T[]>;
 }

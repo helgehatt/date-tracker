@@ -18,10 +18,8 @@ import CategoryProvider, {
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
 
-type Pages = "category" | "calendar" | "limits" | "settings";
-
 export default function App() {
-  const [page, setPage] = React.useState<Pages>("calendar");
+  const [page, setPage] = React.useState<AppPage>("calendar");
 
   const pageStyle = {
     calendar: { display: "none" } as ViewStyle,
