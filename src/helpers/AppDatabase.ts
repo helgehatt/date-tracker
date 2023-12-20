@@ -1,47 +1,6 @@
 import * as SQLite from "expo-sqlite";
 import migrations from "../migrations";
 
-class Interval<T> {
-  constructor(private start: T, private stop: T) {}
-
-  contains(x: T) {
-    return this.start <= x && x <= this.stop;
-  }
-
-  filter(xs: T[]) {
-    return xs.filter((x) => this.contains(x));
-  }
-}
-
-export function getInterval(l: AppLimit, date: string | number) {
-  const { year, month, day } = new Date(date).getComponents();
-  if (l.intervalType === "fixed") {
-    if (l.fixedInterval === "yearly") {
-      return new Interval(Date.UTC(year, 0, 1), Date.UTC(year + 1, 0, 0));
-    }
-    if (l.fixedInterval === "monthly") {
-      return new Interval(
-        Date.UTC(year, month, 1),
-        Date.UTC(year, month + 1, 0)
-      );
-    }
-    throw new Error("Invalid AppLimit fixedInterval");
-  }
-  if (l.intervalType === "running") {
-    const yearOffset = l.runningUnit === "year" ? l.runningAmount! : 0;
-    const monthOffset = l.runningUnit === "month" ? l.runningAmount! : 0;
-    const dayOffset = l.runningUnit === "day" ? l.runningAmount! : 0;
-    return new Interval(
-      Date.UTC(year - yearOffset, month - monthOffset, day - dayOffset),
-      Date.UTC(year, month, day)
-    );
-  }
-  if (l.intervalType === "custom") {
-    return new Interval(l.customStartDate!, l.customStopDate!);
-  }
-  throw new Error("Invalid AppLimit type");
-}
-
 class AppDatabase {
   db: SQLite.SQLiteDatabase;
 
