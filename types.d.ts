@@ -94,6 +94,11 @@ interface Date {
    * @Example 2022-02
    */
   toISOMonthString(): string;
+
+  /**
+   * Returns a new Date after adding the given years, months and days.
+   */
+  add({ years: number = 0, months: number = 0, days: number = 0 }): Date;
 }
 
 interface Object {

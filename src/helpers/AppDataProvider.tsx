@@ -1,6 +1,7 @@
 import React from "react";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
+import DateInterval from "./DateInterval";
 import { TODAY } from "../constants";
 
 const db = new AppDatabase();
