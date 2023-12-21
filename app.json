@@ -2,7 +2,7 @@
   "expo": {
     "name": "Date Tracker",
     "slug": "date-tracker",
-    "version": "1.0.4",
+    "version": "1.0.0",
     "orientation": "portrait",
     "backgroundColor": "#2C394B",
     "icon": "./assets/icon.png",

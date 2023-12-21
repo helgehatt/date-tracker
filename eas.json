@@ -1,6 +1,7 @@
 {
   "cli": {
     "version": ">= 0.51.0",
+    "appVersionSource": "remote",
     "promptToConfigurePushNotifications": false
   },
   "build": {
@@ -14,7 +15,9 @@
         "buildType": "apk"
       }
     },
-    "production": {}
+    "production": {
+      "autoIncrement": true
+    }
   },
   "submit": {
     "production": {}
