@@ -10,10 +10,11 @@ import {
   ViewStyle,
 } from "react-native";
 import { AppDataContext } from "../helpers/AppDataProvider";
-import { COLORS, STYLES } from "../constants";
+import { COLORS, STYLES, TODAY } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
+import MyLimit from "../components/MyLimit";
 
 interface IProps {
   style?: ViewStyle;
@@ -99,9 +100,9 @@ function isInputValid(input: State["input"]) {
 const LimitView: React.FC<IProps> = ({ style }) => {
   const {
     selectedCategory,
+    eventDates,
     limits,
     limitsById,
-    limitCounts,
     selectLimit,
     addLimit,
     editLimit,
@@ -185,11 +186,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: limit }) => (
           <View style={styles.flatlistItem}>
-            <View style={styles.flatlistLimit}>
-              <Text style={styles.flatlistLimitText}>
-                {limitCounts[limit.limitId]}/{limit.maxDays}
-              </Text>
-            </View>
+            <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <MyIcon
               style={{ marginLeft: "auto" }}

@@ -1,8 +1,6 @@
 import React from "react";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
-import DateInterval from "./DateInterval";
-import { TODAY } from "../constants";
 
 const db = new AppDatabase();
 
@@ -11,9 +9,9 @@ type State = {
   selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
   events: AppEvent[];
+  eventDates: Set<number>;
   limits: AppLimit[];
   limitsById: Record<number, AppLimit>;
-  limitCounts: Record<number, number>;
 };
 
 type Action =
@@ -48,9 +46,9 @@ const initialState: State = {
   selectedCategory: undefined,
   selectedLimit: undefined,
   events: [],
+  eventDates: new Set(),
   limits: [],
   limitsById: {},
-  limitCounts: {},
 };
 
 export const AppDataContext = React.createContext<Context>({
@@ -67,26 +65,6 @@ export const AppDataContext = React.createContext<Context>({
   editLimit: () => undefined,
   deleteLimit: () => undefined,
 });
-
-function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
-  const dates = new Set<number>();
-
-  for (const event of events) {
-    for (const date of Date.range(event.startDate, event.stopDate)) {
-      dates.add(date);
-    }
-  }
-
-  const counts: Record<number, number> = {};
-
-  for (const limit of limits) {
-    const interval = DateInterval.getInterval(limit, TODAY);
-
-    counts[limit.limitId] = interval.filter([...dates]).length;
-  }
-
-  return counts;
-}
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
@@ -131,14 +109,20 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      const limitCounts = getLimitCounts(events, state.limits);
-      return { ...state, events, limitCounts };
+
+      const eventDates = new Set<number>();
+      for (const event of events) {
+        for (const date of Date.range(event.startDate, event.stopDate)) {
+          eventDates.add(date);
+        }
+      }
+
+      return { ...state, events, eventDates };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
       const limitsById = limits.toObject("limitId");
-      const limitCounts = getLimitCounts(state.events, limits);
-      return { ...state, limits, limitsById, limitCounts };
+      return { ...state, limits, limitsById };
     }
     default:
       return state;

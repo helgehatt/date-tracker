@@ -8,15 +8,16 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { COLORS } from "../constants";
+import { COLORS, TODAY } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
+import MyLimit from "../components/MyLimit";
 
 interface IProps {
   style?: ViewStyle;
 }
 
 const HeaderView: React.FC<IProps> = ({ style }) => {
-  const { selectedCategory, limits, limitCounts } =
+  const { selectedCategory, eventDates, limits } =
     React.useContext(AppDataContext);
 
   const crumbs = selectedCategory
@@ -46,9 +47,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
             ]}
           >
             <Text style={[styles.text]}>{limit.name}</Text>
-            <Text style={[styles.text, { fontSize: 20 }]}>
-              {limitCounts[limit.limitId]}/{limit.maxDays}
-            </Text>
+            <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
           </View>
         ))}
       </ScrollView>
@@ -62,11 +61,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   favoriteContainer: {
-    marginVertical: 20,
+    paddingVertical: 20,
     alignSelf: "center",
     overflow: "visible",
   },
   favoriteItem: {
+    alignItems: "center",
     marginHorizontal: 10,
     rowGap: 10,
   },
