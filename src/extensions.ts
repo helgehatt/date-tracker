@@ -39,6 +39,10 @@ Date.prototype.toISOMonthString = function () {
   return this.toISOString().slice(0, 7);
 };
 
+Date.prototype.toISOYearString = function () {
+  return this.toISOString().slice(0, 4);
+};
+
 Date.prototype.add = function ({ years = 0, months = 0, days = 0 }) {
   const { year, month, day } = this.getComponents();
   return new Date(Date.UTC(year + years, month + months, day + days));

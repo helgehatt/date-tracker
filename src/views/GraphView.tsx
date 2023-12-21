@@ -19,30 +19,36 @@ interface IProps {
   limit: AppLimit;
 }
 
-function getUniqueDates(events: AppEvent[]) {
-  const dates = new Set<number>();
-
-  for (const event of events) {
-    for (const date of Date.range(event.startDate, event.stopDate)) {
-      dates.add(date);
-    }
-  }
-
-  return Array.from(dates);
-}
-
-function getData(limit: AppLimit, events: AppEvent[]) {
-  const dates = getUniqueDates(events).sort();
-
+function getData(limit: AppLimit, dates: number[]) {
   switch (limit.intervalType) {
     case "fixed": {
-      const years = new Set(dates.map((date) => new Date(date).getFullYear()));
+      switch (limit.fixedInterval) {
+        case "yearly": {
+          const unique = new Set(
+            dates.map((date) => Date.UTC(new Date(date).getFullYear(), 0, 1))
+          );
 
-      return Array.from(years).map((year): BarItemType => {
-        const interval = DateInterval.getInterval(limit, Date.UTC(year, 0, 1));
-        const count = interval.filter(dates).length;
-        return { value: count, label: String(year) };
-      });
+          return Array.from(unique).map((date): BarItemType => {
+            const interval = DateInterval.getInterval(limit, date);
+            const count = interval.filter(dates).length;
+            return { value: count, label: new Date(date).toISOYearString() };
+          });
+        }
+        case "monthly": {
+          const unique = new Set(
+            dates.map((date) => Number(new Date(date).ceil()))
+          );
+
+          return Array.from(unique).map((date): BarItemType => {
+            const interval = DateInterval.getInterval(limit, date);
+            const count = interval.filter(dates).length;
+            return { value: count, label: new Date(date).toISOMonthString() };
+          });
+        }
+        default: {
+          return [];
+        }
+      }
     }
     case "running": {
       const range = Array.from(Date.range(dates[0], dates[dates.length - 1]));
@@ -80,7 +86,7 @@ const LabelComponent: React.FC<{ date: number }> = ({ date }) => {
 };
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { events, selectLimit } = React.useContext(AppDataContext);
+  const { eventDates, selectLimit } = React.useContext(AppDataContext);
 
   const onClose = React.useCallback(() => {
     selectLimit(undefined);
@@ -96,7 +102,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
     };
   }, []);
 
-  const data = getData(limit, events);
+  const data = getData(limit, eventDates);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -109,7 +115,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
           <BarChart
             data={data}
             {...props}
-            barWidth={22}
+            barWidth={50}
             barBorderRadius={4}
             frontColor="lightgray"
           />

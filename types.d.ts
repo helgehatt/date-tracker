@@ -84,16 +84,23 @@ interface Date {
   /**
    * Returns the date part of an ISO string
    *
-   * @Example 2022-02-28
+   * @Example "2022-02-28"
    */
   toISODateString(): string;
 
   /**
    * Returns the month part of an ISO string
    *
-   * @Example 2022-02
+   * @Example "2022-02"
    */
   toISOMonthString(): string;
+
+  /**
+   * Returns the year part of an ISO string
+   *
+   * @Example "2022"
+   */
+  toISOYearString(): string;
 
   /**
    * Returns a new Date after adding the given years, months and days.
