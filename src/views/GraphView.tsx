@@ -12,6 +12,7 @@ import {
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
+import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {

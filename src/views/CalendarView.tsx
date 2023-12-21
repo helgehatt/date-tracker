@@ -1,6 +1,8 @@
 import React from "react";
 import {
   ActivityIndicator,
+  FlatList,
+  FlatListProps,
   Keyboard,
   StyleSheet,
   Text,
@@ -10,8 +12,7 @@ import {
 } from "react-native";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
-import MonthGenerator from "../helpers/MonthGenerator";
-import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT, STYLES, TODAY } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { AppDataContext } from "../helpers/AppDataProvider";
@@ -24,36 +25,78 @@ interface IProps {
 
 type State = {
   mode: "view" | "add" | "edit";
+  months: Date[];
+  thisMonthIndex: number;
+  currentMonthIndex: number;
   eventsByDate: Record<number, AppEvent>;
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
   selectedStopDate: number;
-  noteInput: string;
-  startDateInput: string;
-  stopDateInput: string;
+  input: {
+    startDate: string;
+    stopDate: string;
+    note: string;
+  };
 };
 
 type Action =
-  | { type: "RESET" }
+  | { type: "ON_OPEN" }
+  | { type: "ON_CLOSE" }
   | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
-  | { type: "ON_CHANGE"; payload: { key: keyof State; value: string } }
-  | { type: "SELECT_DATE"; payload: { datetime: number } };
+  | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
+  | { type: "ON_SCROLL"; payload: { index: number } }
+  | { type: "SELECT_DATE"; payload: { datetime: number } }
+  | { type: "PREV_MONTH" }
+  | { type: "NEXT_MONTH" };
+
+const THIS_MONTH = new Date(new Date(TODAY).setDate(1));
 
 const initialState: State = {
   mode: "view",
+  months: [
+    ...Array.from({ length: 5 }, (v, k) =>
+      THIS_MONTH.add({ months: -(k + 1) })
+    ).reverse(),
+    THIS_MONTH,
+    ...Array.from({ length: 5 }, (v, k) => THIS_MONTH.add({ months: k + 1 })),
+  ],
+  thisMonthIndex: 5,
+  currentMonthIndex: 5,
   eventsByDate: {},
   selectedEvent: null,
   selectedStartDate: NaN,
   selectedStopDate: NaN,
-  noteInput: "",
-  startDateInput: "",
-  stopDateInput: "",
+  input: {
+    startDate: "",
+    stopDate: "",
+    note: "",
+  },
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "RESET": {
-      return { ...initialState, eventsByDate: state.eventsByDate };
+    case "ON_OPEN": {
+      return {
+        ...state,
+        mode: "add",
+        input: {
+          startDate: "",
+          stopDate: "",
+          note: "",
+        },
+      };
+    }
+    case "ON_CLOSE": {
+      return {
+        ...state,
+        mode: "view",
+        selectedEvent: null,
+        selectedStartDate: NaN,
+        selectedStopDate: NaN,
+      };
+    }
+    case "ON_SCROLL": {
+      return { ...state, currentMonthIndex: action.payload.index };
     }
     case "UPDATE_EVENTS": {
       const eventsByDate: Record<number, AppEvent> = {};
@@ -70,20 +113,20 @@ function reducer(state: State, action: Action): State {
       const { key } = action.payload;
       let { value } = action.payload;
 
-      if (key === "startDateInput" || key === "stopDateInput") {
-        value = Date.onChangeFormat(state[key], value);
+      if (key === "startDate" || key === "stopDate") {
+        value = Date.onChangeFormat(state.input[key], value);
 
         if (value.length == 10) {
           const datetime = Date.parse(value);
 
           if (datetime) {
-            if (key === "startDateInput") state.selectedStartDate = datetime;
-            if (key === "stopDateInput") state.selectedStopDate = datetime;
+            if (key === "startDate") state.selectedStartDate = datetime;
+            if (key === "stopDate") state.selectedStopDate = datetime;
           }
         }
       }
 
-      return { ...state, [key]: value };
+      return { ...state, input: { ...state.input, [key]: value } };
     }
     case "SELECT_DATE": {
       const { datetime } = action.payload;
@@ -97,9 +140,11 @@ function reducer(state: State, action: Action): State {
             selectedEvent: event,
             selectedStartDate: event.startDate,
             selectedStopDate: event.stopDate,
-            noteInput: event.note,
-            startDateInput: new Date(event.startDate).toISODateString(),
-            stopDateInput: new Date(event.stopDate).toISODateString(),
+            input: {
+              startDate: new Date(event.startDate).toISODateString(),
+              stopDate: new Date(event.stopDate).toISODateString(),
+              note: event.note,
+            },
           };
         }
         return state;
@@ -115,7 +160,10 @@ function reducer(state: State, action: Action): State {
         return {
           ...state,
           selectedStopDate: datetime,
-          stopDateInput: new Date(datetime).toISODateString(),
+          input: {
+            ...state.input,
+            stopDate: new Date(datetime).toISODateString(),
+          },
         };
       }
 
@@ -124,9 +172,21 @@ function reducer(state: State, action: Action): State {
         ...state,
         selectedStartDate: datetime,
         selectedStopDate: NaN,
-        startDateInput: new Date(datetime).toISODateString(),
-        stopDateInput: "",
+        input: {
+          ...state.input,
+          startDate: new Date(datetime).toISODateString(),
+          stopDate: "",
+        },
       };
+    }
+    case "PREV_MONTH": {
+      const thisMonthIndex = state.thisMonthIndex + 1;
+      const prev = state.months[0].add({ months: -1 });
+      return { ...state, months: [prev, ...state.months], thisMonthIndex };
+    }
+    case "NEXT_MONTH": {
+      const next = state.months[state.months.length - 1].add({ months: 1 });
+      return { ...state, months: [...state.months, next] };
     }
     default:
       return state;
@@ -138,10 +198,14 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     React.useContext(AppDataContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
-  const [monthGenerator] = React.useState(() => new MonthGenerator());
-  const [visibleMonths, setVisibleMonths] = React.useState(() =>
-    monthGenerator.init(5, 5)
-  );
+  const flatlistRef = React.useRef<FlatList>(null);
+
+  const onViewableItemsChanged = React.useRef<
+    NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>
+  >(({ viewableItems }) => {
+    const index = viewableItems[0].index;
+    if (index) dispatch({ type: "ON_SCROLL", payload: { index } });
+  });
 
   const isValid =
     state.selectedStartDate > 0 &&
@@ -149,7 +213,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     state.selectedStartDate <= state.selectedStopDate;
 
   const onChange = React.useCallback(
-    (key: keyof State) => (value: string) => {
+    (key: keyof State["input"]) => (value: string) => {
       dispatch({ type: "ON_CHANGE", payload: { key, value } });
     },
     []
@@ -160,16 +224,20 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
-  }, [monthGenerator]);
+    dispatch({ type: "PREV_MONTH" });
+  }, []);
 
   const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [...months, monthGenerator.next()]);
-  }, [monthGenerator]);
+    dispatch({ type: "NEXT_MONTH" });
+  }, []);
+
+  const onOpen = React.useCallback(() => {
+    dispatch({ type: "ON_OPEN" });
+  }, []);
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "RESET" });
+    dispatch({ type: "ON_CLOSE" });
   }, []);
 
   const onPressAdd = () => {
@@ -178,7 +246,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         categoryId: selectedCategory.categoryId,
         startDate: state.selectedStartDate,
         stopDate: state.selectedStopDate,
-        note: state.noteInput,
+        note: state.input.note,
       });
     }
   };
@@ -189,7 +257,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         ...state.selectedEvent,
         startDate: state.selectedStartDate,
         stopDate: state.selectedStopDate,
-        note: state.noteInput,
+        note: state.input.note,
       });
     }
   };
@@ -198,6 +266,13 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     if (state.selectedEvent) {
       deleteEvent(state.selectedEvent.eventId, state.selectedEvent.categoryId);
     }
+  };
+
+  const onPressArrow = () => {
+    flatlistRef.current?.scrollToIndex({
+      animated: true,
+      index: state.thisMonthIndex,
+    });
   };
 
   React.useEffect(() => {
@@ -217,22 +292,25 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         }}
       >
         <BidirectionalFlatList
+          ref={flatlistRef}
           style={styles.flatlist}
-          data={visibleMonths}
-          renderItem={({ item: { year, month } }) => (
-            <MonthView year={year} month={month} />
+          data={state.months}
+          renderItem={({ item }: { item: Date }) => (
+            <MonthView {...item.getComponents()} />
           )}
           getItemLayout={(_, index) => ({
             length: MONTH_VIEW_HEIGHT,
             offset: MONTH_VIEW_HEIGHT * index,
             index,
           })}
-          initialScrollIndex={5}
-          keyExtractor={({ year, month }) => `${year}.${month}`}
+          initialScrollIndex={state.thisMonthIndex}
+          keyExtractor={(item: Date) => item.toISODateString()}
           onStartReached={showPreviousMonth}
           onStartReachedThreshold={1000}
           onEndReached={showNextMonth}
           onEndReachedThreshold={1000}
+          onViewableItemsChanged={onViewableItemsChanged.current}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <ActivityIndicator
@@ -251,9 +329,30 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         />
       </SelectionContext.Provider>
 
-      <View style={STYLES.sheet.opener}>
-        <MyIcon onPress={() => onChange("mode")("add")} name="plus" size="lg" />
-      </View>
+      <MyIcon
+        style={STYLES.sheet.opener}
+        onPress={onOpen}
+        name="plus"
+        size="lg"
+      />
+
+      {state.currentMonthIndex > state.thisMonthIndex + 2 && (
+        <MyIcon
+          style={styles.returnArrow}
+          onPress={onPressArrow}
+          name="arrow-up"
+          size="lg"
+        />
+      )}
+
+      {state.currentMonthIndex < state.thisMonthIndex - 2 && (
+        <MyIcon
+          style={styles.returnArrow}
+          onPress={onPressArrow}
+          name="arrow-down"
+          size="lg"
+        />
+      )}
 
       <BottomSheet
         visible={state.mode !== "view"}
@@ -280,15 +379,15 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={state.startDateInput}
-              onChangeText={onChange("startDateInput")}
+              value={state.input.startDate}
+              onChangeText={onChange("startDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
             <TextInput
               style={STYLES.sheet.input}
-              value={state.stopDateInput}
-              onChangeText={onChange("stopDateInput")}
+              value={state.input.stopDate}
+              onChangeText={onChange("stopDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
@@ -296,8 +395,8 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           <View style={STYLES.sheet.row}>
             <TextInput
               style={STYLES.sheet.input}
-              value={state.noteInput}
-              onChangeText={onChange("noteInput")}
+              value={state.input.note}
+              onChangeText={onChange("note")}
               placeholder="Write a small note..."
             />
           </View>
@@ -319,6 +418,11 @@ const styles = StyleSheet.create({
   container: {},
   flatlist: { paddingHorizontal: 5 },
   spinner: { marginVertical: 50 },
+  returnArrow: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+  },
 });
 
 export default CalendarView;

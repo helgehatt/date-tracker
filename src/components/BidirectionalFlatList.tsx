@@ -15,37 +15,43 @@ interface IProps
   onEndReachedThreshold: number;
 }
 
-const BidirectionalFlatList: React.FC<IProps> = ({
-  onScroll,
-  onStartReached,
-  onEndReached,
-  onStartReachedThreshold,
-  onEndReachedThreshold,
-  ...props
-}) => {
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    onScroll?.(event);
+const BidirectionalFlatList = React.forwardRef<FlatList, IProps>(
+  (
+    {
+      onScroll,
+      onStartReached,
+      onEndReached,
+      onStartReachedThreshold,
+      onEndReachedThreshold,
+      ...props
+    },
+    ref
+  ) => {
+    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      onScroll?.(event);
 
-    const offset = event.nativeEvent.contentOffset.y;
-    const visibleLength = event.nativeEvent.layoutMeasurement.height;
-    const contentLength = event.nativeEvent.contentSize.height;
+      const offset = event.nativeEvent.contentOffset.y;
+      const visibleLength = event.nativeEvent.layoutMeasurement.height;
+      const contentLength = event.nativeEvent.contentSize.height;
 
-    if (offset < onStartReachedThreshold) {
-      onStartReached();
-    }
+      if (offset < onStartReachedThreshold) {
+        onStartReached();
+      }
 
-    if (contentLength - visibleLength - offset < onEndReachedThreshold) {
-      onEndReached();
-    }
-  };
+      if (contentLength - visibleLength - offset < onEndReachedThreshold) {
+        onEndReached();
+      }
+    };
 
-  return (
-    <FlatList
-      {...props}
-      onScroll={handleScroll}
-      maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-    />
-  );
-};
+    return (
+      <FlatList
+        {...props}
+        ref={ref}
+        onScroll={handleScroll}
+        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+      />
+    );
+  }
+);
 
 export default BidirectionalFlatList;
