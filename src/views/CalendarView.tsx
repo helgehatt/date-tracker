@@ -206,15 +206,16 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
   const flatlistRef = React.useRef<FlatList>(null);
 
-  const onViewableItemsChanged = React.useRef<
-    NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>
-  >(({ viewableItems }) => {
-    const index = viewableItems[0].index;
-    if (index) {
-      dispatch({ type: "ON_SCROLL", payload: { index } });
-      setReferenceDate(new Date(viewableItems[0].item).ceil());
+  type ItemChange = NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>;
+  const onViewableItemsChanged = React.useRef<ItemChange>(
+    ({ viewableItems }) => {
+      if (viewableItems.length && viewableItems[0].index) {
+        const { index, item } = viewableItems[0];
+        dispatch({ type: "ON_SCROLL", payload: { index } });
+        setReferenceDate(new Date(item).ceil());
+      }
     }
-  });
+  );
 
   const isValid =
     state.selectedStartDate > 0 &&
