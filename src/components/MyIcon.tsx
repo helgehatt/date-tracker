@@ -12,6 +12,8 @@ import { EvilIcons } from "@expo/vector-icons";
 import { COLORS } from "../constants";
 
 type IconName =
+  | "arrow-down"
+  | "arrow-up"
   | "calendar"
   | "chart"
   | "close"

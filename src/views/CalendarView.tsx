@@ -1,6 +1,8 @@
 import React from "react";
 import {
   ActivityIndicator,
+  FlatList,
+  FlatListProps,
   Keyboard,
   StyleSheet,
   Text,
@@ -24,6 +26,8 @@ interface IProps {
 type State = {
   mode: "view" | "add" | "edit";
   months: Date[];
+  thisMonthIndex: number;
+  currentMonthIndex: number;
   eventsByDate: Record<number, AppEvent>;
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
@@ -40,6 +44,7 @@ type Action =
   | { type: "ON_CLOSE" }
   | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
+  | { type: "ON_SCROLL"; payload: { index: number } }
   | { type: "SELECT_DATE"; payload: { datetime: number } }
   | { type: "PREV_MONTH" }
   | { type: "NEXT_MONTH" };
@@ -55,6 +60,8 @@ const initialState: State = {
     THIS_MONTH,
     ...Array.from({ length: 5 }, (v, k) => THIS_MONTH.add({ months: k + 1 })),
   ],
+  thisMonthIndex: 5,
+  currentMonthIndex: 5,
   eventsByDate: {},
   selectedEvent: null,
   selectedStartDate: NaN,
@@ -69,10 +76,27 @@ const initialState: State = {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "ON_OPEN": {
-      return { ...state, mode: "add" };
+      return {
+        ...state,
+        mode: "add",
+        input: {
+          startDate: "",
+          stopDate: "",
+          note: "",
+        },
+      };
     }
     case "ON_CLOSE": {
-      return { ...initialState, eventsByDate: state.eventsByDate };
+      return {
+        ...state,
+        mode: "view",
+        selectedEvent: null,
+        selectedStartDate: NaN,
+        selectedStopDate: NaN,
+      };
+    }
+    case "ON_SCROLL": {
+      return { ...state, currentMonthIndex: action.payload.index };
     }
     case "UPDATE_EVENTS": {
       const eventsByDate: Record<number, AppEvent> = {};
@@ -156,8 +180,9 @@ function reducer(state: State, action: Action): State {
       };
     }
     case "PREV_MONTH": {
+      const thisMonthIndex = state.thisMonthIndex + 1;
       const prev = state.months[0].add({ months: -1 });
-      return { ...state, months: [prev, ...state.months] };
+      return { ...state, months: [prev, ...state.months], thisMonthIndex };
     }
     case "NEXT_MONTH": {
       const next = state.months[state.months.length - 1].add({ months: 1 });
@@ -173,6 +198,14 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     React.useContext(AppDataContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
+  const flatlistRef = React.useRef<FlatList>(null);
+
+  const onViewableItemsChanged = React.useRef<
+    NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>
+  >(({ viewableItems }) => {
+    const index = viewableItems[0].index;
+    if (index) dispatch({ type: "ON_SCROLL", payload: { index } });
+  });
 
   const isValid =
     state.selectedStartDate > 0 &&
@@ -235,6 +268,13 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     }
   };
 
+  const onPressArrow = () => {
+    flatlistRef.current?.scrollToIndex({
+      animated: true,
+      index: state.thisMonthIndex,
+    });
+  };
+
   React.useEffect(() => {
     dispatch({ type: "UPDATE_EVENTS", payload: { events } });
     onClose();
@@ -252,6 +292,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         }}
       >
         <BidirectionalFlatList
+          ref={flatlistRef}
           style={styles.flatlist}
           data={state.months}
           renderItem={({ item }: { item: Date }) => (
@@ -262,12 +303,14 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             offset: MONTH_VIEW_HEIGHT * index,
             index,
           })}
-          initialScrollIndex={5}
+          initialScrollIndex={state.thisMonthIndex}
           keyExtractor={(item: Date) => item.toISODateString()}
           onStartReached={showPreviousMonth}
           onStartReachedThreshold={1000}
           onEndReached={showNextMonth}
           onEndReachedThreshold={1000}
+          onViewableItemsChanged={onViewableItemsChanged.current}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <ActivityIndicator
@@ -286,13 +329,30 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         />
       </SelectionContext.Provider>
 
-      <View style={STYLES.sheet.opener}>
-        <MyIcon onPress={onOpen} name="plus" size="lg" />
-      </View>
+      <MyIcon
+        style={STYLES.sheet.opener}
+        onPress={onOpen}
+        name="plus"
+        size="lg"
+      />
 
-      <View>
-        <MyIcon name="close" size="lg" />
-      </View>
+      {state.currentMonthIndex > state.thisMonthIndex + 2 && (
+        <MyIcon
+          style={styles.returnArrow}
+          onPress={onPressArrow}
+          name="arrow-up"
+          size="lg"
+        />
+      )}
+
+      {state.currentMonthIndex < state.thisMonthIndex - 2 && (
+        <MyIcon
+          style={styles.returnArrow}
+          onPress={onPressArrow}
+          name="arrow-down"
+          size="lg"
+        />
+      )}
 
       <BottomSheet
         visible={state.mode !== "view"}
@@ -358,6 +418,11 @@ const styles = StyleSheet.create({
   container: {},
   flatlist: { paddingHorizontal: 5 },
   spinner: { marginVertical: 50 },
+  returnArrow: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+  },
 });
 
 export default CalendarView;
