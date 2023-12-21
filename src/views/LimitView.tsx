@@ -192,7 +192,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               style={{ marginLeft: "auto" }}
               disabled={limit.intervalType === "custom"}
               onPress={() => selectLimit(limit)}
-              name="external-link"
+              name="chevron-down"
             />
             <MyIcon
               onPress={() =>
