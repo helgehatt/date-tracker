@@ -19,21 +19,7 @@ interface IProps {
   limit: AppLimit;
 }
 
-function getUniqueDates(events: AppEvent[]) {
-  const dates = new Set<number>();
-
-  for (const event of events) {
-    for (const date of Date.range(event.startDate, event.stopDate)) {
-      dates.add(date);
-    }
-  }
-
-  return Array.from(dates);
-}
-
-function getData(limit: AppLimit, events: AppEvent[]) {
-  const dates = getUniqueDates(events).sort();
-
+function getData(limit: AppLimit, dates: number[]) {
   switch (limit.intervalType) {
     case "fixed": {
       const years = new Set(dates.map((date) => new Date(date).getFullYear()));
@@ -80,7 +66,7 @@ const LabelComponent: React.FC<{ date: number }> = ({ date }) => {
 };
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { events, selectLimit } = React.useContext(AppDataContext);
+  const { eventDates, selectLimit } = React.useContext(AppDataContext);
 
   const onClose = React.useCallback(() => {
     selectLimit(undefined);
@@ -96,7 +82,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
     };
   }, []);
 
-  const data = getData(limit, events);
+  const data = getData(limit, eventDates);
 
   return (
     <SafeAreaView style={styles.container}>

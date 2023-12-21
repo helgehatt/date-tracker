@@ -6,12 +6,12 @@ import DateInterval from "../helpers/DateInterval";
 interface IProps {
   limit: AppLimit;
   date: number;
-  eventDates: Set<number>;
+  eventDates: number[];
 }
 
 const MyLimit: React.FC<IProps> = ({ limit, date, eventDates }) => {
   const interval = DateInterval.getInterval(limit, date);
-  const count = interval.filter([...eventDates]).length;
+  const count = interval.filter(eventDates).length;
   return (
     <View style={styles.container}>
       <Text style={styles.text}>
