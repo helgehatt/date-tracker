@@ -1,8 +1,11 @@
 import React from "react";
+import * as SplashScreen from "expo-splash-screen";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
 import { TODAY } from "../constants";
 
+// Keep the splash screen visible while the database initializes
+SplashScreen.preventAutoHideAsync();
 const db = new AppDatabase();
 
 type State = {
@@ -265,7 +268,8 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         const categoryId = await AppSettings.getSelectedCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
       })
-      .catch((error) => console.error(error.message));
+      .catch((error) => console.error(error.message))
+      .then(() => SplashScreen.hideAsync());
   }, []);
 
   React.useEffect(() => {

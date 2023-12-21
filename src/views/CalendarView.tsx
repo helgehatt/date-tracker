@@ -6,7 +6,7 @@ import {
   Keyboard,
   StyleSheet,
   Text,
-  TextInput,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from "react-native";
@@ -18,13 +18,14 @@ import MyButton from "../components/MyButton";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import SelectionContext from "../helpers/SelectionContext";
 import MyIcon from "../components/MyIcon";
+import MyTextInput from "../components/MyTextInput";
 
 interface IProps {
   style?: ViewStyle;
 }
 
 type State = {
-  mode: "view" | "add" | "edit";
+  mode: "none" | "view" | "add" | "edit";
   months: Date[];
   thisMonthIndex: number;
   currentMonthIndex: number;
@@ -40,8 +41,7 @@ type State = {
 };
 
 type Action =
-  | { type: "ON_OPEN" }
-  | { type: "ON_CLOSE" }
+  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
   | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
   | { type: "ON_SCROLL"; payload: { index: number } }
@@ -52,7 +52,7 @@ type Action =
 const THIS_MONTH = new Date(TODAY).floor();
 
 const initialState: State = {
-  mode: "view",
+  mode: "none",
   months: [
     ...Array.from({ length: 5 }, (v, k) =>
       THIS_MONTH.add({ months: -(k + 1) })
@@ -75,25 +75,31 @@ const initialState: State = {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "ON_OPEN": {
-      return {
-        ...state,
-        mode: "add",
-        input: {
-          startDate: "",
-          stopDate: "",
-          note: "",
-        },
-      };
-    }
-    case "ON_CLOSE": {
-      return {
-        ...state,
-        mode: "view",
-        selectedEvent: null,
-        selectedStartDate: NaN,
-        selectedStopDate: NaN,
-      };
+    case "SET_MODE": {
+      const { mode } = action.payload;
+
+      if (mode === "add")
+        return {
+          ...state,
+          mode,
+          input: {
+            startDate: "",
+            stopDate: "",
+            note: "",
+          },
+        };
+
+      if (mode === "none") {
+        return {
+          ...state,
+          mode,
+          selectedEvent: null,
+          selectedStartDate: NaN,
+          selectedStopDate: NaN,
+        };
+      }
+
+      return { ...state, mode };
     }
     case "ON_SCROLL": {
       return { ...state, currentMonthIndex: action.payload.index };
@@ -131,12 +137,14 @@ function reducer(state: State, action: Action): State {
     case "SELECT_DATE": {
       const { datetime } = action.payload;
 
-      if (state.mode === "view") {
+      // If mode === "edit" the TouchableOpacity will prevent SELECT_DATE
+
+      if (state.mode === "none") {
         if (datetime in state.eventsByDate) {
           const event = state.eventsByDate[datetime];
           return {
             ...state,
-            mode: "edit",
+            mode: "view",
             selectedEvent: event,
             selectedStartDate: event.startDate,
             selectedStopDate: event.stopDate,
@@ -206,15 +214,16 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
   const flatlistRef = React.useRef<FlatList>(null);
 
-  const onViewableItemsChanged = React.useRef<
-    NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>
-  >(({ viewableItems }) => {
-    const index = viewableItems[0].index;
-    if (index) {
-      dispatch({ type: "ON_SCROLL", payload: { index } });
-      setReferenceDate(new Date(viewableItems[0].item).ceil());
+  type ItemChange = NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>;
+  const onViewableItemsChanged = React.useRef<ItemChange>(
+    ({ viewableItems }) => {
+      if (viewableItems.length && viewableItems[0].index) {
+        const { index, item } = viewableItems[0];
+        dispatch({ type: "ON_SCROLL", payload: { index } });
+        setReferenceDate(new Date(item).ceil());
+      }
     }
-  });
+  );
 
   const isValid =
     state.selectedStartDate > 0 &&
@@ -240,16 +249,27 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     dispatch({ type: "NEXT_MONTH" });
   }, []);
 
-  const onOpen = React.useCallback(() => {
-    dispatch({ type: "ON_OPEN" });
+  const onPressAdd = React.useCallback(() => {
+    dispatch({ type: "SET_MODE", payload: { mode: "add" } });
+  }, []);
+
+  const onPressEdit = React.useCallback(() => {
+    dispatch({ type: "SET_MODE", payload: { mode: "edit" } });
   }, []);
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "ON_CLOSE" });
+    dispatch({ type: "SET_MODE", payload: { mode: "none" } });
   }, []);
 
-  const onPressAdd = () => {
+  const onPressArrow = () => {
+    flatlistRef.current?.scrollToIndex({
+      animated: true,
+      index: state.thisMonthIndex,
+    });
+  };
+
+  const onSubmitAdd = () => {
     if (isValid && selectedCategory) {
       addEvent({
         categoryId: selectedCategory.categoryId,
@@ -260,7 +280,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     }
   };
 
-  const onPressEdit = () => {
+  const onSubmitEdit = () => {
     if (isValid && state.selectedEvent) {
       editEvent({
         ...state.selectedEvent,
@@ -271,17 +291,10 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     }
   };
 
-  const onPressDelete = () => {
+  const onSubmitDelete = () => {
     if (state.selectedEvent) {
       deleteEvent(state.selectedEvent.eventId, state.selectedEvent.categoryId);
     }
-  };
-
-  const onPressArrow = () => {
-    flatlistRef.current?.scrollToIndex({
-      animated: true,
-      index: state.thisMonthIndex,
-    });
   };
 
   React.useEffect(() => {
@@ -349,7 +362,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
       <MyIcon
         style={STYLES.sheet.opener}
-        onPress={onOpen}
+        onPress={onPressAdd}
         name="plus"
         size="lg"
       />
@@ -372,8 +385,12 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         />
       )}
 
+      {state.mode === "view" && (
+        <TouchableOpacity style={styles.overlay} onPress={onClose} />
+      )}
+
       <BottomSheet
-        visible={state.mode !== "view"}
+        visible={state.mode !== "none"}
         height={264}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
@@ -384,26 +401,35 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         <View style={[STYLES.sheet.container]}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
             <Text style={STYLES.sheet.headerText}>
-              {state.mode === "edit" ? "Edit event" : "Add event"}
+              {state.mode === "add" && "Add event"}
+              {state.mode === "view" && "Event details"}
+              {state.mode === "edit" && "Edit event"}
             </Text>
+            {state.mode === "view" && (
+              <MyIcon
+                style={{ marginLeft: "auto" }}
+                onPress={onPressEdit}
+                name="pencil"
+              />
+            )}
             {state.mode === "edit" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={onPressDelete}
+                onPress={onSubmitDelete}
                 name="trash"
               />
             )}
           </View>
           <View style={STYLES.sheet.row}>
-            <TextInput
-              style={STYLES.sheet.input}
+            <MyTextInput
+              editable={state.mode !== "view"}
               value={state.input.startDate}
               onChangeText={onChange("startDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
-            <TextInput
-              style={STYLES.sheet.input}
+            <MyTextInput
+              editable={state.mode !== "view"}
               value={state.input.stopDate}
               onChangeText={onChange("stopDate")}
               placeholder="YYYY-MM-DD"
@@ -411,21 +437,23 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             />
           </View>
           <View style={STYLES.sheet.row}>
-            <TextInput
-              style={STYLES.sheet.input}
+            <MyTextInput
+              editable={state.mode !== "view"}
               value={state.input.note}
               onChangeText={onChange("note")}
               placeholder="Write a small note..."
             />
           </View>
-          <View style={STYLES.sheet.row}>
-            <MyButton
-              style={STYLES.sheet.button}
-              title="Confirm"
-              onPress={state.mode === "edit" ? onPressEdit : onPressAdd}
-              disabled={!isValid}
-            />
-          </View>
+          {state.mode !== "view" && (
+            <View style={STYLES.sheet.row}>
+              <MyButton
+                style={STYLES.sheet.button}
+                title="Confirm"
+                onPress={state.mode === "edit" ? onSubmitEdit : onSubmitAdd}
+                disabled={!isValid}
+              />
+            </View>
+          )}
         </View>
       </BottomSheet>
     </View>
@@ -454,6 +482,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 20,
     right: 20,
+  },
+  overlay: {
+    position: "absolute",
+    ...{ top: 0, bottom: 0, right: 0, left: 0 },
   },
 });
 
