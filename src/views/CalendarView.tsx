@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
-import MonthGenerator from "../helpers/MonthGenerator";
-import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT, STYLES, TODAY } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { AppDataContext } from "../helpers/AppDataProvider";
@@ -24,6 +23,7 @@ interface IProps {
 
 type State = {
   mode: "view" | "add" | "edit";
+  months: Date[];
   eventsByDate: Record<number, AppEvent>;
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
@@ -40,10 +40,21 @@ type Action =
   | { type: "ON_CLOSE" }
   | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
-  | { type: "SELECT_DATE"; payload: { datetime: number } };
+  | { type: "SELECT_DATE"; payload: { datetime: number } }
+  | { type: "PREV_MONTH" }
+  | { type: "NEXT_MONTH" };
+
+const THIS_MONTH = new Date(new Date(TODAY).setDate(1));
 
 const initialState: State = {
   mode: "view",
+  months: [
+    ...Array.from({ length: 5 }, (v, k) =>
+      THIS_MONTH.add({ months: -(k + 1) })
+    ).reverse(),
+    THIS_MONTH,
+    ...Array.from({ length: 5 }, (v, k) => THIS_MONTH.add({ months: k + 1 })),
+  ],
   eventsByDate: {},
   selectedEvent: null,
   selectedStartDate: NaN,
@@ -144,6 +155,14 @@ function reducer(state: State, action: Action): State {
         },
       };
     }
+    case "PREV_MONTH": {
+      const prev = state.months[0].add({ months: -1 });
+      return { ...state, months: [prev, ...state.months] };
+    }
+    case "NEXT_MONTH": {
+      const next = state.months[state.months.length - 1].add({ months: 1 });
+      return { ...state, months: [...state.months, next] };
+    }
     default:
       return state;
   }
@@ -154,10 +173,6 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     React.useContext(AppDataContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
-  const [monthGenerator] = React.useState(() => new MonthGenerator());
-  const [visibleMonths, setVisibleMonths] = React.useState(() =>
-    monthGenerator.init(5, 5)
-  );
 
   const isValid =
     state.selectedStartDate > 0 &&
@@ -176,12 +191,12 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   const showPreviousMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [monthGenerator.prev(), ...months]);
-  }, [monthGenerator]);
+    dispatch({ type: "PREV_MONTH" });
+  }, []);
 
   const showNextMonth = React.useCallback(() => {
-    setVisibleMonths((months) => [...months, monthGenerator.next()]);
-  }, [monthGenerator]);
+    dispatch({ type: "NEXT_MONTH" });
+  }, []);
 
   const onOpen = React.useCallback(() => {
     dispatch({ type: "ON_OPEN" });
@@ -238,9 +253,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
       >
         <BidirectionalFlatList
           style={styles.flatlist}
-          data={visibleMonths}
-          renderItem={({ item: { year, month } }) => (
-            <MonthView year={year} month={month} />
+          data={state.months}
+          renderItem={({ item }: { item: Date }) => (
+            <MonthView {...item.getComponents()} />
           )}
           getItemLayout={(_, index) => ({
             length: MONTH_VIEW_HEIGHT,
@@ -248,7 +263,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             index,
           })}
           initialScrollIndex={5}
-          keyExtractor={({ year, month }) => `${year}.${month}`}
+          keyExtractor={(item: Date) => item.toISODateString()}
           onStartReached={showPreviousMonth}
           onStartReachedThreshold={1000}
           onEndReached={showNextMonth}
