@@ -16,7 +16,7 @@ interface IProps
 }
 
 const BidirectionalFlatList = React.forwardRef<FlatList, IProps>(
-  (
+  function BidirectionalFlatList(
     {
       onScroll,
       onStartReached,
@@ -26,7 +26,7 @@ const BidirectionalFlatList = React.forwardRef<FlatList, IProps>(
       ...props
     },
     ref
-  ) => {
+  ) {
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       onScroll?.(event);
 

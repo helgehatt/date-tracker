@@ -1,19 +1,19 @@
 import React from "react";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
-import DateInterval from "./DateInterval";
 import { TODAY } from "../constants";
 
 const db = new AppDatabase();
 
 type State = {
+  referenceDate: Date;
   selectedCategory: AppCategory | undefined;
   selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
   events: AppEvent[];
+  eventDates: Set<number>;
   limits: AppLimit[];
   limitsById: Record<number, AppLimit>;
-  limitCounts: Record<number, number>;
 };
 
 type Action =
@@ -21,6 +21,7 @@ type Action =
       type: "INITIAL_LOAD";
       payload: { categories: AppCategory[]; categoryId: number | undefined };
     }
+  | { type: "SET_REFERENCE_DATE"; payload: { date: Date } }
   | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
   | { type: "SELECT_LIMIT"; payload: { limit: AppLimit | undefined } }
   | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
@@ -30,6 +31,7 @@ type Action =
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
+  setReferenceDate(date: Date): void;
   selectCategory(category: AppCategory | undefined): void;
   selectLimit(limit: AppLimit | undefined): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
@@ -44,17 +46,19 @@ type Context = State & {
 };
 
 const initialState: State = {
+  referenceDate: new Date(TODAY).ceil(),
   categories: [],
   selectedCategory: undefined,
   selectedLimit: undefined,
   events: [],
+  eventDates: new Set(),
   limits: [],
   limitsById: {},
-  limitCounts: {},
 };
 
 export const AppDataContext = React.createContext<Context>({
   ...initialState,
+  setReferenceDate: () => undefined,
   selectCategory: () => undefined,
   selectLimit: () => undefined,
   addCategory: () => undefined,
@@ -68,26 +72,6 @@ export const AppDataContext = React.createContext<Context>({
   deleteLimit: () => undefined,
 });
 
-function getLimitCounts(events: AppEvent[], limits: AppLimit[]) {
-  const dates = new Set<number>();
-
-  for (const event of events) {
-    for (const date of Date.range(event.startDate, event.stopDate)) {
-      dates.add(date);
-    }
-  }
-
-  const counts: Record<number, number> = {};
-
-  for (const limit of limits) {
-    const interval = DateInterval.getInterval(limit, TODAY);
-
-    counts[limit.limitId] = interval.filter([...dates]).length;
-  }
-
-  return counts;
-}
-
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "INITIAL_LOAD": {
@@ -99,6 +83,9 @@ function reducer(state: State, action: Action): State {
         (category) => category.categoryId == categoryId
       );
       return { ...state, categories, selectedCategory };
+    }
+    case "SET_REFERENCE_DATE": {
+      return { ...state, referenceDate: action.payload.date };
     }
     case "SELECT_CATEGORY": {
       const { category } = action.payload;
@@ -131,14 +118,20 @@ function reducer(state: State, action: Action): State {
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
-      const limitCounts = getLimitCounts(events, state.limits);
-      return { ...state, events, limitCounts };
+
+      const eventDates = new Set<number>();
+      for (const event of events) {
+        for (const date of Date.range(event.startDate, event.stopDate)) {
+          eventDates.add(date);
+        }
+      }
+
+      return { ...state, events, eventDates };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
       const limitsById = limits.toObject("limitId");
-      const limitCounts = getLimitCounts(state.events, limits);
-      return { ...state, limits, limitsById, limitCounts };
+      return { ...state, limits, limitsById };
     }
     default:
       return state;
@@ -147,6 +140,10 @@ function reducer(state: State, action: Action): State {
 
 const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
+
+  const setReferenceDate = React.useCallback((date: Date) => {
+    dispatch({ type: "SET_REFERENCE_DATE", payload: { date } });
+  }, []);
 
   const selectCategory = React.useCallback((category?: AppCategory) => {
     if (category) {
@@ -282,6 +279,7 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     <AppDataContext.Provider
       value={{
         ...state,
+        setReferenceDate,
         selectCategory,
         selectLimit,
         addCategory,

@@ -44,6 +44,16 @@ Date.prototype.add = function ({ years = 0, months = 0, days = 0 }) {
   return new Date(Date.UTC(year + years, month + months, day + days));
 };
 
+Date.prototype.floor = function () {
+  const { year, month } = this.getComponents();
+  return new Date(Date.UTC(year, month, 1));
+};
+
+Date.prototype.ceil = function () {
+  const { year, month } = this.getComponents();
+  return new Date(Date.UTC(year, month + 1, 0));
+};
+
 Date.range = function* (
   start: number,
   stop: number,

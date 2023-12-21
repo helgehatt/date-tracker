@@ -99,6 +99,16 @@ interface Date {
    * Returns a new Date after adding the given years, months and days.
    */
   add({ years: number = 0, months: number = 0, days: number = 0 }): Date;
+
+  /**
+   * Returns a new Date with date of month equal to 1
+   */
+  floor(): Date;
+
+  /**
+   * Returns a new Date with date of month equal to last of month
+   */
+  ceil(): Date;
 }
 
 interface Object {
