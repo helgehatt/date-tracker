@@ -282,6 +282,15 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
   return (
     <View style={[styles.container, style]}>
+      <View style={styles.dayOfWeekContainer}>
+        <Text style={styles.dayOfWeekText}>M</Text>
+        <Text style={styles.dayOfWeekText}>T</Text>
+        <Text style={styles.dayOfWeekText}>W</Text>
+        <Text style={styles.dayOfWeekText}>T</Text>
+        <Text style={styles.dayOfWeekText}>F</Text>
+        <Text style={styles.dayOfWeekText}>S</Text>
+        <Text style={styles.dayOfWeekText}>S</Text>
+      </View>
       <SelectionContext.Provider
         value={{
           eventsByDate: state.eventsByDate,
@@ -416,8 +425,22 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {},
-  flatlist: { paddingHorizontal: 5 },
-  spinner: { marginVertical: 50 },
+  flatlist: {
+    paddingHorizontal: 5,
+  },
+  spinner: {
+    marginVertical: 50,
+  },
+  dayOfWeekContainer: {
+    padding: 5,
+    flexDirection: "row",
+    backgroundColor: COLORS.secondary,
+  },
+  dayOfWeekText: {
+    flex: 1,
+    textAlign: "center",
+    color: COLORS.text,
+  },
   returnArrow: {
     position: "absolute",
     bottom: 20,
