@@ -11,7 +11,7 @@ type State = {
   selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
   events: AppEvent[];
-  eventDates: Set<number>;
+  eventDates: number[];
   limits: AppLimit[];
   limitsById: Record<number, AppLimit>;
 };
@@ -51,7 +51,7 @@ const initialState: State = {
   selectedCategory: undefined,
   selectedLimit: undefined,
   events: [],
-  eventDates: new Set(),
+  eventDates: [],
   limits: [],
   limitsById: {},
 };
@@ -119,14 +119,14 @@ function reducer(state: State, action: Action): State {
     case "LOAD_EVENTS": {
       const { events } = action.payload;
 
-      const eventDates = new Set<number>();
+      const dates = new Set<number>();
       for (const event of events) {
         for (const date of Date.range(event.startDate, event.stopDate)) {
-          eventDates.add(date);
+          dates.add(date);
         }
       }
 
-      return { ...state, events, eventDates };
+      return { ...state, events, eventDates: Array.from(dates).sort() };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
