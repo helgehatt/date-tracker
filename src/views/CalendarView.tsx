@@ -49,7 +49,7 @@ type Action =
   | { type: "PREV_MONTH" }
   | { type: "NEXT_MONTH" };
 
-const THIS_MONTH = new Date(new Date(TODAY).setDate(1));
+const THIS_MONTH = new Date(TODAY).floor();
 
 const initialState: State = {
   mode: "view",
@@ -194,8 +194,14 @@ function reducer(state: State, action: Action): State {
 }
 
 const CalendarView: React.FC<IProps> = ({ style }) => {
-  const { selectedCategory, events, addEvent, editEvent, deleteEvent } =
-    React.useContext(AppDataContext);
+  const {
+    selectedCategory,
+    events,
+    setReferenceDate,
+    addEvent,
+    editEvent,
+    deleteEvent,
+  } = React.useContext(AppDataContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
   const flatlistRef = React.useRef<FlatList>(null);
@@ -204,7 +210,10 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>
   >(({ viewableItems }) => {
     const index = viewableItems[0].index;
-    if (index) dispatch({ type: "ON_SCROLL", payload: { index } });
+    if (index) {
+      dispatch({ type: "ON_SCROLL", payload: { index } });
+      setReferenceDate(new Date(viewableItems[0].item).ceil());
+    }
   });
 
   const isValid =

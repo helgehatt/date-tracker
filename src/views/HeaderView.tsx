@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { COLORS, TODAY } from "../constants";
+import { COLORS } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import MyLimit from "../components/MyLimit";
 
@@ -17,7 +17,7 @@ interface IProps {
 }
 
 const HeaderView: React.FC<IProps> = ({ style }) => {
-  const { selectedCategory, eventDates, limits } =
+  const { referenceDate, selectedCategory, eventDates, limits } =
     React.useContext(AppDataContext);
 
   const crumbs = selectedCategory
@@ -47,7 +47,11 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
             ]}
           >
             <Text style={[styles.text]}>{limit.name}</Text>
-            <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+            <MyLimit
+              limit={limit}
+              date={Number(referenceDate)}
+              eventDates={eventDates}
+            />
           </View>
         ))}
       </ScrollView>

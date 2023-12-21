@@ -1,10 +1,12 @@
 import React from "react";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
+import { TODAY } from "../constants";
 
 const db = new AppDatabase();
 
 type State = {
+  referenceDate: Date;
   selectedCategory: AppCategory | undefined;
   selectedLimit: AppLimit | undefined;
   categories: AppCategory[];
@@ -19,6 +21,7 @@ type Action =
       type: "INITIAL_LOAD";
       payload: { categories: AppCategory[]; categoryId: number | undefined };
     }
+  | { type: "SET_REFERENCE_DATE"; payload: { date: Date } }
   | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
   | { type: "SELECT_LIMIT"; payload: { limit: AppLimit | undefined } }
   | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
@@ -28,6 +31,7 @@ type Action =
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
+  setReferenceDate(date: Date): void;
   selectCategory(category: AppCategory | undefined): void;
   selectLimit(limit: AppLimit | undefined): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
@@ -42,6 +46,7 @@ type Context = State & {
 };
 
 const initialState: State = {
+  referenceDate: new Date(TODAY).ceil(),
   categories: [],
   selectedCategory: undefined,
   selectedLimit: undefined,
@@ -53,6 +58,7 @@ const initialState: State = {
 
 export const AppDataContext = React.createContext<Context>({
   ...initialState,
+  setReferenceDate: () => undefined,
   selectCategory: () => undefined,
   selectLimit: () => undefined,
   addCategory: () => undefined,
@@ -77,6 +83,9 @@ function reducer(state: State, action: Action): State {
         (category) => category.categoryId == categoryId
       );
       return { ...state, categories, selectedCategory };
+    }
+    case "SET_REFERENCE_DATE": {
+      return { ...state, referenceDate: action.payload.date };
     }
     case "SELECT_CATEGORY": {
       const { category } = action.payload;
@@ -131,6 +140,10 @@ function reducer(state: State, action: Action): State {
 
 const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [state, dispatch] = React.useReducer(reducer, initialState);
+
+  const setReferenceDate = React.useCallback((date: Date) => {
+    dispatch({ type: "SET_REFERENCE_DATE", payload: { date } });
+  }, []);
 
   const selectCategory = React.useCallback((category?: AppCategory) => {
     if (category) {
@@ -266,6 +279,7 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     <AppDataContext.Provider
       value={{
         ...state,
+        setReferenceDate,
         selectCategory,
         selectLimit,
         addCategory,
