@@ -59,9 +59,8 @@ function getData(limit: AppLimit, dates: number[]) {
         const labeled = new Date(date).getDate() === 1;
         return {
           value: count,
-          labelComponent: labeled
-            ? () => <LabelComponent date={date} />
-            : undefined,
+          label: labeled ? new Date(date).toISOMonthString() : undefined,
+          labelTextStyle: { color: "lightgray", width: 100, marginLeft: -50 },
           showVerticalLine: !!labeled,
         };
       });
@@ -71,19 +70,6 @@ function getData(limit: AppLimit, dates: number[]) {
     }
   }
 }
-
-const LabelComponent: React.FC<{ date: number }> = ({ date }) => {
-  const label = new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-
-  return (
-    <View style={{ width: 50, marginLeft: -15 }}>
-      <Text style={{ color: "lightgray" }}>{label}</Text>
-    </View>
-  );
-};
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
   const { eventDates, selectLimit } = React.useContext(AppDataContext);
@@ -125,8 +111,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
             areaChart
             data={data}
             {...props}
-            adjustToWidth
-            disableScroll
+            spacing={2.5}
             hideDataPoints
             color="#00ff83"
             thickness={2}
