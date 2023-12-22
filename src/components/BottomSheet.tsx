@@ -34,7 +34,7 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
   customStyles = {},
   children,
 }) => {
-  const [panY] = React.useState(new Animated.Value(0));
+  const [panY] = React.useState(new Animated.Value(height));
 
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => closeOnSwipeDown,
