@@ -19,14 +19,60 @@ interface IProps {
   style?: ViewStyle;
 }
 
-type Mode = "view" | "add" | "edit";
-type State = Optional<AppCategory, "categoryId">;
+type State = {
+  mode: "view" | "add" | "edit";
+  categoryId: number | null;
+  name: string;
+  color: string;
+};
 
-const initialState: () => State = () => ({
-  categoryId: undefined,
+type Action =
+  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
+  | { type: "SET_NAME"; payload: { name: string } }
+  | { type: "SET_COLOR"; payload: { color: string } }
+  | { type: "ON_EDIT"; payload: { category: AppCategory } };
+
+const initialState: State = {
+  mode: "view",
+  categoryId: null,
   name: "",
   color: generateRandomColor(),
-});
+};
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_MODE": {
+      const { mode } = action.payload;
+
+      if (mode === "add") {
+        return {
+          ...state,
+          mode,
+          name: "",
+          color: generateRandomColor(),
+        };
+      }
+
+      if (mode === "view") {
+        return { ...state, mode, categoryId: null };
+      }
+
+      return { ...state, mode };
+    }
+    case "SET_NAME": {
+      return { ...state, name: action.payload.name };
+    }
+    case "SET_COLOR": {
+      return { ...state, color: action.payload.color };
+    }
+    case "ON_EDIT": {
+      return { ...state, mode: "edit", ...action.payload.category };
+    }
+    default: {
+      return state;
+    }
+  }
+}
 
 function generateRandomColor() {
   // return "#" + ((Math.random() * 0xffffff) << 0);
@@ -43,15 +89,18 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     deleteCategory,
   } = React.useContext(AppDataContext);
 
-  const [mode, setMode] = React.useState<Mode>("view");
-  const [state, setState] = React.useState<State>(initialState);
+  const [state, dispatch] = React.useReducer(reducer, initialState);
+
+  const setMode = React.useCallback((mode: State["mode"]) => {
+    dispatch({ type: "SET_MODE", payload: { mode } });
+  }, []);
 
   const setName = React.useCallback((name: string) => {
-    setState((prev) => ({ ...prev, name }));
+    dispatch({ type: "SET_NAME", payload: { name } });
   }, []);
 
   const setColor = React.useCallback((color: string) => {
-    setState((prev) => ({ ...prev, color }));
+    dispatch({ type: "SET_COLOR", payload: { color } });
   }, []);
 
   const isValid = state.name.length > 0;
@@ -59,13 +108,15 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
     setMode("view");
-    setState(initialState);
+  }, []);
+
+  const onPressEdit = React.useCallback((category: AppCategory) => {
+    dispatch({ type: "ON_EDIT", payload: { category } });
   }, []);
 
   const onSubmitAdd = () => {
     if (isValid) {
       addCategory({ name: state.name, color: state.color });
-      onClose();
     }
   };
 
@@ -76,7 +127,6 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         name: state.name,
         color: state.color,
       });
-      onClose();
     }
   };
 
@@ -84,8 +134,9 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     if (state.categoryId) {
       deleteCategory(state.categoryId);
     }
-    onClose();
   };
+
+  React.useEffect(() => onClose(), [onClose, categories]);
 
   return (
     <View style={[styles.container, style]}>
@@ -117,10 +168,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
               <Text style={styles.categoryText}>{category.name}</Text>
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={() => {
-                  setMode("edit");
-                  setState(category);
-                }}
+                onPress={() => onPressEdit(category)}
                 name="pencil"
               />
             </View>
@@ -133,7 +181,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
       </View>
 
       <BottomSheet
-        visible={mode !== "view"}
+        visible={state.mode !== "view"}
         height={200}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
@@ -144,9 +192,9 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         <View style={STYLES.sheet.container}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
             <Text style={STYLES.sheet.headerText}>
-              {mode === "edit" ? "Edit category" : "Add category"}
+              {state.mode === "edit" ? "Edit category" : "Add category"}
             </Text>
-            {mode === "edit" && (
+            {state.mode === "edit" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
                 onPress={onSubmitDelete}
@@ -171,7 +219,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
             <MyButton
               style={STYLES.sheet.button}
               title="Confirm"
-              onPress={mode === "edit" ? onSubmitEdit : onSubmitAdd}
+              onPress={state.mode === "edit" ? onSubmitEdit : onSubmitAdd}
               disabled={!isValid}
             />
           </View>
