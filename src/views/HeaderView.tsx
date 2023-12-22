@@ -48,6 +48,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
           >
             <Text style={[styles.text]}>{limit.name}</Text>
             <MyLimit
+              style={{ fontSize: 20, minWidth: 50 }}
               limit={limit}
               date={Number(referenceDate)}
               eventDates={eventDates}

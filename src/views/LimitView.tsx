@@ -186,7 +186,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: limit }) => (
           <View style={styles.flatlistItem}>
-            <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+            <View style={styles.flatlistLimit}>
+              <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+            </View>
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <MyIcon
               style={{ marginLeft: "auto" }}
