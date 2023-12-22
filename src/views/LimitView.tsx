@@ -151,7 +151,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     eventDates,
     limits,
     limitsById,
-    selectLimit: openGraph,
+    openGraph,
     addLimit,
     editLimit,
     deleteLimit,

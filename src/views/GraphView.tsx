@@ -72,11 +72,7 @@ function getData(limit: AppLimit, dates: number[]) {
 }
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { eventDates, selectLimit } = React.useContext(AppDataContext);
-
-  const onClose = React.useCallback(() => {
-    selectLimit(undefined);
-  }, [selectLimit]);
+  const { eventDates, closeGraph } = React.useContext(AppDataContext);
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -94,7 +90,11 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>{limit.name}</Text>
-        <MyIcon style={{ marginLeft: "auto" }} onPress={onClose} name="close" />
+        <MyIcon
+          style={{ marginLeft: "auto" }}
+          onPress={closeGraph}
+          name="close"
+        />
       </View>
       <View style={styles.graph}>
         {limit.intervalType === "fixed" && (

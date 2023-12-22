@@ -11,7 +11,7 @@ const db = new AppDatabase();
 type State = {
   referenceDate: Date;
   selectedCategory: AppCategory | undefined;
-  selectedLimit: AppLimit | undefined;
+  graphViewLimit: AppLimit | null;
   categories: AppCategory[];
   events: AppEvent[];
   eventDates: number[];
@@ -26,7 +26,8 @@ type Action =
     }
   | { type: "SET_REFERENCE_DATE"; payload: { date: Date } }
   | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
-  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit | undefined } }
+  | { type: "OPEN_GRAPH"; payload: { limit: AppLimit } }
+  | { type: "CLOSE_GRAPH" }
   | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
   | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
@@ -36,7 +37,8 @@ type Action =
 type Context = State & {
   setReferenceDate(date: Date): void;
   selectCategory(category: AppCategory | undefined): void;
-  selectLimit(limit: AppLimit | undefined): void;
+  openGraph(limit: AppLimit): void;
+  closeGraph(): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
   deleteCategory(categoryId: number): void;
@@ -52,7 +54,7 @@ const initialState: State = {
   referenceDate: new Date(TODAY).ceil(),
   categories: [],
   selectedCategory: undefined,
-  selectedLimit: undefined,
+  graphViewLimit: null,
   events: [],
   eventDates: [],
   limits: [],
@@ -63,7 +65,8 @@ export const AppDataContext = React.createContext<Context>({
   ...initialState,
   setReferenceDate: () => undefined,
   selectCategory: () => undefined,
-  selectLimit: () => undefined,
+  openGraph: () => undefined,
+  closeGraph: () => undefined,
   addCategory: () => undefined,
   editCategory: () => undefined,
   deleteCategory: () => undefined,
@@ -97,8 +100,11 @@ function reducer(state: State, action: Action): State {
       }
       return { ...state, selectedCategory: category };
     }
-    case "SELECT_LIMIT": {
-      return { ...state, selectedLimit: action.payload.limit };
+    case "OPEN_GRAPH": {
+      return { ...state, graphViewLimit: action.payload.limit };
+    }
+    case "CLOSE_GRAPH": {
+      return { ...state, graphViewLimit: null };
     }
     case "EDIT_CATEGORY": {
       const { categoryId } = action.payload;
@@ -157,8 +163,12 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "SELECT_CATEGORY", payload: { category } });
   }, []);
 
-  const selectLimit = React.useCallback((limit?: AppLimit) => {
-    dispatch({ type: "SELECT_LIMIT", payload: { limit } });
+  const openGraph = React.useCallback((limit: AppLimit) => {
+    dispatch({ type: "OPEN_GRAPH", payload: { limit } });
+  }, []);
+
+  const closeGraph = React.useCallback(() => {
+    dispatch({ type: "CLOSE_GRAPH" });
   }, []);
 
   const setCategories = React.useCallback((categories: AppCategory[]) => {
@@ -285,7 +295,8 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
         ...state,
         setReferenceDate,
         selectCategory,
-        selectLimit,
+        openGraph,
+        closeGraph,
         addCategory,
         editCategory,
         deleteCategory,
