@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
@@ -16,7 +16,7 @@ import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {
-  limit: AppLimit;
+  style?: ViewStyle;
 }
 
 function getData(limit: AppLimit, dates: number[]) {
@@ -71,8 +71,11 @@ function getData(limit: AppLimit, dates: number[]) {
   }
 }
 
-const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { eventDates, activateLimit } = React.useContext(AppDataContext);
+const GraphView: React.FC<IProps> = ({ style }) => {
+  const { activeLimitId, limitsById, eventDates, activateLimit } =
+    React.useContext(AppDataContext);
+
+  const limit = limitsById[activeLimitId!];
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -87,7 +90,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
   const data = getData(limit, eventDates);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, style]}>
       <View style={styles.header}>
         <Text style={styles.headerText}>{limit.name}</Text>
         <MyIcon

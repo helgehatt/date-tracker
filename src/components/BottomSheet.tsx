@@ -47,7 +47,11 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
     },
     onPanResponderRelease: (_e, gestureState) => {
       if (gestureState.dy > height * 0.4 || gestureState.vy > 0.5) {
-        closeOnSwipeTrigger();
+        Animated.timing(panY, {
+          useNativeDriver: false,
+          toValue: height,
+          duration: closeDuration,
+        }).start(closeOnSwipeTrigger);
       } else {
         Animated.spring(panY, {
           toValue: 0,

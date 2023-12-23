@@ -389,9 +389,11 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         <View style={[STYLES.sheet.container]}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
             <Text style={STYLES.sheet.headerText}>
-              {state.mode === "add" && "Add event"}
-              {state.mode === "view" && "Event details"}
-              {state.mode === "edit" && "Edit event"}
+              {state.mode === "view"
+                ? "Event details"
+                : state.mode === "edit"
+                ? "Edit event"
+                : "Add event"}
             </Text>
             {state.mode === "view" && (
               <MyIcon
