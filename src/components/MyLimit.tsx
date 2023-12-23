@@ -1,39 +1,30 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleProp, StyleSheet, Text, TextStyle } from "react-native";
 import { COLORS } from "../constants";
 import DateInterval from "../helpers/DateInterval";
 
 interface IProps {
+  style?: StyleProp<TextStyle>;
   limit: AppLimit;
   date: number;
   eventDates: number[];
 }
 
-const MyLimit: React.FC<IProps> = ({ limit, date, eventDates }) => {
+const MyLimit: React.FC<IProps> = ({ style, limit, date, eventDates }) => {
   const interval = DateInterval.getInterval(limit, date);
   const count = interval.filter(eventDates).length;
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>
-        {count}/{limit.maxDays}
-      </Text>
-    </View>
+    <Text style={[styles.base, style]}>
+      {count}/{limit.maxDays}
+    </Text>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    width: 75,
-    justifyContent: "center",
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 15,
-    borderRadius: 15,
-  },
-  text: {
+  base: {
     color: COLORS.text,
     textAlign: "center",
   },
 });
 
-export default React.memo(MyLimit);
+export default MyLimit;

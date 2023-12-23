@@ -11,9 +11,9 @@ interface IProps {
 }
 
 const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
-  const { selectedCategory } = React.useContext(AppDataContext);
+  const { activeCategoryId } = React.useContext(AppDataContext);
 
-  const disabled = selectedCategory === undefined;
+  const disabled = activeCategoryId === null;
 
   return (
     <SafeAreaView style={[styles.container, style]}>

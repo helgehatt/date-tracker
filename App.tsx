@@ -37,9 +37,7 @@ export default function App() {
         <AppbarView page={page} setPage={setPage} />
       </View>
       <AppDataContext.Consumer>
-        {(value) =>
-          value.selectedLimit && <GraphView limit={value.selectedLimit} />
-        }
+        {(ctx) => ctx.activeLimitId !== null && <GraphView />}
       </AppDataContext.Consumer>
     </AppDataProvider>
   );

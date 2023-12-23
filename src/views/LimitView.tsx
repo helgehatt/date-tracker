@@ -21,7 +21,7 @@ interface IProps {
 }
 
 type State = {
-  mode: "view" | "add" | "edit";
+  mode: "none" | "add" | "edit";
   selectedLimit: AppLimit | null;
   input: {
     name: string;
@@ -35,8 +35,14 @@ type State = {
   };
 };
 
+type Action =
+  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
+  | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
+  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit } }
+  | { type: "UPDATE_LIMIT"; payload: { limit: AppLimit } };
+
 const initialState: State = {
-  mode: "view",
+  mode: "none",
   selectedLimit: null,
   input: {
     name: "",
@@ -49,6 +55,48 @@ const initialState: State = {
     customStopDate: "",
   },
 };
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case "SET_MODE": {
+      const { mode } = action.payload;
+
+      if (mode === "add") {
+        return { ...state, mode, input: initialState.input };
+      }
+
+      if (mode === "none") {
+        return { ...state, mode, selectedLimit: null };
+      }
+
+      return { ...state, mode };
+    }
+    case "ON_CHANGE": {
+      const { key } = action.payload;
+      let { value } = action.payload;
+
+      if (key === "customStartDate" || key === "customStopDate") {
+        value = Date.onChangeFormat(state.input[key], value);
+      }
+
+      return { ...state, input: { ...state.input, [key]: value } };
+    }
+    case "SELECT_LIMIT": {
+      return {
+        ...state,
+        mode: "edit",
+        selectedLimit: action.payload.limit,
+        input: convertLimit(action.payload.limit),
+      };
+    }
+    case "UPDATE_LIMIT": {
+      return { ...state, selectedLimit: action.payload.limit };
+    }
+    default: {
+      return state;
+    }
+  }
+}
 
 function convertLimit(limit: AppLimit): State["input"] {
   return {
@@ -99,41 +147,44 @@ function isInputValid(input: State["input"]) {
 
 const LimitView: React.FC<IProps> = ({ style }) => {
   const {
-    selectedCategory,
+    activeCategoryId,
     eventDates,
     limits,
     limitsById,
-    selectLimit,
+    activateLimit,
     addLimit,
     editLimit,
     deleteLimit,
   } = React.useContext(AppDataContext);
 
-  const [state, setState] = React.useState<State>(initialState);
+  const [state, dispatch] = React.useReducer(reducer, initialState);
 
   const onChange = React.useCallback(
-    (key: keyof State["input"]) => (value: State["input"][typeof key]) => {
-      setState((prev) => {
-        if (key === "customStartDate" || key === "customStopDate") {
-          value = Date.onChangeFormat(prev["input"][key], value as string);
-        }
-        return { ...prev, input: { ...prev.input, [key]: value } };
-      });
+    (key: keyof State["input"]) => (value: string) => {
+      dispatch({ type: "ON_CHANGE", payload: { key, value } });
     },
     []
   );
 
+  const selectLimit = React.useCallback((limit: AppLimit) => {
+    dispatch({ type: "SELECT_LIMIT", payload: { limit } });
+  }, []);
+
   const isValid = isInputValid(state.input);
+
+  const onPressAdd = React.useCallback(() => {
+    dispatch({ type: "SET_MODE", payload: { mode: "add" } });
+  }, []);
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    setState(initialState);
+    dispatch({ type: "SET_MODE", payload: { mode: "none" } });
   }, []);
 
   const onSubmitAdd = () => {
-    if (isValid && selectedCategory) {
+    if (isValid && activeCategoryId) {
       addLimit({
-        categoryId: selectedCategory.categoryId,
+        categoryId: activeCategoryId,
         isFavorite: 0,
         ...convertInput(state.input),
       });
@@ -169,9 +220,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
 
   React.useEffect(() => {
     if (state.selectedLimit) {
-      const selectedLimit = limitsById[state.selectedLimit.limitId];
-      if (selectedLimit !== state.selectedLimit) {
-        setState((prev) => ({ ...prev, selectedLimit }));
+      const limit = limitsById[state.selectedLimit.limitId];
+      if (limit !== state.selectedLimit) {
+        dispatch({ type: "UPDATE_LIMIT", payload: { limit } });
       }
     }
   }, [limitsById, state.selectedLimit]);
@@ -186,38 +237,30 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: limit }) => (
           <View style={styles.flatlistItem}>
-            <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+            <View style={styles.flatlistLimit}>
+              <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+            </View>
             <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
             <MyIcon
               style={{ marginLeft: "auto" }}
               disabled={limit.intervalType === "custom"}
-              onPress={() => selectLimit(limit)}
+              onPress={() => activateLimit(limit.limitId)}
               name="chevron-down"
             />
-            <MyIcon
-              onPress={() =>
-                setState({
-                  mode: "edit",
-                  selectedLimit: limit,
-                  input: convertLimit(limit),
-                })
-              }
-              name="pencil"
-            />
+            <MyIcon onPress={() => selectLimit(limit)} name="pencil" />
           </View>
         )}
       />
 
-      <View style={STYLES.sheet.opener}>
-        <MyIcon
-          onPress={() => setState((prev) => ({ ...prev, mode: "add" }))}
-          name="plus"
-          size="lg"
-        />
-      </View>
+      <MyIcon
+        style={STYLES.sheet.opener}
+        onPress={onPressAdd}
+        name="plus"
+        size="lg"
+      />
 
       <BottomSheet
-        visible={state.mode !== "view"}
+        visible={state.mode !== "none"}
         height={328}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}

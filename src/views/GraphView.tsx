@@ -1,5 +1,5 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
@@ -10,13 +10,13 @@ import {
   LineChartPropsType,
   itemType as LineItemType,
 } from "react-native-gifted-charts/src/LineChart/types";
-import { COLORS } from "../constants";
+import { COLORS, DAY_IN_MS, TODAY } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {
-  limit: AppLimit;
+  style?: ViewStyle;
 }
 
 function getData(limit: AppLimit, dates: number[]) {
@@ -52,16 +52,15 @@ function getData(limit: AppLimit, dates: number[]) {
     }
     case "running": {
       const range = Array.from(Date.range(dates[0], dates[dates.length - 1]));
-
-      return range.map((date): LineItemType => {
+      const start = range?.[0] - DAY_IN_MS || TODAY;
+      return [start, ...range].map((date): LineItemType => {
         const interval = DateInterval.getInterval(limit, date);
         const count = interval.filter(dates).length;
         const labeled = new Date(date).getDate() === 1;
         return {
           value: count,
-          labelComponent: labeled
-            ? () => <LabelComponent date={date} />
-            : undefined,
+          label: labeled ? new Date(date).toISOMonthString() : undefined,
+          labelTextStyle: { color: "lightgray", width: 100, marginLeft: -50 },
           showVerticalLine: !!labeled,
         };
       });
@@ -72,25 +71,11 @@ function getData(limit: AppLimit, dates: number[]) {
   }
 }
 
-const LabelComponent: React.FC<{ date: number }> = ({ date }) => {
-  const label = new Date(date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+const GraphView: React.FC<IProps> = ({ style }) => {
+  const { activeLimitId, limitsById, eventDates, activateLimit } =
+    React.useContext(AppDataContext);
 
-  return (
-    <View style={{ width: 50, marginLeft: -15 }}>
-      <Text style={{ color: "lightgray" }}>{label}</Text>
-    </View>
-  );
-};
-
-const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { eventDates, selectLimit } = React.useContext(AppDataContext);
-
-  const onClose = React.useCallback(() => {
-    selectLimit(undefined);
-  }, [selectLimit]);
+  const limit = limitsById[activeLimitId!];
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -105,10 +90,14 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
   const data = getData(limit, eventDates);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, style]}>
       <View style={styles.header}>
         <Text style={styles.headerText}>{limit.name}</Text>
-        <MyIcon style={{ marginLeft: "auto" }} onPress={onClose} name="close" />
+        <MyIcon
+          style={{ marginLeft: "auto" }}
+          onPress={() => activateLimit(null)}
+          name="close"
+        />
       </View>
       <View style={styles.graph}>
         {limit.intervalType === "fixed" && (
@@ -125,8 +114,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
             areaChart
             data={data}
             {...props}
-            adjustToWidth
-            disableScroll
+            spacing={2.5}
             hideDataPoints
             color="#00ff83"
             thickness={2}

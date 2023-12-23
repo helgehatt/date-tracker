@@ -1,15 +1,13 @@
 import React from "react";
 
 type Context = {
-  eventsByDate: Record<number, AppEvent>;
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
   selectedStopDate: number;
-  selectDate: (date: number) => void;
+  selectDate: (date: number, eventsByDate: Record<number, AppEvent>) => void;
 };
 
 const SelectionContext = React.createContext<Context>({
-  eventsByDate: {},
   selectedEvent: null,
   selectedStartDate: NaN,
   selectedStopDate: NaN,

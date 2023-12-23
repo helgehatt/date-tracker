@@ -1,5 +1,6 @@
 {
     "emmet.showAbbreviationSuggestions": false,
+    "emmet.showExpandedAbbreviation": "never",
     "javascript.updateImportsOnFileMove.enabled": "always",
     "typescript.preferences.importModuleSpecifier": "relative",
     "typescript.updateImportsOnFileMove.enabled": "always",

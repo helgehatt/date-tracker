@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const PREFIX = "app.settings.";
-type Setting = "selectedCategory";
+type Setting = "activeCategory";
 
 async function getItem(key: Setting) {
   return AsyncStorage.getItem(PREFIX + key).catch(console.warn);
@@ -16,16 +16,16 @@ async function removeItem(key: Setting) {
 }
 
 class AppSettings {
-  static async getSelectedCategory() {
-    return getItem("selectedCategory").then((value) =>
-      value ? Number(value) : undefined
+  static async getActiveCategory() {
+    return getItem("activeCategory").then((value) =>
+      value ? Number(value) : null
     );
   }
-  static async setSelectedCategory(categoryId: number) {
-    return setItem("selectedCategory", String(categoryId));
+  static async setActiveCategory(categoryId: number) {
+    return setItem("activeCategory", String(categoryId));
   }
-  static async removeSelectedCategory() {
-    return removeItem("selectedCategory");
+  static async removeActiveCategory() {
+    return removeItem("activeCategory");
   }
 }
 

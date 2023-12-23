@@ -17,14 +17,25 @@ interface IProps {
 }
 
 const HeaderView: React.FC<IProps> = ({ style }) => {
-  const { referenceDate, selectedCategory, eventDates, limits } =
-    React.useContext(AppDataContext);
+  const {
+    activeCategoryId,
+    referenceDate,
+    categoriesById,
+    eventDates,
+    limits,
+  } = React.useContext(AppDataContext);
 
-  const crumbs = selectedCategory
-    ? "Starred limits are shown here"
-    : "Select a category from the list below";
-  const title = selectedCategory?.name || "No category selected";
-  const color = selectedCategory?.color || COLORS.secondary;
+  let crumbs: string, title: string, color: string;
+  if (activeCategoryId && categoriesById[activeCategoryId]) {
+    crumbs = "Starred limits are shown here";
+    title = categoriesById[activeCategoryId].name;
+    color = categoriesById[activeCategoryId].color;
+  } else {
+    crumbs = "Select a category from the list below";
+    title = "No category selected";
+    color = COLORS.secondary;
+  }
+
   const favorites = limits.filter((l) => l.isFavorite === 1);
 
   return (
@@ -48,6 +59,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
           >
             <Text style={[styles.text]}>{limit.name}</Text>
             <MyLimit
+              style={{ fontSize: 20, minWidth: 50 }}
               limit={limit}
               date={Number(referenceDate)}
               eventDates={eventDates}
