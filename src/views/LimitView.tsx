@@ -147,11 +147,11 @@ function isInputValid(input: State["input"]) {
 
 const LimitView: React.FC<IProps> = ({ style }) => {
   const {
-    selectedCategory,
+    activeCategoryId,
     eventDates,
     limits,
     limitsById,
-    openGraph,
+    activateLimit,
     addLimit,
     editLimit,
     deleteLimit,
@@ -182,9 +182,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   const onSubmitAdd = () => {
-    if (isValid && selectedCategory) {
+    if (isValid && activeCategoryId) {
       addLimit({
-        categoryId: selectedCategory.categoryId,
+        categoryId: activeCategoryId,
         isFavorite: 0,
         ...convertInput(state.input),
       });
@@ -244,7 +244,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <MyIcon
               style={{ marginLeft: "auto" }}
               disabled={limit.intervalType === "custom"}
-              onPress={() => openGraph(limit)}
+              onPress={() => activateLimit(limit.limitId)}
               name="chevron-down"
             />
             <MyIcon onPress={() => selectLimit(limit)} name="pencil" />

@@ -10,10 +10,13 @@ const db = new AppDatabase();
 
 type State = {
   referenceDate: Date;
-  selectedCategory: AppCategory | undefined;
-  graphViewLimit: AppLimit | null;
+  activeCategoryId: number | null;
+  activeLimitId: number | null;
   categories: AppCategory[];
+  categoriesById: Record<number, AppCategory>;
   events: AppEvent[];
+  eventsById: Record<number, AppEvent>;
+  eventsByDate: Record<number, AppEvent>;
   eventDates: number[];
   limits: AppLimit[];
   limitsById: Record<number, AppLimit>;
@@ -22,23 +25,19 @@ type State = {
 type Action =
   | {
       type: "INITIAL_LOAD";
-      payload: { categories: AppCategory[]; categoryId: number | undefined };
+      payload: { categories: AppCategory[]; categoryId: number | null };
     }
   | { type: "SET_REFERENCE_DATE"; payload: { date: Date } }
-  | { type: "SELECT_CATEGORY"; payload: { category: AppCategory | undefined } }
-  | { type: "OPEN_GRAPH"; payload: { limit: AppLimit } }
-  | { type: "CLOSE_GRAPH" }
-  | { type: "EDIT_CATEGORY"; payload: { categoryId: number } }
-  | { type: "DELETE_CATEGORY"; payload: { categoryId: number } }
+  | { type: "ACTIVATE_CATEGORY"; payload: { categoryId: number | null } }
+  | { type: "ACTIVATE_LIMIT"; payload: { limitId: number | null } }
   | { type: "LOAD_CATEGORIES"; payload: { categories: AppCategory[] } }
   | { type: "LOAD_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "LOAD_LIMITS"; payload: { limits: AppLimit[] } };
 
 type Context = State & {
   setReferenceDate(date: Date): void;
-  selectCategory(category: AppCategory | undefined): void;
-  openGraph(limit: AppLimit): void;
-  closeGraph(): void;
+  activateCategory(categoryId: number | null): void;
+  activateLimit(limitId: number | null): void;
   addCategory(category: Omit<AppCategory, "categoryId">): void;
   editCategory(category: AppCategory): void;
   deleteCategory(categoryId: number): void;
@@ -52,10 +51,13 @@ type Context = State & {
 
 const initialState: State = {
   referenceDate: new Date(TODAY).ceil(),
+  activeCategoryId: null,
+  activeLimitId: null,
   categories: [],
-  selectedCategory: undefined,
-  graphViewLimit: null,
+  categoriesById: {},
   events: [],
+  eventsById: {},
+  eventsByDate: {},
   eventDates: [],
   limits: [],
   limitsById: {},
@@ -64,9 +66,8 @@ const initialState: State = {
 export const AppDataContext = React.createContext<Context>({
   ...initialState,
   setReferenceDate: () => undefined,
-  selectCategory: () => undefined,
-  openGraph: () => undefined,
-  closeGraph: () => undefined,
+  activateCategory: () => undefined,
+  activateLimit: () => undefined,
   addCategory: () => undefined,
   editCategory: () => undefined,
   deleteCategory: () => undefined,
@@ -82,60 +83,55 @@ function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "INITIAL_LOAD": {
       const { categories, categoryId } = action.payload;
+      let activeCategoryId = categoryId;
       if (categoryId === undefined && categories.length) {
-        return { ...state, categories, selectedCategory: categories[0] };
+        activeCategoryId = categories[0].categoryId;
       }
-      const selectedCategory = categories.find(
-        (category) => category.categoryId == categoryId
-      );
-      return { ...state, categories, selectedCategory };
+      return {
+        ...state,
+        categories,
+        categoriesById: categories.toObject("categoryId"),
+        activeCategoryId,
+      };
     }
     case "SET_REFERENCE_DATE": {
       return { ...state, referenceDate: action.payload.date };
     }
-    case "SELECT_CATEGORY": {
-      const { category } = action.payload;
-      if (category === undefined) {
-        return { ...initialState, categories: state.categories };
-      }
-      return { ...state, selectedCategory: category };
-    }
-    case "OPEN_GRAPH": {
-      return { ...state, graphViewLimit: action.payload.limit };
-    }
-    case "CLOSE_GRAPH": {
-      return { ...state, graphViewLimit: null };
-    }
-    case "EDIT_CATEGORY": {
+    case "ACTIVATE_CATEGORY": {
       const { categoryId } = action.payload;
-      // Force state update if the selected category has changed
-      if (state.selectedCategory?.categoryId === categoryId) {
-        return { ...state };
+      if (categoryId) {
+        return { ...state, activeCategoryId: categoryId };
       }
-      return state;
+      const { categories, categoriesById } = state;
+      return { ...initialState, categories, categoriesById };
     }
-    case "DELETE_CATEGORY": {
-      const { categoryId } = action.payload;
-      if (state.selectedCategory?.categoryId === categoryId) {
-        return { ...initialState, categories: state.categories };
-      }
-      return state;
+    case "ACTIVATE_LIMIT": {
+      return { ...state, activeLimitId: action.payload.limitId };
     }
     case "LOAD_CATEGORIES": {
       const { categories } = action.payload;
-      return { ...state, categories };
+      const categoriesById = categories.toObject("categoryId");
+      if (
+        state.activeCategoryId &&
+        !(state.activeCategoryId in categoriesById)
+      ) {
+        return { ...state, categories, categoriesById, activeCategoryId: null };
+      }
+      return { ...state, categories, categoriesById };
     }
     case "LOAD_EVENTS": {
       const { events } = action.payload;
+      const eventsById = events.toObject("eventId");
 
-      const dates = new Set<number>();
+      const eventsByDate: Record<number, AppEvent> = {};
       for (const event of events) {
         for (const date of Date.range(event.startDate, event.stopDate)) {
-          dates.add(date);
+          eventsByDate[date] = event;
         }
       }
+      const eventDates = Object.keys(eventsByDate).map(Number).sort();
 
-      return { ...state, events, eventDates: Array.from(dates).sort() };
+      return { ...state, events, eventsById, eventsByDate, eventDates };
     }
     case "LOAD_LIMITS": {
       const { limits } = action.payload;
@@ -154,21 +150,17 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     dispatch({ type: "SET_REFERENCE_DATE", payload: { date } });
   }, []);
 
-  const selectCategory = React.useCallback((category?: AppCategory) => {
-    if (category) {
-      AppSettings.setSelectedCategory(category.categoryId);
+  const activateCategory = React.useCallback((categoryId: number | null) => {
+    if (categoryId) {
+      AppSettings.setActiveCategory(categoryId);
     } else {
-      AppSettings.removeSelectedCategory();
+      AppSettings.removeActiveCategory();
     }
-    dispatch({ type: "SELECT_CATEGORY", payload: { category } });
+    dispatch({ type: "ACTIVATE_CATEGORY", payload: { categoryId } });
   }, []);
 
-  const openGraph = React.useCallback((limit: AppLimit) => {
-    dispatch({ type: "OPEN_GRAPH", payload: { limit } });
-  }, []);
-
-  const closeGraph = React.useCallback(() => {
-    dispatch({ type: "CLOSE_GRAPH" });
+  const activateLimit = React.useCallback((limitId: number | null) => {
+    dispatch({ type: "ACTIVATE_LIMIT", payload: { limitId } });
   }, []);
 
   const setCategories = React.useCallback((categories: AppCategory[]) => {
@@ -194,13 +186,9 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
 
   const editCategory = React.useCallback(
     (category: AppCategory) => {
-      const { categoryId } = category;
       db.updateCategory(category)
         .then(() => db.loadCategories())
-        .then(setCategories)
-        .then(() =>
-          dispatch({ type: "EDIT_CATEGORY", payload: { categoryId } })
-        );
+        .then(setCategories);
     },
     [setCategories]
   );
@@ -209,10 +197,7 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     (categoryId: number) => {
       db.deleteCategory(categoryId)
         .then(() => db.loadCategories())
-        .then(setCategories)
-        .then(() =>
-          dispatch({ type: "DELETE_CATEGORY", payload: { categoryId } })
-        );
+        .then(setCategories);
     },
     [setCategories]
   );
@@ -275,7 +260,7 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
     db.init()
       .then(() => db.loadCategories())
       .then(async (categories) => {
-        const categoryId = await AppSettings.getSelectedCategory();
+        const categoryId = await AppSettings.getActiveCategory();
         dispatch({ type: "INITIAL_LOAD", payload: { categories, categoryId } });
       })
       .catch((error) => console.error(error.message))
@@ -283,20 +268,19 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   }, []);
 
   React.useEffect(() => {
-    if (state.selectedCategory) {
-      db.loadEvents(state.selectedCategory.categoryId).then(setEvents);
-      db.loadLimits(state.selectedCategory.categoryId).then(setLimits);
+    if (state.activeCategoryId) {
+      db.loadEvents(state.activeCategoryId).then(setEvents);
+      db.loadLimits(state.activeCategoryId).then(setLimits);
     }
-  }, [setEvents, setLimits, state.selectedCategory]);
+  }, [setEvents, setLimits, state.activeCategoryId]);
 
   return (
     <AppDataContext.Provider
       value={{
         ...state,
         setReferenceDate,
-        selectCategory,
-        openGraph,
-        closeGraph,
+        activateCategory,
+        activateLimit,
         addCategory,
         editCategory,
         deleteCategory,

@@ -72,7 +72,7 @@ function getData(limit: AppLimit, dates: number[]) {
 }
 
 const GraphView: React.FC<IProps> = ({ limit }) => {
-  const { eventDates, closeGraph } = React.useContext(AppDataContext);
+  const { eventDates, activateLimit } = React.useContext(AppDataContext);
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -92,7 +92,7 @@ const GraphView: React.FC<IProps> = ({ limit }) => {
         <Text style={styles.headerText}>{limit.name}</Text>
         <MyIcon
           style={{ marginLeft: "auto" }}
-          onPress={closeGraph}
+          onPress={() => activateLimit(null)}
           name="close"
         />
       </View>

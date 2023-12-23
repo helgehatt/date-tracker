@@ -37,9 +37,7 @@ export default function App() {
         <AppbarView page={page} setPage={setPage} />
       </View>
       <AppDataContext.Consumer>
-        {(ctx) =>
-          ctx.graphViewLimit && <GraphView limit={ctx.graphViewLimit} />
-        }
+        {(ctx) => ctx.activeLimitId && <GraphView limit={ctx.activeLimitId} />}
       </AppDataContext.Consumer>
     </AppDataProvider>
   );

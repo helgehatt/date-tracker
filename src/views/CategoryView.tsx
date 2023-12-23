@@ -82,8 +82,8 @@ function generateRandomColor() {
 const CategoryView: React.FC<IProps> = ({ style }) => {
   const {
     categories,
-    selectedCategory,
-    selectCategory,
+    activeCategoryId,
+    activateCategory,
     addCategory,
     editCategory,
     deleteCategory,
@@ -107,7 +107,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    setMode("view");
+    dispatch({ type: "SET_MODE", payload: { mode: "view" } });
   }, []);
 
   const onPressEdit = React.useCallback((category: AppCategory) => {
@@ -149,12 +149,12 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         renderItem={({ item: category }) => (
           <Pressable
             key={category.categoryId}
-            onPress={() => selectCategory(category)}
+            onPress={() => activateCategory(category.categoryId)}
           >
             <View
               style={[
                 styles.flatlistItem,
-                category.categoryId === selectedCategory?.categoryId && {
+                category.categoryId === activeCategoryId && {
                   backgroundColor: COLORS.secondary,
                 },
               ]}

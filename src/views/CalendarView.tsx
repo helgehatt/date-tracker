@@ -203,7 +203,7 @@ function reducer(state: State, action: Action): State {
 
 const CalendarView: React.FC<IProps> = ({ style }) => {
   const {
-    selectedCategory,
+    activeCategoryId,
     events,
     setReferenceDate,
     addEvent,
@@ -270,9 +270,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitAdd = () => {
-    if (isValid && selectedCategory) {
+    if (isValid && activeCategoryId) {
       addEvent({
-        categoryId: selectedCategory.categoryId,
+        categoryId: activeCategoryId,
         startDate: state.selectedStartDate,
         stopDate: state.selectedStopDate,
         note: state.input.note,

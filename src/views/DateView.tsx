@@ -19,7 +19,7 @@ interface IMemoizableProps {
 }
 
 const DateView: React.FC<IProps> = ({ year, month, day }) => {
-  const { selectedCategory } = React.useContext(AppDataContext);
+  const { activeCategoryId, categoriesById } = React.useContext(AppDataContext);
   const {
     eventsByDate,
     selectedEvent,
@@ -39,6 +39,11 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
     return <MemoizedPlaceholder />;
   }
 
+  const categoryColor =
+    activeCategoryId && categoriesById[activeCategoryId]
+      ? categoriesById[activeCategoryId].color
+      : undefined;
+
   const isToday = datetime == TODAY;
   const isEvent = datetime in eventsByDate;
   const isSelectedEvent =
@@ -52,11 +57,11 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
       datetime >= selectedStartDate &&
       datetime <= selectedStopDate);
   const color = isSelected
-    ? selectedCategory?.color
+    ? categoryColor
     : isSelectedEvent
     ? COLORS.tertiary
     : isEvent
-    ? selectedCategory?.color
+    ? categoryColor
     : undefined;
 
   return (
