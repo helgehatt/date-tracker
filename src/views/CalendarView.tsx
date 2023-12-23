@@ -29,7 +29,6 @@ type State = {
   months: Date[];
   thisMonthIndex: number;
   currentMonthIndex: number;
-  eventsByDate: Record<number, AppEvent>;
   selectedEvent: AppEvent | null;
   selectedStartDate: number;
   selectedStopDate: number;
@@ -42,12 +41,14 @@ type State = {
 
 type Action =
   | { type: "SET_MODE"; payload: { mode: State["mode"] } }
-  | { type: "UPDATE_EVENTS"; payload: { events: AppEvent[] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
   | { type: "ON_SCROLL"; payload: { index: number } }
-  | { type: "SELECT_DATE"; payload: { datetime: number } }
   | { type: "PREV_MONTH" }
-  | { type: "NEXT_MONTH" };
+  | { type: "NEXT_MONTH" }
+  | {
+      type: "SELECT_DATE";
+      payload: { datetime: number; eventsByDate: Record<number, AppEvent> };
+    };
 
 const THIS_MONTH = new Date(TODAY).floor();
 
@@ -62,7 +63,6 @@ const initialState: State = {
   ],
   thisMonthIndex: 5,
   currentMonthIndex: 5,
-  eventsByDate: {},
   selectedEvent: null,
   selectedStartDate: NaN,
   selectedStopDate: NaN,
@@ -104,17 +104,6 @@ function reducer(state: State, action: Action): State {
     case "ON_SCROLL": {
       return { ...state, currentMonthIndex: action.payload.index };
     }
-    case "UPDATE_EVENTS": {
-      const eventsByDate: Record<number, AppEvent> = {};
-
-      for (const event of action.payload.events) {
-        for (const date of Date.range(event.startDate, event.stopDate)) {
-          eventsByDate[date] = event;
-        }
-      }
-
-      return { ...state, eventsByDate };
-    }
     case "ON_CHANGE": {
       const { key } = action.payload;
       let { value } = action.payload;
@@ -135,13 +124,13 @@ function reducer(state: State, action: Action): State {
       return { ...state, input: { ...state.input, [key]: value } };
     }
     case "SELECT_DATE": {
-      const { datetime } = action.payload;
+      const { datetime, eventsByDate } = action.payload;
 
       // If mode === "edit" the TouchableOpacity will prevent SELECT_DATE
 
       if (state.mode === "none") {
-        if (datetime in state.eventsByDate) {
-          const event = state.eventsByDate[datetime];
+        if (datetime in eventsByDate) {
+          const event = eventsByDate[datetime];
           return {
             ...state,
             mode: "view",
@@ -237,9 +226,12 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     []
   );
 
-  const selectDate = React.useCallback((datetime: number) => {
-    dispatch({ type: "SELECT_DATE", payload: { datetime } });
-  }, []);
+  const selectDate = React.useCallback(
+    (datetime: number, eventsByDate: Record<number, AppEvent>) => {
+      dispatch({ type: "SELECT_DATE", payload: { datetime, eventsByDate } });
+    },
+    []
+  );
 
   const showPreviousMonth = React.useCallback(() => {
     dispatch({ type: "PREV_MONTH" });
@@ -297,10 +289,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     }
   };
 
-  React.useEffect(() => {
-    dispatch({ type: "UPDATE_EVENTS", payload: { events } });
-    onClose();
-  }, [onClose, events]);
+  React.useEffect(() => onClose(), [onClose, events]);
 
   return (
     <View style={[styles.container, style]}>
@@ -315,7 +304,6 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
       </View>
       <SelectionContext.Provider
         value={{
-          eventsByDate: state.eventsByDate,
           selectedEvent: state.selectedEvent,
           selectedStartDate: state.selectedStartDate,
           selectedStopDate: state.selectedStopDate,
