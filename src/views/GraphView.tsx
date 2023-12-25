@@ -1,5 +1,12 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
+import {
+  LayoutChangeEvent,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
@@ -75,6 +82,12 @@ const GraphView: React.FC<IProps> = ({ style }) => {
   const { activeLimitId, limitsById, eventDates, activateLimit } =
     React.useContext(AppDataContext);
 
+  const [width, setWidth] = React.useState(932);
+
+  const onLayout = React.useCallback((e: LayoutChangeEvent) => {
+    setWidth(e.nativeEvent.layout.width);
+  }, []);
+
   const limit = limitsById[activeLimitId!];
   const data = React.useMemo(
     () => getData(limit, eventDates),
@@ -92,47 +105,50 @@ const GraphView: React.FC<IProps> = ({ style }) => {
   }, []);
 
   return (
-    <SafeAreaView style={[styles.container, style]}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>{limit.name}</Text>
-        <MyIcon
-          style={{ marginLeft: "auto" }}
-          onPress={() => activateLimit(null)}
-          name="close"
-        />
-      </View>
-      <View style={styles.graph}>
-        {limit.intervalType === "fixed" && (
-          <BarChart
-            data={data}
-            {...props}
-            barWidth={50}
-            barBorderRadius={4}
-            frontColor="lightgray"
+    <SafeAreaView style={[styles.container, style]} onLayout={onLayout}>
+      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>{limit.name}</Text>
+          <MyIcon
+            style={{ marginLeft: "auto" }}
+            onPress={() => activateLimit(null)}
+            name="close"
           />
-        )}
-        {limit.intervalType === "running" && (
-          <LineChart
-            areaChart
-            data={data}
-            {...props}
-            spacing={2.5}
-            hideDataPoints
-            color="#00ff83"
-            thickness={2}
-            startFillColor="rgba(20,105,81,0.3)"
-            endFillColor="rgba(20,85,81,0.01)"
-            startOpacity={0.9}
-            endOpacity={0.2}
-          />
-        )}
+        </View>
+        <View style={styles.graph}>
+          {limit.intervalType === "fixed" && (
+            <BarChart
+              {...props}
+              data={data}
+              width={width * 0.65}
+              barWidth={50}
+              barBorderRadius={4}
+              frontColor="lightgray"
+            />
+          )}
+          {limit.intervalType === "running" && (
+            <LineChart
+              {...props}
+              areaChart
+              data={data}
+              width={width * 0.65}
+              spacing={2.5}
+              hideDataPoints
+              color="#00ff83"
+              thickness={2}
+              startFillColor="rgba(20,105,81,0.3)"
+              endFillColor="rgba(20,85,81,0.01)"
+              startOpacity={0.9}
+              endOpacity={0.2}
+            />
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
 const props: BarChartPropsType & LineChartPropsType = {
-  width: 650,
   noOfSections: 3,
   rulesType: "solid",
   rulesColor: "gray",
@@ -164,8 +180,9 @@ const styles = StyleSheet.create({
   },
   graph: {
     flex: 1,
-    paddingLeft: 30,
     justifyContent: "center",
+    alignSelf: "center",
+    marginLeft: -50,
   },
 });
 
