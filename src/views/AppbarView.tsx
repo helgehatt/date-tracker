@@ -49,7 +49,7 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.tertiary,
+    backgroundColor: COLORS.light,
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-evenly",
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 15,
   },
   buttonActive: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.base,
   },
 });
 

@@ -25,11 +25,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 15,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.base,
     color: COLORS.text,
   },
   disabled: {
-    backgroundColor: COLORS.tertiary,
+    backgroundColor: COLORS.light,
   },
 });
 

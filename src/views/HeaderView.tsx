@@ -33,7 +33,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
   } else {
     crumbs = "Select a category from the list below";
     title = "No category selected";
-    color = COLORS.secondary;
+    color = COLORS.dark;
   }
 
   const favorites = limits.filter((l) => l.isFavorite === 1);

@@ -55,7 +55,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
   const color = isSelected
     ? categoryColor
     : isSelectedEvent
-    ? COLORS.tertiary
+    ? COLORS.light
     : isEvent
     ? categoryColor
     : undefined;
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   isToday: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.dark,
     borderRadius: 14,
   },
   text: {

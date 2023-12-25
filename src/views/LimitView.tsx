@@ -265,7 +265,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
-          container: { backgroundColor: COLORS.tertiary },
+          container: { backgroundColor: COLORS.light },
         }}
       >
         <View style={STYLES.sheet.container}>
@@ -313,7 +313,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 styles.typePressable,
                 { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
                 state.input.intervalType === "fixed" && {
-                  backgroundColor: COLORS.secondary,
+                  backgroundColor: COLORS.dark,
                 },
               ]}
             >
@@ -324,7 +324,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               style={[
                 styles.typePressable,
                 state.input.intervalType === "running" && {
-                  backgroundColor: COLORS.secondary,
+                  backgroundColor: COLORS.dark,
                 },
               ]}
             >
@@ -336,7 +336,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 styles.typePressable,
                 { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
                 state.input.intervalType === "custom" && {
-                  backgroundColor: COLORS.secondary,
+                  backgroundColor: COLORS.dark,
                 },
               ]}
             >
@@ -351,7 +351,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   styles.typePressable,
                   { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
                   state.input.fixedInterval === "yearly" && {
-                    backgroundColor: COLORS.secondary,
+                    backgroundColor: COLORS.dark,
                   },
                 ]}
               >
@@ -363,7 +363,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   styles.typePressable,
                   { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
                   state.input.fixedInterval === "monthly" && {
-                    backgroundColor: COLORS.secondary,
+                    backgroundColor: COLORS.dark,
                   },
                 ]}
               >
@@ -387,7 +387,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                     styles.typePressable,
                     { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
                     state.input.runningUnit === "year" && {
-                      backgroundColor: COLORS.secondary,
+                      backgroundColor: COLORS.dark,
                     },
                   ]}
                 >
@@ -398,7 +398,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   style={[
                     styles.typePressable,
                     state.input.runningUnit === "month" && {
-                      backgroundColor: COLORS.secondary,
+                      backgroundColor: COLORS.dark,
                     },
                   ]}
                 >
@@ -410,7 +410,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                     styles.typePressable,
                     { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
                     state.input.runningUnit === "day" && {
-                      backgroundColor: COLORS.secondary,
+                      backgroundColor: COLORS.dark,
                     },
                   ]}
                 >
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   flatlistSeparator: {
     marginVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.tertiary,
+    borderBottomColor: COLORS.light,
   },
   flatlistItem: {
     padding: 10,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   flatlistLimit: {
     width: 75,
     justifyContent: "center",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.dark,
     paddingHorizontal: 10,
     paddingVertical: 15,
     borderRadius: 15,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   typePressable: {
     flex: 1,
     alignItems: "center",
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.base,
     paddingVertical: 15,
   },
   typeText: {

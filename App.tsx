@@ -23,7 +23,7 @@ export default function App() {
 
   return (
     <AppDataProvider>
-      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.base }}>
         <HeaderView />
         <KeyboardAvoidingView
           style={{ flex: 1 }}

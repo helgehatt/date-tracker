@@ -383,7 +383,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
-          container: { backgroundColor: COLORS.tertiary },
+          container: { backgroundColor: COLORS.light },
         }}
       >
         <View style={[STYLES.sheet.container]}>
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   dayOfWeekContainer: {
     padding: 5,
     flexDirection: "row",
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.dark,
   },
   dayOfWeekText: {
     flex: 1,

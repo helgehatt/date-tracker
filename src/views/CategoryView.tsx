@@ -155,7 +155,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
               style={[
                 styles.flatlistItem,
                 category.categoryId === activeCategoryId && {
-                  backgroundColor: COLORS.secondary,
+                  backgroundColor: COLORS.dark,
                 },
               ]}
             >
@@ -186,7 +186,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
-          container: { backgroundColor: COLORS.tertiary },
+          container: { backgroundColor: COLORS.light },
         }}
       >
         <View style={STYLES.sheet.container}>
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   flatlistSeparator: {
     marginVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.tertiary,
+    borderBottomColor: COLORS.light,
   },
   flatlistItem: {
     flexDirection: "row",
