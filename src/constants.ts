@@ -12,6 +12,7 @@ export const COLORS = {
   secondary: "#082032",
   tertiary: "#334756",
   text: "#FFFFFF",
+  placeholderText: "#656E7D",
 };
 
 export const STYLES = {

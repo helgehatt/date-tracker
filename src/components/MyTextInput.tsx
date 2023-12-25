@@ -4,10 +4,15 @@ import { COLORS } from "../constants";
 
 interface IProps extends TextInputProps {}
 
-const MyTextInput: React.FC<IProps> = ({ style, ...props }) => {
+const MyTextInput: React.FC<IProps> = ({
+  style,
+  placeholderTextColor,
+  ...props
+}) => {
   return (
     <TextInput
       style={[styles.base, !props.editable && styles.disabled, style]}
+      placeholderTextColor={placeholderTextColor ?? COLORS.placeholderText}
       {...props}
     />
   );
