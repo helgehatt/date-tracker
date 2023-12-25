@@ -26,7 +26,7 @@ interface IProps {
   style?: ViewStyle;
 }
 
-function getData(limit: AppLimit, dates: number[]) {
+function getData(limit: AppLimit, dates: number[], locale = "en-US") {
   switch (limit.intervalType) {
     case "fixed": {
       switch (limit.fixedInterval) {
@@ -38,7 +38,8 @@ function getData(limit: AppLimit, dates: number[]) {
           return Array.from(unique).map((date): BarItemType => {
             const interval = DateInterval.getInterval(limit, date);
             const count = interval.filter(dates).length;
-            return { value: count, label: new Date(date).toISOYearString() };
+            const label = new Date(date).toISOYearString();
+            return { value: count, label };
           });
         }
         case "monthly": {
@@ -49,7 +50,11 @@ function getData(limit: AppLimit, dates: number[]) {
           return Array.from(unique).map((date): BarItemType => {
             const interval = DateInterval.getInterval(limit, date);
             const count = interval.filter(dates).length;
-            return { value: count, label: new Date(date).toISOMonthString() };
+            const label = new Date(date).toLocaleDateString(locale, {
+              year: "2-digit",
+              month: "short",
+            });
+            return { value: count, label };
           });
         }
         default: {
@@ -64,9 +69,14 @@ function getData(limit: AppLimit, dates: number[]) {
         const interval = DateInterval.getInterval(limit, date);
         const count = interval.filter(dates).length;
         const labeled = new Date(date).getDate() === 1;
+        const label = new Date(date).toLocaleDateString(locale, {
+          year: new Date(date).getMonth() === 0 ? "numeric" : undefined,
+          month: "short",
+          day: "numeric",
+        });
         return {
           value: count,
-          label: labeled ? new Date(date).toISOMonthString() : undefined,
+          label: labeled ? label : undefined,
           labelTextStyle: { color: "lightgray", width: 100, marginLeft: -50 },
           showVerticalLine: !!labeled,
         };
