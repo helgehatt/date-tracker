@@ -36,10 +36,6 @@ export const STYLES = {
       borderBottomColor: COLORS.base,
       borderBottomWidth: 1,
     },
-    headerText: {
-      fontSize: 20,
-      color: COLORS.text,
-    },
     input: {
       flex: 1,
       fontSize: 20,

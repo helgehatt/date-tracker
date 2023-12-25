@@ -3,7 +3,6 @@ import {
   LayoutChangeEvent,
   SafeAreaView,
   StyleSheet,
-  Text,
   View,
   ViewStyle,
 } from "react-native";
@@ -21,6 +20,7 @@ import { COLORS, DAY_IN_MS, TODAY } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
@@ -118,7 +118,7 @@ const GraphView: React.FC<IProps> = ({ style }) => {
     <SafeAreaView style={[styles.container, style]} onLayout={onLayout}>
       <View style={{ flex: 1, paddingHorizontal: 20 }}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>{limit.name}</Text>
+          <MyText fontSize="lg">{limit.name}</MyText>
           <MyIcon
             style={{ marginLeft: "auto" }}
             onPress={() => activateLimit(null)}
@@ -183,10 +183,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.text,
-  },
-  headerText: {
-    color: COLORS.text,
-    fontSize: 20,
   },
   graph: {
     flex: 1,

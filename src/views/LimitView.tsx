@@ -4,7 +4,6 @@ import {
   Keyboard,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
   ViewStyle,
@@ -15,6 +14,7 @@ import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
 import MyLimit from "../components/MyLimit";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
@@ -240,7 +240,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <View style={styles.flatlistLimit}>
               <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
             </View>
-            <Text style={styles.flatlistHeaderText}>{limit.name}</Text>
+            <MyText fontSize="lg">{limit.name}</MyText>
             <MyIcon
               style={{ marginLeft: "auto" }}
               disabled={limit.intervalType === "custom"}
@@ -270,9 +270,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
       >
         <View style={STYLES.sheet.container}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
-            <Text style={STYLES.sheet.headerText}>
+            <MyText fontSize="lg">
               {state.mode === "edit" ? "Edit limit" : "Add limit"}
-            </Text>
+            </MyText>
             {state.mode === "edit" && (
               <>
                 <MyIcon
@@ -317,7 +317,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 },
               ]}
             >
-              <Text style={styles.typeText}>Fixed</Text>
+              <MyText fontSize="lg">Fixed</MyText>
             </Pressable>
             <Pressable
               onPress={() => onChange("intervalType")("running")}
@@ -328,7 +328,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 },
               ]}
             >
-              <Text style={styles.typeText}>Running</Text>
+              <MyText fontSize="lg">Running</MyText>
             </Pressable>
             <Pressable
               onPress={() => onChange("intervalType")("custom")}
@@ -340,7 +340,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 },
               ]}
             >
-              <Text style={styles.typeText}>Custom</Text>
+              <MyText fontSize="lg">Custom</MyText>
             </Pressable>
           </View>
           {state.input.intervalType === "fixed" && (
@@ -355,7 +355,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   },
                 ]}
               >
-                <Text style={styles.typeText}>Yearly</Text>
+                <MyText fontSize="lg">Yearly</MyText>
               </Pressable>
               <Pressable
                 onPress={() => onChange("fixedInterval")("monthly")}
@@ -367,7 +367,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   },
                 ]}
               >
-                <Text style={styles.typeText}>Monthly</Text>
+                <MyText fontSize="lg">Monthly</MyText>
               </Pressable>
             </View>
           )}
@@ -391,7 +391,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                     },
                   ]}
                 >
-                  <Text style={styles.typeText}>Years</Text>
+                  <MyText fontSize="lg">Years</MyText>
                 </Pressable>
                 <Pressable
                   onPress={() => onChange("runningUnit")("month")}
@@ -402,7 +402,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                     },
                   ]}
                 >
-                  <Text style={styles.typeText}>Months</Text>
+                  <MyText fontSize="lg">Months</MyText>
                 </Pressable>
                 <Pressable
                   onPress={() => onChange("runningUnit")("day")}
@@ -414,7 +414,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                     },
                   ]}
                 >
-                  <Text style={styles.typeText}>Days</Text>
+                  <MyText fontSize="lg">Days</MyText>
                 </Pressable>
               </View>
             </View>
@@ -467,10 +467,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  flatlistHeaderText: {
-    fontSize: 20,
-    color: COLORS.text,
-  },
   flatlistLimit: {
     width: 75,
     justifyContent: "center",
@@ -478,10 +474,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 15,
     borderRadius: 15,
-  },
-  flatlistLimitText: {
-    color: COLORS.text,
-    textAlign: "center",
   },
   typeContainer: {
     columnGap: 0,
@@ -492,10 +484,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: COLORS.base,
     paddingVertical: 15,
-  },
-  typeText: {
-    fontSize: 20,
-    color: COLORS.text,
   },
 });
 

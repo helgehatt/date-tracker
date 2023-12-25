@@ -5,7 +5,6 @@ import {
   FlatListProps,
   Keyboard,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
   ViewStyle,
@@ -19,6 +18,7 @@ import { AppDataContext } from "../helpers/AppDataProvider";
 import SelectionContext from "../helpers/SelectionContext";
 import MyIcon from "../components/MyIcon";
 import MyTextInput from "../components/MyTextInput";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
@@ -294,13 +294,13 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   return (
     <View style={[styles.container, style]}>
       <View style={styles.dayOfWeekContainer}>
-        <Text style={styles.dayOfWeekText}>M</Text>
-        <Text style={styles.dayOfWeekText}>T</Text>
-        <Text style={styles.dayOfWeekText}>W</Text>
-        <Text style={styles.dayOfWeekText}>T</Text>
-        <Text style={styles.dayOfWeekText}>F</Text>
-        <Text style={styles.dayOfWeekText}>S</Text>
-        <Text style={styles.dayOfWeekText}>S</Text>
+        <MyText style={{ flex: 1, textAlign: "center" }}>M</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>T</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>W</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>T</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>F</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>S</MyText>
+        <MyText style={{ flex: 1, textAlign: "center" }}>S</MyText>
       </View>
       <SelectionContext.Provider
         value={{
@@ -388,13 +388,13 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
       >
         <View style={[STYLES.sheet.container]}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
-            <Text style={STYLES.sheet.headerText}>
+            <MyText fontSize="lg">
               {state.mode === "view"
                 ? "Event details"
                 : state.mode === "edit"
                 ? "Edit event"
                 : "Add event"}
-            </Text>
+            </MyText>
             {state.mode === "view" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
@@ -462,11 +462,6 @@ const styles = StyleSheet.create({
     padding: 5,
     flexDirection: "row",
     backgroundColor: COLORS.dark,
-  },
-  dayOfWeekText: {
-    flex: 1,
-    textAlign: "center",
-    color: COLORS.text,
   },
   returnArrow: {
     position: "absolute",
