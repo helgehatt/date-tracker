@@ -84,7 +84,7 @@ function reducer(state: State, action: Action): State {
     case "INITIAL_LOAD": {
       const { categories, categoryId } = action.payload;
       let activeCategoryId = categoryId;
-      if (categoryId === undefined && categories.length) {
+      if (categoryId === null && categories.length) {
         activeCategoryId = categories[0].categoryId;
       }
       return {
