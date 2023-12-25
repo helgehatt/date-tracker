@@ -76,6 +76,10 @@ const GraphView: React.FC<IProps> = ({ style }) => {
     React.useContext(AppDataContext);
 
   const limit = limitsById[activeLimitId!];
+  const data = React.useMemo(
+    () => getData(limit, eventDates),
+    [limit, eventDates]
+  );
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -86,8 +90,6 @@ const GraphView: React.FC<IProps> = ({ style }) => {
       );
     };
   }, []);
-
-  const data = getData(limit, eventDates);
 
   return (
     <SafeAreaView style={[styles.container, style]}>
