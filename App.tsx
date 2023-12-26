@@ -1,6 +1,7 @@
 import "./src/extensions";
 import React from "react";
 import { KeyboardAvoidingView, Platform, View, ViewStyle } from "react-native";
+import * as SystemUI from "expo-system-ui";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
@@ -9,6 +10,8 @@ import AppDataProvider, { AppDataContext } from "./src/helpers/AppDataProvider";
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
 import { COLORS } from "./src/constants";
+
+SystemUI.setBackgroundColorAsync(COLORS.base);
 
 export default function App() {
   const [page, setPage] = React.useState<AppPage>("calendar");
@@ -23,7 +26,7 @@ export default function App() {
 
   return (
     <AppDataProvider>
-      <View style={{ flex: 1, backgroundColor: COLORS.base }}>
+      <View style={{ flex: 1 }}>
         <HeaderView />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
