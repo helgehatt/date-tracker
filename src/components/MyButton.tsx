@@ -4,10 +4,10 @@ import {
   Pressable,
   PressableProps,
   StyleSheet,
-  Text,
   ViewStyle,
 } from "react-native";
 import { COLORS } from "../constants";
+import MyText from "./MyText";
 
 interface IProps extends PressableProps {
   style?: ViewStyle;
@@ -21,30 +21,24 @@ const MyButton: React.FC<IProps> = ({ style, title, color, ...props }) => {
       style={[
         styles.container,
         style,
-        props.disabled && styles.disabled,
+        props.disabled && { opacity: 0.75 },
         !!color && { backgroundColor: color },
       ]}
       {...props}
     >
-      <Text style={styles.text}>{title}</Text>
+      <MyText centered fontSize="lg">
+        {title}
+      </MyText>
     </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.base,
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 15,
-  },
-  text: {
-    textAlign: "center",
-    color: COLORS.text,
-    fontSize: 20,
-  },
-  disabled: {
-    opacity: 0.75,
   },
 });
 

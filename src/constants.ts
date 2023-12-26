@@ -8,10 +8,11 @@ export const MONTH_VIEW_HEIGHT = 350;
 
 // https://colorhunt.co/palette/0820322c394b334756ff4c29
 export const COLORS = {
-  background: "#2C394B",
-  secondary: "#082032",
-  tertiary: "#334756",
+  base: "#2C394B",
+  dark: "#082032",
+  light: "#334756",
   text: "#FFFFFF",
+  placeholderText: "#656E7D",
 };
 
 export const STYLES = {
@@ -32,12 +33,8 @@ export const STYLES = {
     },
     header: {
       paddingBottom: 10,
-      borderBottomColor: COLORS.background,
+      borderBottomColor: COLORS.base,
       borderBottomWidth: 1,
-    },
-    headerText: {
-      fontSize: 20,
-      color: COLORS.text,
     },
     input: {
       flex: 1,
@@ -45,7 +42,7 @@ export const STYLES = {
       paddingVertical: 15,
       paddingHorizontal: 20,
       borderRadius: 15,
-      backgroundColor: COLORS.background,
+      backgroundColor: COLORS.base,
       color: COLORS.text,
     },
     button: {

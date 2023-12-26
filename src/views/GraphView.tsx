@@ -1,5 +1,11 @@
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View, ViewStyle } from "react-native";
+import {
+  LayoutChangeEvent,
+  SafeAreaView,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
@@ -14,12 +20,13 @@ import { COLORS, DAY_IN_MS, TODAY } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
 }
 
-function getData(limit: AppLimit, dates: number[]) {
+function getData(limit: AppLimit, dates: number[], locale = "en-US") {
   switch (limit.intervalType) {
     case "fixed": {
       switch (limit.fixedInterval) {
@@ -31,7 +38,8 @@ function getData(limit: AppLimit, dates: number[]) {
           return Array.from(unique).map((date): BarItemType => {
             const interval = DateInterval.getInterval(limit, date);
             const count = interval.filter(dates).length;
-            return { value: count, label: new Date(date).toISOYearString() };
+            const label = new Date(date).toISOYearString();
+            return { value: count, label };
           });
         }
         case "monthly": {
@@ -42,7 +50,11 @@ function getData(limit: AppLimit, dates: number[]) {
           return Array.from(unique).map((date): BarItemType => {
             const interval = DateInterval.getInterval(limit, date);
             const count = interval.filter(dates).length;
-            return { value: count, label: new Date(date).toISOMonthString() };
+            const label = new Date(date).toLocaleDateString(locale, {
+              year: "2-digit",
+              month: "short",
+            });
+            return { value: count, label };
           });
         }
         default: {
@@ -57,9 +69,14 @@ function getData(limit: AppLimit, dates: number[]) {
         const interval = DateInterval.getInterval(limit, date);
         const count = interval.filter(dates).length;
         const labeled = new Date(date).getDate() === 1;
+        const label = new Date(date).toLocaleDateString(locale, {
+          year: new Date(date).getMonth() === 0 ? "numeric" : undefined,
+          month: "short",
+          day: "numeric",
+        });
         return {
           value: count,
-          label: labeled ? new Date(date).toISOMonthString() : undefined,
+          label: labeled ? label : undefined,
           labelTextStyle: { color: "lightgray", width: 100, marginLeft: -50 },
           showVerticalLine: !!labeled,
         };
@@ -75,7 +92,17 @@ const GraphView: React.FC<IProps> = ({ style }) => {
   const { activeLimitId, limitsById, eventDates, activateLimit } =
     React.useContext(AppDataContext);
 
+  const [width, setWidth] = React.useState(932);
+
+  const onLayout = React.useCallback((e: LayoutChangeEvent) => {
+    setWidth(e.nativeEvent.layout.width);
+  }, []);
+
   const limit = limitsById[activeLimitId!];
+  const data = React.useMemo(
+    () => getData(limit, eventDates),
+    [limit, eventDates]
+  );
 
   React.useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
@@ -87,50 +114,51 @@ const GraphView: React.FC<IProps> = ({ style }) => {
     };
   }, []);
 
-  const data = getData(limit, eventDates);
-
   return (
-    <SafeAreaView style={[styles.container, style]}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>{limit.name}</Text>
-        <MyIcon
-          style={{ marginLeft: "auto" }}
-          onPress={() => activateLimit(null)}
-          name="close"
-        />
-      </View>
-      <View style={styles.graph}>
-        {limit.intervalType === "fixed" && (
-          <BarChart
-            data={data}
-            {...props}
-            barWidth={50}
-            barBorderRadius={4}
-            frontColor="lightgray"
+    <SafeAreaView style={[styles.container, style]} onLayout={onLayout}>
+      <View style={{ flex: 1, paddingHorizontal: 20 }}>
+        <View style={styles.header}>
+          <MyText fontSize="lg">{limit.name}</MyText>
+          <MyIcon
+            style={{ marginLeft: "auto" }}
+            onPress={() => activateLimit(null)}
+            name="close"
           />
-        )}
-        {limit.intervalType === "running" && (
-          <LineChart
-            areaChart
-            data={data}
-            {...props}
-            spacing={2.5}
-            hideDataPoints
-            color="#00ff83"
-            thickness={2}
-            startFillColor="rgba(20,105,81,0.3)"
-            endFillColor="rgba(20,85,81,0.01)"
-            startOpacity={0.9}
-            endOpacity={0.2}
-          />
-        )}
+        </View>
+        <View style={styles.graph}>
+          {limit.intervalType === "fixed" && (
+            <BarChart
+              {...props}
+              data={data}
+              width={width * 0.65}
+              barWidth={50}
+              barBorderRadius={4}
+              frontColor="lightgray"
+            />
+          )}
+          {limit.intervalType === "running" && (
+            <LineChart
+              {...props}
+              areaChart
+              data={data}
+              width={width * 0.65}
+              spacing={2.5}
+              hideDataPoints
+              color="#00ff83"
+              thickness={2}
+              startFillColor="rgba(20,105,81,0.3)"
+              endFillColor="rgba(20,85,81,0.01)"
+              startOpacity={0.9}
+              endOpacity={0.2}
+            />
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
 };
 
 const props: BarChartPropsType & LineChartPropsType = {
-  width: 650,
   noOfSections: 3,
   rulesType: "solid",
   rulesColor: "gray",
@@ -147,7 +175,7 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     ...{ top: 0, bottom: 0, left: 0, right: 0 },
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.base,
   },
   header: {
     flexDirection: "row",
@@ -156,14 +184,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.text,
   },
-  headerText: {
-    color: COLORS.text,
-    fontSize: 20,
-  },
   graph: {
     flex: 1,
-    paddingLeft: 30,
     justifyContent: "center",
+    alignSelf: "center",
+    marginLeft: -50,
   },
 });
 

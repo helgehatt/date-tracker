@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { COLORS, MONTH_VIEW_HEIGHT } from "../constants";
+import { StyleSheet, View } from "react-native";
+import { MONTH_VIEW_HEIGHT } from "../constants";
 import DateView from "./DateView";
+import MyText from "../components/MyText";
 
 function getMonthTitle(year: number, month: number) {
   const date = new Date(Date.UTC(year, month));
@@ -20,7 +21,9 @@ const MonthView: React.FC<IProps> = ({ year, month }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>{title}</Text>
+      <MyText fontSize="md" style={{ padding: 20 }}>
+        {title}
+      </MyText>
       {Array.from({ length: 6 }, (_, i) => (
         <View key={i} style={styles.row}>
           {Array.from({ length: 7 }, (_, j) => (
@@ -40,11 +43,6 @@ const MonthView: React.FC<IProps> = ({ year, month }) => {
 const styles = StyleSheet.create({
   container: {
     height: MONTH_VIEW_HEIGHT,
-  },
-  text: {
-    color: COLORS.text,
-    padding: 20,
-    fontSize: 16,
   },
   row: {
     flex: 111,

@@ -4,7 +4,6 @@ import {
   Keyboard,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
   ViewStyle,
@@ -14,6 +13,7 @@ import { AppDataContext } from "../helpers/AppDataProvider";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
@@ -155,7 +155,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
               style={[
                 styles.flatlistItem,
                 category.categoryId === activeCategoryId && {
-                  backgroundColor: COLORS.secondary,
+                  backgroundColor: COLORS.dark,
                 },
               ]}
             >
@@ -165,7 +165,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
                   { backgroundColor: category.color },
                 ]}
               />
-              <Text style={styles.categoryText}>{category.name}</Text>
+              <MyText fontSize="lg">{category.name}</MyText>
               <MyIcon
                 style={{ marginLeft: "auto" }}
                 onPress={() => onPressEdit(category)}
@@ -186,14 +186,14 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
-          container: { backgroundColor: COLORS.tertiary },
+          container: { backgroundColor: COLORS.light },
         }}
       >
         <View style={STYLES.sheet.container}>
           <View style={[STYLES.sheet.row, STYLES.sheet.header]}>
-            <Text style={STYLES.sheet.headerText}>
+            <MyText fontSize="lg">
               {state.mode === "edit" ? "Edit category" : "Add category"}
-            </Text>
+            </MyText>
             {state.mode === "edit" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   flatlistSeparator: {
     marginVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.tertiary,
+    borderBottomColor: COLORS.light,
   },
   flatlistItem: {
     flexDirection: "row",
@@ -250,10 +250,6 @@ const styles = StyleSheet.create({
     height: 50,
     width: 50,
     borderRadius: 10,
-  },
-  categoryText: {
-    fontSize: 20,
-    color: COLORS.text,
   },
 });
 

@@ -8,6 +8,7 @@ import CategoryView from "./src/views/CategoryView";
 import AppDataProvider, { AppDataContext } from "./src/helpers/AppDataProvider";
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
+import { COLORS } from "./src/constants";
 
 export default function App() {
   const [page, setPage] = React.useState<AppPage>("calendar");
@@ -22,7 +23,7 @@ export default function App() {
 
   return (
     <AppDataProvider>
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: COLORS.base }}>
         <HeaderView />
         <KeyboardAvoidingView
           style={{ flex: 1 }}

@@ -4,13 +4,13 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  Text,
   View,
   ViewStyle,
 } from "react-native";
 import { COLORS } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import MyLimit from "../components/MyLimit";
+import MyText from "../components/MyText";
 
 interface IProps {
   style?: ViewStyle;
@@ -33,7 +33,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
   } else {
     crumbs = "Select a category from the list below";
     title = "No category selected";
-    color = COLORS.secondary;
+    color = COLORS.dark;
   }
 
   const favorites = limits.filter((l) => l.isFavorite === 1);
@@ -44,8 +44,10 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
       <ScrollView horizontal style={[styles.favoriteContainer]}>
         {favorites.length === 0 && (
           <View style={styles.favoriteItem}>
-            <Text style={[styles.text]}>{crumbs}</Text>
-            <Text style={[styles.text, { fontSize: 20 }]}>{title}</Text>
+            <MyText centered>{crumbs}</MyText>
+            <MyText centered fontSize="lg">
+              {title}
+            </MyText>
           </View>
         )}
         {favorites.map((limit, index) => (
@@ -57,7 +59,7 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
               index === favorites.length - 1 && { marginRight: 20 },
             ]}
           >
-            <Text style={[styles.text]}>{limit.name}</Text>
+            <MyText centered>{limit.name}</MyText>
             <MyLimit
               style={{ fontSize: 20, minWidth: 50 }}
               limit={limit}
@@ -72,10 +74,6 @@ const HeaderView: React.FC<IProps> = ({ style }) => {
 };
 
 const styles = StyleSheet.create({
-  text: {
-    color: COLORS.text,
-    textAlign: "center",
-  },
   favoriteContainer: {
     paddingVertical: 20,
     alignSelf: "center",
