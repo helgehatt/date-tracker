@@ -331,6 +331,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
           showsVerticalScrollIndicator={false}
+          scrollsToTop={false}
           ListHeaderComponent={
             <ActivityIndicator
               size="large"
