@@ -1,9 +1,10 @@
 {
   "expo": {
-    "name": "Date Tracker",
+    "name": "Daytr",
     "slug": "date-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
+    "userInterfaceStyle": "dark",
     "backgroundColor": "#2C394B",
     "icon": "./assets/icon.png",
     "splash": {
@@ -18,15 +19,18 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.helgehatt.datetracker"
+      "bundleIdentifier": "com.helgehatt.datetracker",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.helgehatt.datetracker",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2C394B"
-      },
-      "package": "com.helgehatt.datetracker"
+      }
     },
     "extra": {
       "eas": {
