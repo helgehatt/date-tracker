@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { COLORS, TODAY } from "../constants";
+import { COLORS } from "../constants";
 import SelectionContext from "../helpers/SelectionContext";
 import { AppDataContext } from "../helpers/AppDataProvider";
 
@@ -40,7 +40,7 @@ const DateView: React.FC<IProps> = ({ year, month, day }) => {
       ? categoriesById[activeCategoryId].color
       : undefined;
 
-  const isToday = datetime == TODAY;
+  const isToday = datetime == Date.today();
   const isEvent = datetime in eventsByDate;
   const isSelectedEvent =
     selectedEvent != null &&

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
-import { COLORS, MONTH_VIEW_HEIGHT, STYLES, TODAY } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import { AppDataContext } from "../helpers/AppDataProvider";
@@ -51,7 +51,7 @@ type Action =
       payload: { datetime: number; eventsByDate: Record<number, AppEvent> };
     };
 
-const THIS_MONTH = new Date(TODAY).floor();
+const THIS_MONTH = new Date(Date.today()).floor();
 
 const initialState: State = {
   mode: "none",
