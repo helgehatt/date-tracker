@@ -16,7 +16,7 @@ import {
   LineChartPropsType,
   itemType as LineItemType,
 } from "react-native-gifted-charts/src/LineChart/types";
-import { COLORS, DAY_IN_MS, TODAY } from "../constants";
+import { COLORS } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
@@ -64,7 +64,7 @@ function getData(limit: AppLimit, dates: number[], locale = "en-US") {
     }
     case "running": {
       const range = Array.from(Date.range(dates[0], dates[dates.length - 1]));
-      const start = range?.[0] - DAY_IN_MS || TODAY;
+      const start = range?.[0] - Date.DAY_IN_MS || Date.today();
       return [start, ...range].map((date): LineItemType => {
         const interval = DateInterval.getInterval(limit, date);
         const count = interval.filter(dates).length;

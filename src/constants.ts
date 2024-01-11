@@ -1,9 +1,5 @@
 import { StyleSheet } from "react-native";
 
-export const DAY_IN_MS = 1000 * 60 * 60 * 24;
-
-export const TODAY = Math.floor(Date.now() / DAY_IN_MS) * DAY_IN_MS;
-
 export const MONTH_VIEW_HEIGHT = 350;
 export const TEXT_INPUT_HEIGHT = 54;
 

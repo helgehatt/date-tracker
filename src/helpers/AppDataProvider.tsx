@@ -2,7 +2,6 @@ import React from "react";
 import * as SplashScreen from "expo-splash-screen";
 import AppDatabase from "./AppDatabase";
 import AppSettings from "./AppSettings";
-import { TODAY } from "../constants";
 
 // Keep the splash screen visible while the database initializes
 SplashScreen.preventAutoHideAsync();
@@ -50,7 +49,7 @@ type Context = State & {
 };
 
 const initialState: State = {
-  referenceDate: new Date(TODAY).ceil(),
+  referenceDate: new Date(Date.today()).ceil(),
   activeCategoryId: null,
   activeLimitId: null,
   categories: [],

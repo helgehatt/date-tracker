@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { AppDataContext } from "../helpers/AppDataProvider";
 import TextInputHeight from "../helpers/TextInputHeight";
-import { COLORS, STYLES, TODAY } from "../constants";
+import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
@@ -240,7 +240,11 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         renderItem={({ item: limit }) => (
           <View style={styles.flatlistItem}>
             <View style={styles.flatlistLimit}>
-              <MyLimit limit={limit} date={TODAY} eventDates={eventDates} />
+              <MyLimit
+                limit={limit}
+                date={Date.today()}
+                eventDates={eventDates}
+              />
             </View>
             <MyText fontSize="lg">{limit.name}</MyText>
             <MyIcon
