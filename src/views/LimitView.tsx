@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import AppDataContext from "../helpers/AppDataContext";
-import TextInputHeight from "../helpers/TextInputHeight";
+import TextInputHeightContext from "../helpers/TextInputHeightContext";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
@@ -157,7 +157,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     editLimit,
     deleteLimit,
   } = React.useContext(AppDataContext);
-  const textInputHeight = React.useContext(TextInputHeight.Context);
+  const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
 

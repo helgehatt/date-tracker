@@ -16,7 +16,7 @@ import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import AppDataContext from "../helpers/AppDataContext";
 import SelectionContext from "../helpers/SelectionContext";
-import TextInputHeight from "../helpers/TextInputHeight";
+import TextInputHeightContext from "../helpers/TextInputHeightContext";
 import MyIcon from "../components/MyIcon";
 import MyTextInput from "../components/MyTextInput";
 import MyText from "../components/MyText";
@@ -200,7 +200,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     editEvent,
     deleteEvent,
   } = React.useContext(AppDataContext);
-  const textInputHeight = React.useContext(TextInputHeight.Context);
+  const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
   const flatlistRef = React.useRef<FlatList>(null);

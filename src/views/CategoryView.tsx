@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
 import AppDataContext from "../helpers/AppDataContext";
-import TextInputHeight from "../helpers/TextInputHeight";
+import TextInputHeightContext from "../helpers/TextInputHeightContext";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
@@ -89,7 +89,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     editCategory,
     deleteCategory,
   } = React.useContext(AppDataContext);
-  const textInputHeight = React.useContext(TextInputHeight.Context);
+  const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
 

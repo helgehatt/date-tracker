@@ -1,11 +1,10 @@
 import React from "react";
 import MyTextInput from "../components/MyTextInput";
-import { TEXT_INPUT_HEIGHT } from "../constants";
-
-const TextInputHeightContext = React.createContext(TEXT_INPUT_HEIGHT);
+import TextInputHeightContext from "./TextInputHeightContext";
 
 const TextInputHeightProvider: React.FC<React.PropsWithChildren> = (props) => {
-  const [height, setHeight] = React.useState(TEXT_INPUT_HEIGHT);
+  const initialHeight = React.useContext(TextInputHeightContext);
+  const [height, setHeight] = React.useState(initialHeight);
 
   return (
     <TextInputHeightContext.Provider value={height}>
@@ -18,9 +17,4 @@ const TextInputHeightProvider: React.FC<React.PropsWithChildren> = (props) => {
   );
 };
 
-const TextInputHeight = {
-  Context: TextInputHeightContext,
-  Provider: TextInputHeightProvider,
-};
-
-export default TextInputHeight;
+export default TextInputHeightProvider;

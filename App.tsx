@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, View, ViewStyle } from "react-native";
 import * as SystemUI from "expo-system-ui";
 import AppDataContext from "./src/helpers/AppDataContext";
 import AppDataProvider from "./src/helpers/AppDataProvider";
-import TextInputHeight from "./src/helpers/TextInputHeight";
+import TextInputHeightProvider from "./src/helpers/TextInputHeightProvider";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
@@ -30,7 +30,7 @@ export default function App() {
     <AppDataProvider>
       <View style={{ flex: 1 }}>
         <HeaderView />
-        <TextInputHeight.Provider>
+        <TextInputHeightProvider>
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             enabled={Platform.OS === "ios"}
@@ -41,7 +41,7 @@ export default function App() {
             <LimitView style={pageStyle["limits"]} />
             <View style={pageStyle["settings"]} />
           </KeyboardAvoidingView>
-        </TextInputHeight.Provider>
+        </TextInputHeightProvider>
         <AppbarView page={page} setPage={setPage} />
       </View>
       <AppDataContext.Consumer>

@@ -1,7 +1,6 @@
 import { StyleSheet } from "react-native";
 
 export const MONTH_VIEW_HEIGHT = 350;
-export const TEXT_INPUT_HEIGHT = 54;
 
 // https://colorhunt.co/palette/0820322c394b334756ff4c29
 export const COLORS = {
