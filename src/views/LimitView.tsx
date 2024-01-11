@@ -16,107 +16,13 @@ import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
 import MyLimit from "../components/MyLimit";
 import MyText from "../components/MyText";
+import { initialState, reducer, createActions } from "../reducers/LimitReducer";
 
 interface IProps {
   style?: ViewStyle;
 }
 
-type State = {
-  mode: "none" | "add" | "edit";
-  selectedLimit: AppLimit | null;
-  input: {
-    name: string;
-    maxDays: string;
-    intervalType: "fixed" | "running" | "custom";
-    fixedInterval: "yearly" | "monthly" | null;
-    runningAmount: string;
-    runningUnit: "year" | "month" | "day" | null;
-    customStartDate: string;
-    customStopDate: string;
-  };
-};
-
-type Action =
-  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
-  | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
-  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit } }
-  | { type: "UPDATE_LIMIT"; payload: { limit: AppLimit } };
-
-const initialState: State = {
-  mode: "none",
-  selectedLimit: null,
-  input: {
-    name: "",
-    maxDays: "",
-    intervalType: "fixed",
-    fixedInterval: null,
-    runningAmount: "",
-    runningUnit: null,
-    customStartDate: "",
-    customStopDate: "",
-  },
-};
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "SET_MODE": {
-      const { mode } = action.payload;
-
-      if (mode === "add") {
-        return { ...state, mode, input: initialState.input };
-      }
-
-      if (mode === "none") {
-        return { ...state, mode, selectedLimit: null };
-      }
-
-      return { ...state, mode };
-    }
-    case "ON_CHANGE": {
-      const { key } = action.payload;
-      let { value } = action.payload;
-
-      if (key === "customStartDate" || key === "customStopDate") {
-        value = Date.onChangeFormat(state.input[key], value);
-      }
-
-      return { ...state, input: { ...state.input, [key]: value } };
-    }
-    case "SELECT_LIMIT": {
-      return {
-        ...state,
-        mode: "edit",
-        selectedLimit: action.payload.limit,
-        input: convertLimit(action.payload.limit),
-      };
-    }
-    case "UPDATE_LIMIT": {
-      return { ...state, selectedLimit: action.payload.limit };
-    }
-    default: {
-      return state;
-    }
-  }
-}
-
-function convertLimit(limit: AppLimit): State["input"] {
-  return {
-    name: limit.name,
-    maxDays: String(limit.maxDays),
-    intervalType: limit.intervalType,
-    fixedInterval: limit.fixedInterval,
-    runningAmount: limit.runningAmount ? String(limit.runningAmount) : "",
-    runningUnit: limit.runningUnit,
-    customStartDate: limit.customStartDate
-      ? new Date(limit.customStartDate).toISODateString()
-      : "",
-    customStopDate: limit.customStopDate
-      ? new Date(limit.customStopDate).toISODateString()
-      : "",
-  };
-}
-
-function convertInput(input: State["input"]) {
+function convertInput(input: (typeof initialState)["input"]) {
   return {
     name: input.name,
     maxDays: Number(input.maxDays),
@@ -133,7 +39,7 @@ function convertInput(input: State["input"]) {
   };
 }
 
-function isInputValid(input: State["input"]) {
+function isInputValid(input: (typeof initialState)["input"]) {
   return (
     input.name.length > 0 &&
     Number(input.maxDays) > 0 &&
@@ -160,28 +66,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
-
-  const onChange = React.useCallback(
-    (key: keyof State["input"]) => (value: string) => {
-      dispatch({ type: "ON_CHANGE", payload: { key, value } });
-    },
-    []
-  );
-
-  const selectLimit = React.useCallback((limit: AppLimit) => {
-    dispatch({ type: "SELECT_LIMIT", payload: { limit } });
-  }, []);
+  const actions = React.useMemo(() => createActions(dispatch), []);
 
   const isValid = isInputValid(state.input);
 
-  const onPressAdd = React.useCallback(() => {
-    dispatch({ type: "SET_MODE", payload: { mode: "add" } });
-  }, []);
-
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "SET_MODE", payload: { mode: "none" } });
-  }, []);
+    actions.setMode("none");
+  }, [actions.setMode]);
 
   const onSubmitAdd = () => {
     if (isValid && activeCategoryId) {
@@ -224,10 +116,10 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     if (state.selectedLimit) {
       const limit = limitsById[state.selectedLimit.limitId];
       if (limit !== state.selectedLimit) {
-        dispatch({ type: "UPDATE_LIMIT", payload: { limit } });
+        actions.updateLimit(limit);
       }
     }
-  }, [limitsById, state.selectedLimit]);
+  }, [actions.updateLimit, limitsById, state.selectedLimit]);
 
   return (
     <View style={[styles.container, style]}>
@@ -253,14 +145,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               onPress={() => activateLimit(limit.limitId)}
               name="chevron-down"
             />
-            <MyIcon onPress={() => selectLimit(limit)} name="pencil" />
+            <MyIcon onPress={() => actions.selectLimit(limit)} name="pencil" />
           </View>
         )}
       />
 
       <MyIcon
         style={STYLES.sheet.opener}
-        onPress={onPressAdd}
+        onPress={() => actions.setMode("add")}
         name="plus"
         size="lg"
       />
@@ -301,20 +193,20 @@ const LimitView: React.FC<IProps> = ({ style }) => {
             <TextInput
               style={[STYLES.sheet.input, { flex: 5 }]}
               value={state.input.name}
-              onChangeText={onChange("name")}
+              onChangeText={actions.onChange("name")}
               placeholder="Name"
             />
             <TextInput
               inputMode="numeric"
               style={[STYLES.sheet.input, { textAlign: "center" }]}
               value={state.input.maxDays}
-              onChangeText={onChange("maxDays")}
+              onChangeText={actions.onChange("maxDays")}
               placeholder="Limit"
             />
           </View>
           <View style={[STYLES.sheet.row, styles.typeContainer]}>
             <Pressable
-              onPress={() => onChange("intervalType")("fixed")}
+              onPress={() => actions.onChange("intervalType")("fixed")}
               style={[
                 styles.typePressable,
                 { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
@@ -326,7 +218,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               <MyText fontSize="lg">Fixed</MyText>
             </Pressable>
             <Pressable
-              onPress={() => onChange("intervalType")("running")}
+              onPress={() => actions.onChange("intervalType")("running")}
               style={[
                 styles.typePressable,
                 state.input.intervalType === "running" && {
@@ -337,7 +229,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               <MyText fontSize="lg">Running</MyText>
             </Pressable>
             <Pressable
-              onPress={() => onChange("intervalType")("custom")}
+              onPress={() => actions.onChange("intervalType")("custom")}
               style={[
                 styles.typePressable,
                 { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
@@ -352,7 +244,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
           {state.input.intervalType === "fixed" && (
             <View style={[STYLES.sheet.row, styles.typeContainer]}>
               <Pressable
-                onPress={() => onChange("fixedInterval")("yearly")}
+                onPress={() => actions.onChange("fixedInterval")("yearly")}
                 style={[
                   styles.typePressable,
                   { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
@@ -364,7 +256,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 <MyText fontSize="lg">Yearly</MyText>
               </Pressable>
               <Pressable
-                onPress={() => onChange("fixedInterval")("monthly")}
+                onPress={() => actions.onChange("fixedInterval")("monthly")}
                 style={[
                   styles.typePressable,
                   { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
@@ -383,12 +275,12 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                 inputMode="numeric"
                 style={[STYLES.sheet.input, { textAlign: "center" }]}
                 value={state.input.runningAmount}
-                onChangeText={onChange("runningAmount")}
+                onChangeText={actions.onChange("runningAmount")}
                 placeholder="X"
               />
               <View style={[styles.typeContainer, { flex: 8 }]}>
                 <Pressable
-                  onPress={() => onChange("runningUnit")("year")}
+                  onPress={() => actions.onChange("runningUnit")("year")}
                   style={[
                     styles.typePressable,
                     { borderTopLeftRadius: 15, borderBottomLeftRadius: 15 },
@@ -400,7 +292,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   <MyText fontSize="lg">Years</MyText>
                 </Pressable>
                 <Pressable
-                  onPress={() => onChange("runningUnit")("month")}
+                  onPress={() => actions.onChange("runningUnit")("month")}
                   style={[
                     styles.typePressable,
                     state.input.runningUnit === "month" && {
@@ -411,7 +303,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   <MyText fontSize="lg">Months</MyText>
                 </Pressable>
                 <Pressable
-                  onPress={() => onChange("runningUnit")("day")}
+                  onPress={() => actions.onChange("runningUnit")("day")}
                   style={[
                     styles.typePressable,
                     { borderTopRightRadius: 15, borderBottomRightRadius: 15 },
@@ -430,14 +322,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               <TextInput
                 style={STYLES.sheet.input}
                 value={state.input.customStartDate}
-                onChangeText={onChange("customStartDate")}
+                onChangeText={actions.onChange("customStartDate")}
                 placeholder="YYYY-MM-DD"
                 inputMode="numeric"
               />
               <TextInput
                 style={STYLES.sheet.input}
                 value={state.input.customStopDate}
-                onChangeText={onChange("customStopDate")}
+                onChangeText={actions.onChange("customStopDate")}
                 placeholder="YYYY-MM-DD"
                 inputMode="numeric"
               />
