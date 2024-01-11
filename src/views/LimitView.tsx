@@ -87,9 +87,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitEdit = () => {
-    if (isValid && state.selectedLimit) {
+    if (isValid && state.limitId) {
       editLimit({
-        ...state.selectedLimit,
+        ...limitsById[state.limitId],
         ...convertInput(state.input),
       });
       onClose();
@@ -97,29 +97,20 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   };
 
   const onSubmitDelete = () => {
-    if (state.selectedLimit) {
-      deleteLimit(state.selectedLimit.limitId, state.selectedLimit.categoryId);
+    if (state.limitId && activeCategoryId) {
+      deleteLimit(state.limitId, activeCategoryId);
     }
     onClose();
   };
 
   const onFavorite = () => {
-    if (state.selectedLimit) {
+    if (state.limitId) {
       editLimit({
-        ...state.selectedLimit,
-        isFavorite: 1 - state.selectedLimit.isFavorite,
+        ...limitsById[state.limitId],
+        isFavorite: 1 - limitsById[state.limitId].isFavorite,
       });
     }
   };
-
-  React.useEffect(() => {
-    if (state.selectedLimit) {
-      const limit = limitsById[state.selectedLimit.limitId];
-      if (limit !== state.selectedLimit) {
-        actions.updateLimit(limit);
-      }
-    }
-  }, [actions.updateLimit, limitsById, state.selectedLimit]);
 
   return (
     <View style={[styles.container, style]}>
@@ -177,10 +168,11 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   onPress={onFavorite}
                   style={[
                     { marginLeft: "auto", width: 25 },
-                    state.selectedLimit?.isFavorite === 1 && {
-                      backgroundColor: "#e2cb16",
-                      borderRadius: 15,
-                    },
+                    state.limitId !== null &&
+                      limitsById[state.limitId]?.isFavorite === 1 && {
+                        backgroundColor: "#e2cb16",
+                        borderRadius: 15,
+                      },
                   ]}
                   name="star"
                   iconStyle={{ marginLeft: -2.5 }}

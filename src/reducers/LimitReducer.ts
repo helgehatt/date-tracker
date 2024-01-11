@@ -2,7 +2,7 @@ import React from "react";
 
 type State = {
   mode: "none" | "add" | "edit";
-  selectedLimit: AppLimit | null;
+  limitId: number | null;
   input: {
     name: string;
     maxDays: string;
@@ -18,12 +18,11 @@ type State = {
 type Action =
   | { type: "SET_MODE"; payload: { mode: State["mode"] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
-  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit } }
-  | { type: "UPDATE_LIMIT"; payload: { limit: AppLimit } };
+  | { type: "SELECT_LIMIT"; payload: { limit: AppLimit } };
 
 export const initialState: State = {
   mode: "none",
-  selectedLimit: null,
+  limitId: null,
   input: {
     name: "",
     maxDays: "",
@@ -46,7 +45,7 @@ export const reducer = (state: State, action: Action): State => {
       }
 
       if (mode === "none") {
-        return { ...state, mode, selectedLimit: null };
+        return { ...state, mode, limitId: null };
       }
 
       return { ...state, mode };
@@ -66,7 +65,7 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         mode: "edit",
-        selectedLimit: limit,
+        limitId: limit.limitId,
         input: {
           name: limit.name,
           maxDays: String(limit.maxDays),
@@ -83,9 +82,6 @@ export const reducer = (state: State, action: Action): State => {
         },
       };
     }
-    case "UPDATE_LIMIT": {
-      return { ...state, selectedLimit: action.payload.limit };
-    }
     default: {
       return state;
     }
@@ -101,9 +97,6 @@ export const createActions = (dispatch: React.Dispatch<Action>) => ({
   },
   selectLimit: (limit: AppLimit) => {
     dispatch({ type: "SELECT_LIMIT", payload: { limit } });
-  },
-  updateLimit: (limit: AppLimit) => {
-    dispatch({ type: "UPDATE_LIMIT", payload: { limit } });
   },
 });
 
