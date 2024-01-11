@@ -2,6 +2,7 @@ import "./src/extensions";
 import React from "react";
 import { KeyboardAvoidingView, Platform, View, ViewStyle } from "react-native";
 import * as SystemUI from "expo-system-ui";
+import TextInputHeight from "./src/helpers/TextInputHeight";
 import HeaderView from "./src/views/HeaderView";
 import AppbarView from "./src/views/AppbarView";
 import CalendarView from "./src/views/CalendarView";
@@ -28,16 +29,18 @@ export default function App() {
     <AppDataProvider>
       <View style={{ flex: 1 }}>
         <HeaderView />
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          enabled={Platform.OS === "ios"}
-          behavior="padding"
-        >
-          <CalendarView style={pageStyle["calendar"]} />
-          <CategoryView style={pageStyle["category"]} />
-          <LimitView style={pageStyle["limits"]} />
-          <View style={pageStyle["settings"]} />
-        </KeyboardAvoidingView>
+        <TextInputHeight.Provider>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            enabled={Platform.OS === "ios"}
+            behavior="padding"
+          >
+            <CalendarView style={pageStyle["calendar"]} />
+            <CategoryView style={pageStyle["category"]} />
+            <LimitView style={pageStyle["limits"]} />
+            <View style={pageStyle["settings"]} />
+          </KeyboardAvoidingView>
+        </TextInputHeight.Provider>
         <AppbarView page={page} setPage={setPage} />
       </View>
       <AppDataContext.Consumer>
