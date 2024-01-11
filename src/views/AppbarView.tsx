@@ -1,7 +1,7 @@
 import React from "react";
 import { SafeAreaView, StyleSheet, View, ViewStyle } from "react-native";
 import { COLORS } from "../constants";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import MyIcon from "../components/MyIcon";
 
 interface IProps {
