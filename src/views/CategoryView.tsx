@@ -44,7 +44,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
     actions.setMode("view");
-  }, [actions.setMode]);
+  }, [actions]);
 
   const onSubmitAdd = () => {
     if (isValid) {

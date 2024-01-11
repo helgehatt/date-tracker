@@ -73,7 +73,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
     actions.setMode("none");
-  }, [actions.setMode]);
+  }, [actions]);
 
   const onSubmitAdd = () => {
     if (isValid && activeCategoryId) {

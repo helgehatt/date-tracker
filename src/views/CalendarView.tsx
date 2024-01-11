@@ -64,7 +64,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
     actions.setMode("none");
-  }, [actions.setMode]);
+  }, [actions]);
 
   const onPressArrow = () => {
     flatlistRef.current?.scrollToIndex({
