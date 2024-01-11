@@ -90,9 +90,7 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
           {...panResponder.panHandlers}
           style={[styles.draggableContainer, customStyles.draggableContainer]}
         >
-          <View
-            style={[styles.draggableIcon, customStyles.draggableIcon]}
-          ></View>
+          <View style={[styles.draggableIcon, customStyles.draggableIcon]} />
         </View>
       )}
       {children}

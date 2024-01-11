@@ -1,10 +1,9 @@
-import { ExpoConfig, ConfigContext } from "expo/config";
+import { ExpoConfig } from "expo/config";
 
-export default ({ config }: ConfigContext): ExpoConfig => ({
-  ...config,
-  name: "Daytr",
+const config: ExpoConfig = {
+  name: "Date Tracker",
   slug: "date-tracker",
-  version: "1.0.0",
+  version: "1.0.1",
   orientation: "portrait",
   userInterfaceStyle: "dark",
   backgroundColor: "#2C394B",
@@ -37,4 +36,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       projectId: "55012730-2e6b-4c86-b78c-aea5fb319c80",
     },
   },
-});
+};
+
+export default config;

@@ -47,6 +47,13 @@ interface Array<T> {
 }
 
 interface DateConstructor {
+  DAY_IN_MS: number;
+
+  /**
+   * Returns date.now() rounded down to day granularity.
+   */
+  today(): number;
+
   /**
    * Generates a range from `start` to `stop` with the given `step` size.
    * @param start Start of the range.

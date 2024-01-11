@@ -9,74 +9,20 @@ import {
   ViewStyle,
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
+import TextInputHeightContext from "../helpers/TextInputHeightContext";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
 import MyText from "../components/MyText";
+import {
+  initialState,
+  reducer,
+  createActions,
+} from "../reducers/CategoryReducer";
 
 interface IProps {
   style?: ViewStyle;
-}
-
-type State = {
-  mode: "view" | "add" | "edit";
-  categoryId: number | null;
-  name: string;
-  color: string;
-};
-
-type Action =
-  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
-  | { type: "SET_NAME"; payload: { name: string } }
-  | { type: "SET_COLOR"; payload: { color: string } }
-  | { type: "ON_EDIT"; payload: { category: AppCategory } };
-
-const initialState: State = {
-  mode: "view",
-  categoryId: null,
-  name: "",
-  color: generateRandomColor(),
-};
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "SET_MODE": {
-      const { mode } = action.payload;
-
-      if (mode === "add") {
-        return {
-          ...state,
-          mode,
-          name: "",
-          color: generateRandomColor(),
-        };
-      }
-
-      if (mode === "view") {
-        return { ...state, mode, categoryId: null };
-      }
-
-      return { ...state, mode };
-    }
-    case "SET_NAME": {
-      return { ...state, name: action.payload.name };
-    }
-    case "SET_COLOR": {
-      return { ...state, color: action.payload.color };
-    }
-    case "ON_EDIT": {
-      return { ...state, mode: "edit", ...action.payload.category };
-    }
-    default: {
-      return state;
-    }
-  }
-}
-
-function generateRandomColor() {
-  // return "#" + ((Math.random() * 0xffffff) << 0);
-  return `hsla(${Math.random() * 360}, 100%, 50%, 1)`;
 }
 
 const CategoryView: React.FC<IProps> = ({ style }) => {
@@ -88,31 +34,17 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     editCategory,
     deleteCategory,
   } = React.useContext(AppDataContext);
+  const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
-
-  const setMode = React.useCallback((mode: State["mode"]) => {
-    dispatch({ type: "SET_MODE", payload: { mode } });
-  }, []);
-
-  const setName = React.useCallback((name: string) => {
-    dispatch({ type: "SET_NAME", payload: { name } });
-  }, []);
-
-  const setColor = React.useCallback((color: string) => {
-    dispatch({ type: "SET_COLOR", payload: { color } });
-  }, []);
+  const actions = React.useMemo(() => createActions(dispatch), []);
 
   const isValid = state.name.length > 0;
 
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "SET_MODE", payload: { mode: "view" } });
-  }, []);
-
-  const onPressEdit = React.useCallback((category: AppCategory) => {
-    dispatch({ type: "ON_EDIT", payload: { category } });
-  }, []);
+    actions.setMode("view");
+  }, [actions]);
 
   const onSubmitAdd = () => {
     if (isValid) {
@@ -168,7 +100,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
               <MyText fontSize="lg">{category.name}</MyText>
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={() => onPressEdit(category)}
+                onPress={() => actions.selectCategory(category)}
                 name="pencil"
               />
             </View>
@@ -177,12 +109,12 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
       />
 
       <View style={STYLES.sheet.opener}>
-        <MyIcon onPress={() => setMode("add")} name="plus" size="lg" />
+        <MyIcon onPress={() => actions.setMode("add")} name="plus" size="lg" />
       </View>
 
       <BottomSheet
         visible={state.mode !== "view"}
-        height={200}
+        height={3 * (textInputHeight + 10) + 8}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
@@ -203,7 +135,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
             )}
           </View>
           <View style={STYLES.sheet.row}>
-            <Pressable onPress={() => setColor(generateRandomColor())}>
+            <Pressable onPress={actions.toggleColor}>
               <View
                 style={[styles.categoryColor, { backgroundColor: state.color }]}
               />
@@ -211,7 +143,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
             <TextInput
               style={STYLES.sheet.input}
               value={state.name}
-              onChangeText={setName}
+              onChangeText={actions.setName}
               placeholder="Name"
             />
           </View>

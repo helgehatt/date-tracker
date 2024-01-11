@@ -11,183 +11,23 @@ import {
 } from "react-native";
 import BidirectionalFlatList from "../components/BidirectionalFlatList";
 import MonthView from "./MonthView";
-import { COLORS, MONTH_VIEW_HEIGHT, STYLES, TODAY } from "../constants";
+import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import SelectionContext from "../helpers/SelectionContext";
+import TextInputHeightContext from "../helpers/TextInputHeightContext";
 import MyIcon from "../components/MyIcon";
 import MyTextInput from "../components/MyTextInput";
 import MyText from "../components/MyText";
+import {
+  initialState,
+  reducer,
+  createActions,
+} from "../reducers/CalendarReducer";
 
 interface IProps {
   style?: ViewStyle;
-}
-
-type State = {
-  mode: "none" | "view" | "add" | "edit";
-  months: Date[];
-  thisMonthIndex: number;
-  currentMonthIndex: number;
-  selectedEvent: AppEvent | null;
-  selectedStartDate: number;
-  selectedStopDate: number;
-  input: {
-    startDate: string;
-    stopDate: string;
-    note: string;
-  };
-};
-
-type Action =
-  | { type: "SET_MODE"; payload: { mode: State["mode"] } }
-  | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
-  | { type: "ON_SCROLL"; payload: { index: number } }
-  | { type: "PREV_MONTH" }
-  | { type: "NEXT_MONTH" }
-  | {
-      type: "SELECT_DATE";
-      payload: { datetime: number; eventsByDate: Record<number, AppEvent> };
-    };
-
-const THIS_MONTH = new Date(TODAY).floor();
-
-const initialState: State = {
-  mode: "none",
-  months: [
-    ...Array.from({ length: 5 }, (v, k) =>
-      THIS_MONTH.add({ months: -(k + 1) })
-    ).reverse(),
-    THIS_MONTH,
-    ...Array.from({ length: 5 }, (v, k) => THIS_MONTH.add({ months: k + 1 })),
-  ],
-  thisMonthIndex: 5,
-  currentMonthIndex: 5,
-  selectedEvent: null,
-  selectedStartDate: NaN,
-  selectedStopDate: NaN,
-  input: {
-    startDate: "",
-    stopDate: "",
-    note: "",
-  },
-};
-
-function reducer(state: State, action: Action): State {
-  switch (action.type) {
-    case "SET_MODE": {
-      const { mode } = action.payload;
-
-      if (mode === "add")
-        return {
-          ...state,
-          mode,
-          input: {
-            startDate: "",
-            stopDate: "",
-            note: "",
-          },
-        };
-
-      if (mode === "none") {
-        return {
-          ...state,
-          mode,
-          selectedEvent: null,
-          selectedStartDate: NaN,
-          selectedStopDate: NaN,
-        };
-      }
-
-      return { ...state, mode };
-    }
-    case "ON_SCROLL": {
-      return { ...state, currentMonthIndex: action.payload.index };
-    }
-    case "ON_CHANGE": {
-      const { key } = action.payload;
-      let { value } = action.payload;
-
-      if (key === "startDate" || key === "stopDate") {
-        value = Date.onChangeFormat(state.input[key], value);
-
-        if (value.length == 10) {
-          const datetime = Date.parse(value);
-
-          if (datetime) {
-            if (key === "startDate") state.selectedStartDate = datetime;
-            if (key === "stopDate") state.selectedStopDate = datetime;
-          }
-        }
-      }
-
-      return { ...state, input: { ...state.input, [key]: value } };
-    }
-    case "SELECT_DATE": {
-      const { datetime, eventsByDate } = action.payload;
-
-      // If mode === "edit" the TouchableOpacity will prevent SELECT_DATE
-
-      if (state.mode === "none") {
-        if (datetime in eventsByDate) {
-          const event = eventsByDate[datetime];
-          return {
-            ...state,
-            mode: "view",
-            selectedEvent: event,
-            selectedStartDate: event.startDate,
-            selectedStopDate: event.stopDate,
-            input: {
-              startDate: new Date(event.startDate).toISODateString(),
-              stopDate: new Date(event.stopDate).toISODateString(),
-              note: event.note,
-            },
-          };
-        }
-        return state;
-      }
-
-      // Select stop date if start date is already selected
-      // and the selected date is after the start date
-      if (
-        state.selectedStartDate &&
-        !state.selectedStopDate &&
-        state.selectedStartDate <= datetime
-      ) {
-        return {
-          ...state,
-          selectedStopDate: datetime,
-          input: {
-            ...state.input,
-            stopDate: new Date(datetime).toISODateString(),
-          },
-        };
-      }
-
-      // Otherwise select start date
-      return {
-        ...state,
-        selectedStartDate: datetime,
-        selectedStopDate: NaN,
-        input: {
-          ...state.input,
-          startDate: new Date(datetime).toISODateString(),
-          stopDate: "",
-        },
-      };
-    }
-    case "PREV_MONTH": {
-      const thisMonthIndex = state.thisMonthIndex + 1;
-      const prev = state.months[0].add({ months: -1 });
-      return { ...state, months: [prev, ...state.months], thisMonthIndex };
-    }
-    case "NEXT_MONTH": {
-      const next = state.months[state.months.length - 1].add({ months: 1 });
-      return { ...state, months: [...state.months, next] };
-    }
-    default:
-      return state;
-  }
 }
 
 const CalendarView: React.FC<IProps> = ({ style }) => {
@@ -199,8 +39,10 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     editEvent,
     deleteEvent,
   } = React.useContext(AppDataContext);
+  const textInputHeight = React.useContext(TextInputHeightContext);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
+  const actions = React.useMemo(() => createActions(dispatch), []);
   const flatlistRef = React.useRef<FlatList>(null);
 
   type ItemChange = NonNullable<FlatListProps<Date>["onViewableItemsChanged"]>;
@@ -219,40 +61,10 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
     state.selectedStopDate > 0 &&
     state.selectedStartDate <= state.selectedStopDate;
 
-  const onChange = React.useCallback(
-    (key: keyof State["input"]) => (value: string) => {
-      dispatch({ type: "ON_CHANGE", payload: { key, value } });
-    },
-    []
-  );
-
-  const selectDate = React.useCallback(
-    (datetime: number, eventsByDate: Record<number, AppEvent>) => {
-      dispatch({ type: "SELECT_DATE", payload: { datetime, eventsByDate } });
-    },
-    []
-  );
-
-  const showPreviousMonth = React.useCallback(() => {
-    dispatch({ type: "PREV_MONTH" });
-  }, []);
-
-  const showNextMonth = React.useCallback(() => {
-    dispatch({ type: "NEXT_MONTH" });
-  }, []);
-
-  const onPressAdd = React.useCallback(() => {
-    dispatch({ type: "SET_MODE", payload: { mode: "add" } });
-  }, []);
-
-  const onPressEdit = React.useCallback(() => {
-    dispatch({ type: "SET_MODE", payload: { mode: "edit" } });
-  }, []);
-
   const onClose = React.useCallback(() => {
     Keyboard.dismiss();
-    dispatch({ type: "SET_MODE", payload: { mode: "none" } });
-  }, []);
+    actions.setMode("none");
+  }, [actions]);
 
   const onPressArrow = () => {
     flatlistRef.current?.scrollToIndex({
@@ -307,7 +119,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           selectedEvent: state.selectedEvent,
           selectedStartDate: state.selectedStartDate,
           selectedStopDate: state.selectedStopDate,
-          selectDate,
+          selectDate: actions.selectDate,
         }}
       >
         <BidirectionalFlatList
@@ -324,9 +136,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           })}
           initialScrollIndex={state.thisMonthIndex}
           keyExtractor={(item: Date) => item.toISODateString()}
-          onStartReached={showPreviousMonth}
+          onStartReached={actions.showPreviousMonth}
           onStartReachedThreshold={1000}
-          onEndReached={showNextMonth}
+          onEndReached={actions.showNextMonth}
           onEndReachedThreshold={1000}
           onViewableItemsChanged={onViewableItemsChanged.current}
           viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
@@ -351,7 +163,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
       <MyIcon
         style={STYLES.sheet.opener}
-        onPress={onPressAdd}
+        onPress={() => actions.setMode("add")}
         name="plus"
         size="lg"
       />
@@ -380,7 +192,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
 
       <BottomSheet
         visible={state.mode !== "none"}
-        height={264}
+        height={4 * (textInputHeight + 10) + 8}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
@@ -399,7 +211,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             {state.mode === "view" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={onPressEdit}
+                onPress={() => actions.setMode("edit")}
                 name="pencil"
               />
             )}
@@ -415,14 +227,14 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             <MyTextInput
               editable={state.mode !== "view"}
               value={state.input.startDate}
-              onChangeText={onChange("startDate")}
+              onChangeText={actions.onChange("startDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
             <MyTextInput
               editable={state.mode !== "view"}
               value={state.input.stopDate}
-              onChangeText={onChange("stopDate")}
+              onChangeText={actions.onChange("stopDate")}
               placeholder="YYYY-MM-DD"
               inputMode="numeric"
             />
@@ -431,7 +243,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             <MyTextInput
               editable={state.mode !== "view"}
               value={state.input.note}
-              onChangeText={onChange("note")}
+              onChangeText={actions.onChange("note")}
               placeholder="Write a small note..."
             />
           </View>

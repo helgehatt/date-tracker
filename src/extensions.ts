@@ -58,6 +58,12 @@ Date.prototype.ceil = function () {
   return new Date(Date.UTC(year, month + 1, 0));
 };
 
+Date.DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+Date.today = function () {
+  return Math.floor(Date.now() / Date.DAY_IN_MS) * Date.DAY_IN_MS;
+};
+
 Date.range = function* (
   start: number,
   stop: number,

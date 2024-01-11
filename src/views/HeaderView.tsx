@@ -8,7 +8,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { COLORS } from "../constants";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import MyLimit from "../components/MyLimit";
 import MyText from "../components/MyText";
 

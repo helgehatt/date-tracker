@@ -126,114 +126,61 @@ class AppDatabase {
   }
 
   async insertLimit(limit: Omit<AppLimit, "limitId">) {
-    if (limit.intervalType === "fixed") {
-      await this.execute(
-        `INSERT INTO limits (
-          categoryId, name, maxDays,
-          intervalType, fixedInterval
-        ) VALUES (?, ?, ?, ?, ?)`,
-        [
-          limit.categoryId,
-          limit.name,
-          limit.maxDays,
-          limit.intervalType,
-          limit.fixedInterval,
-        ]
-      );
-    }
-    if (limit.intervalType === "running") {
-      await this.execute(
-        `INSERT INTO limits (
-          categoryId, name, maxDays,
-          intervalType, runningAmount, runningUnit
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          limit.categoryId,
-          limit.name,
-          limit.maxDays,
-          limit.intervalType,
-          limit.runningAmount,
-          limit.runningUnit,
-        ]
-      );
-    }
-    if (limit.intervalType === "custom") {
-      await this.execute(
-        `INSERT INTO limits (
-          categoryId, name, maxDays,
-          intervalType, customStartDate, customStopDate
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          limit.categoryId,
-          limit.name,
-          limit.maxDays,
-          limit.intervalType,
-          limit.customStartDate,
-          limit.customStopDate,
-        ]
-      );
-    }
+    await this.execute(
+      `INSERT INTO limits (
+        categoryId,
+        name,
+        maxDays,
+        isFavorite,
+        intervalType,
+        fixedInterval,
+        runningAmount,
+        runningUnit,
+        customStartDate,
+        customStopDate,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        limit.categoryId,
+        limit.name,
+        limit.maxDays,
+        limit.isFavorite,
+        limit.intervalType,
+        limit.intervalType === "fixed" ? limit.fixedInterval : null,
+        limit.intervalType === "running" ? limit.runningAmount : null,
+        limit.intervalType === "running" ? limit.runningUnit : null,
+        limit.intervalType === "custom" ? limit.customStartDate : null,
+        limit.intervalType === "custom" ? limit.customStopDate : null,
+      ]
+    );
   }
 
   async updateLimit(limit: AppLimit) {
-    if (limit.intervalType === "fixed") {
-      await this.execute(
-        `UPDATE limits
-        SET
-          name = ?,
-          maxDays = ?,
-          isFavorite = ?,
-          fixedInterval = ?
-        WHERE limitId = ?`,
-        [
-          limit.name,
-          limit.maxDays,
-          limit.isFavorite,
-          limit.fixedInterval,
-          limit.limitId,
-        ]
-      );
-    }
-    if (limit.intervalType === "running") {
-      await this.execute(
-        `UPDATE limits
-        SET
-          name = ?,
-          maxDays = ?,
-          isFavorite = ?,
-          runningAmount = ?,
-          runningUnit = ?
-        WHERE limitId = ?`,
-        [
-          limit.name,
-          limit.maxDays,
-          limit.isFavorite,
-          limit.runningAmount,
-          limit.runningUnit,
-          limit.limitId,
-        ]
-      );
-    }
-    if (limit.intervalType === "custom") {
-      await this.execute(
-        `UPDATE limits
-        SET
-          name = ?,
-          maxDays = ?,
-          isFavorite = ?,
-          customStartDate = ?,
-          customStopDate = ?
-        WHERE limitId = ?`,
-        [
-          limit.name,
-          limit.maxDays,
-          limit.isFavorite,
-          limit.customStartDate,
-          limit.customStopDate,
-          limit.limitId,
-        ]
-      );
-    }
+    await this.execute(
+      `UPDATE limits
+      SET
+        name = ?,
+        maxDays = ?,
+        isFavorite = ?,
+        intervalType = ?,
+        fixedInterval = ?,
+        runningAmount = ?,
+        runningUnit = ?,
+        customStartDate = ?,
+        customStopDate = ?
+      WHERE limitId = ?`,
+      [
+        limit.name,
+        limit.maxDays,
+        limit.isFavorite,
+        limit.intervalType,
+        limit.intervalType === "fixed" ? limit.fixedInterval : null,
+        limit.intervalType === "running" ? limit.runningAmount : null,
+        limit.intervalType === "running" ? limit.runningUnit : null,
+        limit.intervalType === "custom" ? limit.customStartDate : null,
+        limit.intervalType === "custom" ? limit.customStopDate : null,
+        limit.limitId,
+      ]
+    );
   }
 
   async deleteLimit(limitId: number) {
