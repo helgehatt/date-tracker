@@ -17,7 +17,7 @@ import {
   itemType as LineItemType,
 } from "react-native-gifted-charts/src/LineChart/types";
 import { COLORS } from "../constants";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import DateInterval from "../helpers/DateInterval";
 import MyIcon from "../components/MyIcon";
 import MyText from "../components/MyText";

@@ -8,7 +8,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import TextInputHeight from "../helpers/TextInputHeight";
 import { COLORS, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";

@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import TextInputHeight from "../helpers/TextInputHeight";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";

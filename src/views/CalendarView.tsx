@@ -14,7 +14,7 @@ import MonthView from "./MonthView";
 import { COLORS, MONTH_VIEW_HEIGHT, STYLES } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
-import { AppDataContext } from "../helpers/AppDataProvider";
+import AppDataContext from "../helpers/AppDataContext";
 import SelectionContext from "../helpers/SelectionContext";
 import TextInputHeight from "../helpers/TextInputHeight";
 import MyIcon from "../components/MyIcon";
