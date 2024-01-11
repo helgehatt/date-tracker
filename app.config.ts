@@ -1,7 +1,7 @@
 import { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
-  name: "Daytr",
+  name: "Date Tracker",
   slug: "date-tracker",
   version: "1.0.1",
   orientation: "portrait",
