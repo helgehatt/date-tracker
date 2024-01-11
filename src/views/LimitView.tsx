@@ -9,6 +9,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { AppDataContext } from "../helpers/AppDataProvider";
+import TextInputHeight from "../helpers/TextInputHeight";
 import { COLORS, STYLES, TODAY } from "../constants";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
@@ -156,6 +157,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     editLimit,
     deleteLimit,
   } = React.useContext(AppDataContext);
+  const textInputHeight = React.useContext(TextInputHeight.Context);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
@@ -261,7 +263,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
 
       <BottomSheet
         visible={state.mode !== "none"}
-        height={328}
+        height={5 * (textInputHeight + 10) + 8}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{

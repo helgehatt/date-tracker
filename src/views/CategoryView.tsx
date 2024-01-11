@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { COLORS, STYLES } from "../constants";
 import { AppDataContext } from "../helpers/AppDataProvider";
+import TextInputHeight from "../helpers/TextInputHeight";
 import BottomSheet from "../components/BottomSheet";
 import MyButton from "../components/MyButton";
 import MyIcon from "../components/MyIcon";
@@ -88,6 +89,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
     editCategory,
     deleteCategory,
   } = React.useContext(AppDataContext);
+  const textInputHeight = React.useContext(TextInputHeight.Context);
 
   const [state, dispatch] = React.useReducer(reducer, initialState);
 
@@ -182,7 +184,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
 
       <BottomSheet
         visible={state.mode !== "view"}
-        height={200}
+        height={3 * (textInputHeight + 10) + 8}
         closeOnSwipeDown={true}
         closeOnSwipeTrigger={onClose}
         customStyles={{
