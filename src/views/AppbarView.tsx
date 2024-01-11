@@ -19,27 +19,31 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
     <SafeAreaView style={[styles.container, style]}>
       <View style={styles.buttonContainer}>
         <MyIcon
-          style={[styles.button, page === "calendar" && styles.buttonActive]}
+          style={styles.button}
+          color={page === "calendar" ? COLORS.text : COLORS.dark}
           onPress={() => setPage("calendar")}
           disabled={disabled}
           name="calendar"
           size="md"
         />
         <MyIcon
-          style={[styles.button, page === "category" && styles.buttonActive]}
+          style={styles.button}
+          color={page === "category" ? COLORS.text : COLORS.dark}
           onPress={() => setPage("category")}
           name="tag"
           size="md"
         />
         <MyIcon
-          style={[styles.button, page === "limits" && styles.buttonActive]}
+          style={styles.button}
+          color={page === "limits" ? COLORS.text : COLORS.dark}
           disabled={disabled}
           onPress={() => setPage("limits")}
           name="chart"
           size="md"
         />
         {/* <MyIcon
-        style={[styles.button, page === "settings" && styles.buttonActive]}
+        style={styles.button}
+        color={page === "settings" ? COLORS.text : COLORS.dark}
         onPress={() => setPage("settings")}
         name="gear"
         size="md"
@@ -60,11 +64,6 @@ const styles = StyleSheet.create({
   },
   button: {
     padding: 10,
-    borderBottomRightRadius: 15,
-    borderBottomLeftRadius: 15,
-  },
-  buttonActive: {
-    backgroundColor: COLORS.base,
   },
 });
 
