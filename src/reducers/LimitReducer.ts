@@ -2,6 +2,7 @@ import React from "react";
 
 type State = {
   mode: "none" | "add" | "edit";
+  modal: "none" | "delete";
   limitId: number | null;
   input: {
     name: string;
@@ -17,11 +18,13 @@ type State = {
 
 type Action =
   | { type: "SET_MODE"; payload: { mode: State["mode"] } }
+  | { type: "SET_MODAL"; payload: { modal: State["modal"] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
   | { type: "SELECT_LIMIT"; payload: { limit: AppLimit } };
 
 export const initialState: State = {
   mode: "none",
+  modal: "none",
   limitId: null,
   input: {
     name: "",
@@ -49,6 +52,9 @@ export const reducer = (state: State, action: Action): State => {
       }
 
       return { ...state, mode };
+    }
+    case "SET_MODAL": {
+      return { ...state, modal: action.payload.modal };
     }
     case "ON_CHANGE": {
       const { key } = action.payload;
@@ -91,6 +97,9 @@ export const reducer = (state: State, action: Action): State => {
 export const createActions = (dispatch: React.Dispatch<Action>) => ({
   setMode: (mode: State["mode"]) => {
     dispatch({ type: "SET_MODE", payload: { mode } });
+  },
+  setModal: (modal: State["modal"]) => {
+    dispatch({ type: "SET_MODAL", payload: { modal } });
   },
   onChange: (key: keyof State["input"]) => (value: string) => {
     dispatch({ type: "ON_CHANGE", payload: { key, value } });

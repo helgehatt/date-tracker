@@ -25,6 +25,7 @@ import {
   reducer,
   createActions,
 } from "../reducers/CalendarReducer";
+import MyModal from "../components/MyModal";
 
 interface IProps {
   style?: ViewStyle;
@@ -98,9 +99,11 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
   const onSubmitDelete = () => {
     if (state.selectedEvent) {
       deleteEvent(state.selectedEvent.eventId, state.selectedEvent.categoryId);
+      actions.setModal("none");
     }
   };
 
+  // Close open event when events change
   React.useEffect(() => onClose(), [onClose, events]);
 
   return (
@@ -218,8 +221,9 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
             {state.mode === "edit" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={onSubmitDelete}
+                onPress={() => actions.setModal("delete")}
                 name="trash"
+                color={COLORS.red}
               />
             )}
           </View>
@@ -259,6 +263,31 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
           )}
         </View>
       </BottomSheet>
+      <MyModal
+        transparent={true}
+        visible={state.modal === "delete"}
+        onRequestClose={() => actions.setModal("none")}
+        style={{ rowGap: 20 }}
+      >
+        <View>
+          <MyText fontSize="md">
+            Are you sure you want to delete this event?
+          </MyText>
+        </View>
+        <View style={STYLES.sheet.row}>
+          <MyButton
+            style={STYLES.sheet.button}
+            title="Cancel"
+            onPress={() => actions.setModal("none")}
+          />
+          <MyButton
+            style={STYLES.sheet.button}
+            color={COLORS.red}
+            title="Confirm"
+            onPress={() => onSubmitDelete()}
+          />
+        </View>
+      </MyModal>
     </View>
   );
 };

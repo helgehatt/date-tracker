@@ -17,6 +17,7 @@ import MyIcon from "../components/MyIcon";
 import MyLimit from "../components/MyLimit";
 import MyText from "../components/MyText";
 import { initialState, reducer, createActions } from "../reducers/LimitReducer";
+import MyModal from "../components/MyModal";
 
 interface IProps {
   style?: ViewStyle;
@@ -99,6 +100,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
   const onSubmitDelete = () => {
     if (state.limitId && activeCategoryId) {
       deleteLimit(state.limitId, activeCategoryId);
+      actions.setModal("none");
     }
     onClose();
   };
@@ -175,7 +177,11 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                       : undefined
                   }
                 />
-                <MyIcon onPress={onSubmitDelete} name="trash" />
+                <MyIcon
+                  onPress={() => actions.setModal("delete")}
+                  name="trash"
+                  color={COLORS.red}
+                />
               </>
             )}
           </View>
@@ -335,6 +341,31 @@ const LimitView: React.FC<IProps> = ({ style }) => {
           </View>
         </View>
       </BottomSheet>
+      <MyModal
+        transparent={true}
+        visible={state.modal === "delete"}
+        onRequestClose={() => actions.setModal("none")}
+        style={{ rowGap: 20 }}
+      >
+        <View>
+          <MyText fontSize="md">
+            Are you sure you want to delete this limit?
+          </MyText>
+        </View>
+        <View style={STYLES.sheet.row}>
+          <MyButton
+            style={STYLES.sheet.button}
+            title="Cancel"
+            onPress={() => actions.setModal("none")}
+          />
+          <MyButton
+            style={STYLES.sheet.button}
+            color={COLORS.red}
+            title="Confirm"
+            onPress={() => onSubmitDelete()}
+          />
+        </View>
+      </MyModal>
     </View>
   );
 };

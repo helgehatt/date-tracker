@@ -20,6 +20,7 @@ import {
   reducer,
   createActions,
 } from "../reducers/CategoryReducer";
+import MyModal from "../components/MyModal";
 
 interface IProps {
   style?: ViewStyle;
@@ -65,6 +66,7 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
   const onSubmitDelete = () => {
     if (state.categoryId) {
       deleteCategory(state.categoryId);
+      actions.setModal("none");
     }
   };
 
@@ -129,8 +131,9 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
             {state.mode === "edit" && (
               <MyIcon
                 style={{ marginLeft: "auto" }}
-                onPress={onSubmitDelete}
+                onPress={() => actions.setModal("delete")}
                 name="trash"
+                color={COLORS.red}
               />
             )}
           </View>
@@ -157,6 +160,31 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
           </View>
         </View>
       </BottomSheet>
+      <MyModal
+        transparent={true}
+        visible={state.modal === "delete"}
+        onRequestClose={() => actions.setModal("none")}
+        style={{ rowGap: 20 }}
+      >
+        <View>
+          <MyText fontSize="md">
+            Are you sure you want to delete this category?
+          </MyText>
+        </View>
+        <View style={STYLES.sheet.row}>
+          <MyButton
+            style={STYLES.sheet.button}
+            title="Cancel"
+            onPress={() => actions.setModal("none")}
+          />
+          <MyButton
+            style={STYLES.sheet.button}
+            color={COLORS.red}
+            title="Confirm"
+            onPress={() => onSubmitDelete()}
+          />
+        </View>
+      </MyModal>
     </View>
   );
 };

@@ -9,6 +9,7 @@ export const COLORS = {
   light: "#334756",
   text: "#FFFFFF",
   placeholderText: "#656E7D",
+  red: "#BC0105",
 };
 
 export const STYLES = {

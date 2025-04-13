@@ -2,6 +2,7 @@ import React from "react";
 
 type State = {
   mode: "view" | "add" | "edit";
+  modal: "none" | "delete";
   categoryId: number | null;
   name: string;
   color: string;
@@ -9,6 +10,7 @@ type State = {
 
 type Action =
   | { type: "SET_MODE"; payload: { mode: State["mode"] } }
+  | { type: "SET_MODAL"; payload: { modal: State["modal"] } }
   | { type: "SET_NAME"; payload: { name: string } }
   | { type: "SET_COLOR"; payload: { color: string } }
   | { type: "SELECT_CATEGORY"; payload: { category: AppCategory } };
@@ -19,6 +21,7 @@ const generateRandomColor = () => {
 
 export const initialState: State = {
   mode: "view",
+  modal: "none",
   categoryId: null,
   name: "",
   color: generateRandomColor(),
@@ -43,6 +46,9 @@ export const reducer = (state: State, action: Action): State => {
       }
 
       return { ...state, mode };
+    }
+    case "SET_MODAL": {
+      return { ...state, modal: action.payload.modal };
     }
     case "SET_NAME": {
       return { ...state, name: action.payload.name };
@@ -69,6 +75,9 @@ export const reducer = (state: State, action: Action): State => {
 export const createActions = (dispatch: React.Dispatch<Action>) => ({
   setMode: (mode: State["mode"]) => {
     dispatch({ type: "SET_MODE", payload: { mode } });
+  },
+  setModal: (modal: State["modal"]) => {
+    dispatch({ type: "SET_MODAL", payload: { modal } });
   },
   setName: (name: string) => {
     dispatch({ type: "SET_NAME", payload: { name } });

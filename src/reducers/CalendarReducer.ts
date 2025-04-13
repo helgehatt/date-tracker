@@ -2,6 +2,7 @@ import React from "react";
 
 type State = {
   mode: "none" | "view" | "add" | "edit";
+  modal: "none" | "delete";
   months: Date[];
   thisMonthIndex: number;
   currentMonthIndex: number;
@@ -17,6 +18,7 @@ type State = {
 
 type Action =
   | { type: "SET_MODE"; payload: { mode: State["mode"] } }
+  | { type: "SET_MODAL"; payload: { modal: State["modal"] } }
   | { type: "ON_CHANGE"; payload: { key: keyof State["input"]; value: string } }
   | { type: "ON_SCROLL"; payload: { index: number } }
   | { type: "PREV_MONTH" }
@@ -30,6 +32,7 @@ const THIS_MONTH = new Date(Date.today()).floor();
 
 export const initialState: State = {
   mode: "none",
+  modal: "none",
   months: [
     ...Array.from({ length: 5 }, (v, k) =>
       THIS_MONTH.add({ months: -(k + 1) })
@@ -76,6 +79,9 @@ export const reducer = (state: State, action: Action): State => {
       }
 
       return { ...state, mode };
+    }
+    case "SET_MODAL": {
+      return { ...state, modal: action.payload.modal };
     }
     case "ON_SCROLL": {
       return { ...state, currentMonthIndex: action.payload.index };
@@ -184,6 +190,9 @@ export const createActions = (dispatch: React.Dispatch<Action>) => ({
   },
   setMode: (mode: State["mode"]) => {
     dispatch({ type: "SET_MODE", payload: { mode } });
+  },
+  setModal: (modal: State["modal"]) => {
+    dispatch({ type: "SET_MODAL", payload: { modal } });
   },
 });
 
