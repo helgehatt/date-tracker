@@ -20,8 +20,8 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const addCategory = React.useCallback(
     (category: Omit<AppCategory, "categoryId">) => {
       db.insertCategory(category)
-        .then(() => db.loadCategories())
-        .then(actions.setCategories);
+        .then(() => db.loadCategories().then(actions.setCategories))
+        .catch((error) => console.error(error.message));
     },
     [actions.setCategories]
   );
@@ -29,8 +29,8 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const editCategory = React.useCallback(
     (category: AppCategory) => {
       db.updateCategory(category)
-        .then(() => db.loadCategories())
-        .then(actions.setCategories);
+        .then(() => db.loadCategories().then(actions.setCategories))
+        .catch((error) => console.error(error.message));
     },
     [actions.setCategories]
   );
@@ -38,62 +38,62 @@ const AppDataProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const deleteCategory = React.useCallback(
     (categoryId: number) => {
       db.deleteCategory(categoryId)
-        .then(() => db.loadCategories())
-        .then(actions.setCategories);
+        .then(() => db.loadCategories().then(actions.setCategories))
+        .catch((error) => console.error(error.message));
     },
     [actions.setCategories]
   );
 
   const addEvent = React.useCallback(
     (event: Omit<AppEvent, "eventId">) => {
-      db.insertEvent(event).then(() =>
-        db.loadEvents(event.categoryId).then(actions.setEvents)
-      );
+      db.insertEvent(event)
+        .then(() => db.loadEvents(event.categoryId).then(actions.setEvents))
+        .catch((error) => console.error(error.message));
     },
     [actions.setEvents]
   );
 
   const editEvent = React.useCallback(
     (event: AppEvent) => {
-      db.updateEvent(event).then(() =>
-        db.loadEvents(event.categoryId).then(actions.setEvents)
-      );
+      db.updateEvent(event)
+        .then(() => db.loadEvents(event.categoryId).then(actions.setEvents))
+        .catch((error) => console.error(error.message));
     },
     [actions.setEvents]
   );
 
   const deleteEvent = React.useCallback(
     (eventId: number, categoryId: number) => {
-      db.deleteEvent(eventId).then(() =>
-        db.loadEvents(categoryId).then(actions.setEvents)
-      );
+      db.deleteEvent(eventId)
+        .then(() => db.loadEvents(categoryId).then(actions.setEvents))
+        .catch((error) => console.error(error.message));
     },
     [actions.setEvents]
   );
 
   const addLimit = React.useCallback(
     (limit: Omit<AppLimit, "limitId">) => {
-      db.insertLimit(limit).then(() =>
-        db.loadLimits(limit.categoryId).then(actions.setLimits)
-      );
+      db.insertLimit(limit)
+        .then(() => db.loadLimits(limit.categoryId).then(actions.setLimits))
+        .catch((error) => console.error(error.message));
     },
     [actions.setLimits]
   );
 
   const editLimit = React.useCallback(
     (limit: AppLimit) => {
-      db.updateLimit(limit).then(() =>
-        db.loadLimits(limit.categoryId).then(actions.setLimits)
-      );
+      db.updateLimit(limit)
+        .then(() => db.loadLimits(limit.categoryId).then(actions.setLimits))
+        .catch((error) => console.error(error.message));
     },
     [actions.setLimits]
   );
 
   const deleteLimit = React.useCallback(
     (limitId: number, categoryId: number) => {
-      db.deleteLimit(limitId).then(() =>
-        db.loadLimits(categoryId).then(actions.setLimits)
-      );
+      db.deleteLimit(limitId)
+        .then(() => db.loadLimits(categoryId).then(actions.setLimits))
+        .catch((error) => console.error(error.message));
     },
     [actions.setLimits]
   );
