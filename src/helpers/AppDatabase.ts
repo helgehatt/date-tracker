@@ -113,7 +113,7 @@ class AppDatabase {
         runningAmount,
         runningUnit,
         customStartDate,
-        customStopDate,
+        customStopDate
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         limit.categoryId,
