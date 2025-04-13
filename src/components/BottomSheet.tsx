@@ -27,7 +27,7 @@ const BottomSheet: React.FC<React.PropsWithChildren<IProps>> = ({
   visible = false,
   height = 260,
   minClosingHeight = 0,
-  openDuration = 300,
+  openDuration = 200,
   closeDuration = 200,
   closeOnSwipeDown = false,
   closeOnSwipeTrigger = () => {},
