@@ -166,16 +166,14 @@ const LimitView: React.FC<IProps> = ({ style }) => {
               <>
                 <MyIcon
                   onPress={onFavorite}
-                  style={[
-                    { marginLeft: "auto", width: 25 },
-                    state.limitId !== null &&
-                      limitsById[state.limitId]?.isFavorite === 1 && {
-                        backgroundColor: "#e2cb16",
-                        borderRadius: 15,
-                      },
-                  ]}
+                  style={[{ marginLeft: "auto" }]}
                   name="star"
-                  iconStyle={{ marginLeft: -2.5 }}
+                  color={
+                    state.limitId !== null &&
+                    limitsById[state.limitId]?.isFavorite === 1
+                      ? "#e2cb16"
+                      : undefined
+                  }
                 />
                 <MyIcon onPress={onSubmitDelete} name="trash" />
               </>
