@@ -1,5 +1,7 @@
-export default async function (db: AppDatabase) {
-  await db.execute(
+import { SQLiteDatabase } from "expo-sqlite";
+
+export default async function (db: SQLiteDatabase) {
+  await db.runAsync(
     `CREATE TABLE categories (
       categoryId        INTEGER PRIMARY KEY,
       name              TEXT NOT NULL,
@@ -7,7 +9,7 @@ export default async function (db: AppDatabase) {
     )`
   );
 
-  await db.execute(
+  await db.runAsync(
     `CREATE TABLE events (
       eventId           INTEGER PRIMARY KEY,
       categoryId        INTEGER NOT NULL,
@@ -21,7 +23,7 @@ export default async function (db: AppDatabase) {
     )`
   );
 
-  await db.execute(
+  await db.runAsync(
     `CREATE TABLE limits (
       limitId           INTEGER PRIMARY KEY,
       categoryId        INTEGER NOT NULL,
@@ -40,15 +42,15 @@ export default async function (db: AppDatabase) {
     )`
   );
 
-  await db.execute(
+  await db.runAsync(
     `INSERT INTO categories (name, color) VALUES ('Norge', '#FF4C29')`
   );
 
-  const result = await db.execute<AppCategory>(`SELECT * FROM categories`);
+  const result = await db.getAllAsync<AppCategory>(`SELECT * FROM categories`);
 
   const { categoryId } = result[0];
 
-  await db.execute(
+  await db.runAsync(
     `INSERT INTO limits (
       categoryId, name, maxDays, intervalType, fixedInterval
     ) VALUES
@@ -56,7 +58,7 @@ export default async function (db: AppDatabase) {
     [categoryId]
   );
 
-  await db.execute(
+  await db.runAsync(
     `INSERT INTO limits (
       categoryId, name, maxDays, intervalType, runningAmount, runningUnit
     ) VALUES
