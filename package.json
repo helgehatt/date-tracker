@@ -10,7 +10,6 @@
     "eject": "expo eject"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "1.23.1",
     "expo": "52.0.44",
     "expo-screen-orientation": "8.0.4",
     "expo-splash-screen": "0.29.22",

@@ -1,18 +1,18 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Storage from "expo-sqlite/kv-store";
 
 const PREFIX = "app.settings.";
 type Setting = "activeCategory";
 
 async function getItem(key: Setting) {
-  return AsyncStorage.getItem(PREFIX + key).catch(console.warn);
+  return Storage.getItem(PREFIX + key).catch(console.warn);
 }
 
 async function setItem(key: Setting, value: string) {
-  return AsyncStorage.setItem(PREFIX + key, value).catch(console.warn);
+  return Storage.setItem(PREFIX + key, value).catch(console.warn);
 }
 
 async function removeItem(key: Setting) {
-  return AsyncStorage.removeItem(PREFIX + key).catch(console.warn);
+  return Storage.removeItem(PREFIX + key).catch(console.warn);
 }
 
 class AppSettings {
