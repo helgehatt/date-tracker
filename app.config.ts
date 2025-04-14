@@ -3,7 +3,7 @@ import { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "Date Tracker",
   slug: "date-tracker",
-  version: "1.0.1",
+  version: "1.0.4",
   orientation: "portrait",
   userInterfaceStyle: "dark",
   backgroundColor: "#2C394B",
