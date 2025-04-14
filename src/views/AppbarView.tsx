@@ -41,13 +41,13 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
           size="md"
           outline={page !== "limits"}
         />
-        {/* <MyIcon
-        style={styles.button}
-        onPress={() => setPage("settings")}
-        name="gear"
-        size="md"
-        outline={page !== "settings"}
-      /> */}
+        <MyIcon
+          style={styles.button}
+          onPress={() => setPage("settings")}
+          name="settings"
+          size="md"
+          outline={page !== "settings"}
+        />
       </View>
     </SafeAreaView>
   );

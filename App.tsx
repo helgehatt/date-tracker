@@ -11,6 +11,7 @@ import CalendarView from "./src/views/CalendarView";
 import CategoryView from "./src/views/CategoryView";
 import LimitView from "./src/views/LimitView";
 import GraphView from "./src/views/GraphView";
+import SettingsView from "./src/views/SettingsView";
 import { COLORS } from "./src/constants";
 
 SystemUI.setBackgroundColorAsync(COLORS.base);
@@ -39,7 +40,7 @@ export default function App() {
             <CalendarView style={pageStyle["calendar"]} />
             <CategoryView style={pageStyle["category"]} />
             <LimitView style={pageStyle["limits"]} />
-            <View style={pageStyle["settings"]} />
+            <SettingsView style={pageStyle["settings"]} />
           </KeyboardAvoidingView>
         </TextInputHeightProvider>
         <AppbarView page={page} setPage={setPage} />
