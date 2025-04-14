@@ -126,23 +126,26 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         ListFooterComponent={<View style={{ height: 10 }} />}
         ItemSeparatorComponent={() => <View style={styles.flatlistSeparator} />}
         renderItem={({ item: limit }) => (
-          <View style={styles.flatlistItem}>
-            <View style={styles.flatlistLimit}>
-              <MyLimit
-                limit={limit}
-                date={Date.today()}
-                eventDates={eventDates}
+          <Pressable
+            key={limit.limitId}
+            onPress={() => activateLimit(limit.limitId)}
+          >
+            <View style={styles.flatlistItem}>
+              <View style={styles.flatlistLimit}>
+                <MyLimit
+                  limit={limit}
+                  date={Date.today()}
+                  eventDates={eventDates}
+                />
+              </View>
+              <MyText fontSize="lg">{limit.name}</MyText>
+              <MyIcon
+                style={{ marginLeft: "auto" }}
+                onPress={() => actions.selectLimit(limit)}
+                name="pencil"
               />
             </View>
-            <MyText fontSize="lg">{limit.name}</MyText>
-            <MyIcon
-              style={{ marginLeft: "auto" }}
-              disabled={limit.intervalType === "custom"}
-              onPress={() => activateLimit(limit.limitId)}
-              name="chevron-down"
-            />
-            <MyIcon onPress={() => actions.selectLimit(limit)} name="pencil" />
-          </View>
+          </Pressable>
         )}
       />
 
