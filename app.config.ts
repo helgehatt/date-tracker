@@ -36,6 +36,7 @@ const config: ExpoConfig = {
       projectId: "55012730-2e6b-4c86-b78c-aea5fb319c80",
     },
   },
+  newArchEnabled: true,
 };
 
 export default config;
