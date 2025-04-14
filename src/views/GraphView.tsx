@@ -7,15 +7,14 @@ import {
   ViewStyle,
 } from "react-native";
 import * as ScreenOrientation from "expo-screen-orientation";
-import { BarChart, LineChart } from "react-native-gifted-charts";
 import {
-  BarChartPropsType,
-  itemType as BarItemType,
-} from "react-native-gifted-charts/src/BarChart/types";
-import {
+  BarChart,
+  LineChart,
   LineChartPropsType,
-  itemType as LineItemType,
-} from "react-native-gifted-charts/src/LineChart/types";
+  BarChartPropsType,
+  barDataItem as BarItemType,
+  lineDataItem as LineItemType,
+} from "react-native-gifted-charts";
 import { COLORS } from "../constants";
 import AppDataContext from "../helpers/AppDataContext";
 import DateInterval from "../helpers/DateInterval";
