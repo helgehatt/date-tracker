@@ -111,7 +111,12 @@ const CategoryView: React.FC<IProps> = ({ style }) => {
       />
 
       <View style={STYLES.sheet.opener}>
-        <MyIcon onPress={() => actions.setMode("add")} name="plus" size="lg" />
+        <MyIcon
+          onPress={() => actions.setMode("add")}
+          name="plus"
+          size="lg"
+          outline
+        />
       </View>
 
       <BottomSheet

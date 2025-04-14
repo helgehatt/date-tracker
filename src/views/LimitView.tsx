@@ -114,6 +114,9 @@ const LimitView: React.FC<IProps> = ({ style }) => {
     }
   };
 
+  const isFavorite =
+    state.limitId !== null && limitsById[state.limitId].isFavorite === 1;
+
   return (
     <View style={[styles.container, style]}>
       <FlatList
@@ -148,6 +151,7 @@ const LimitView: React.FC<IProps> = ({ style }) => {
         onPress={() => actions.setMode("add")}
         name="plus"
         size="lg"
+        outline
       />
 
       <BottomSheet
@@ -170,12 +174,8 @@ const LimitView: React.FC<IProps> = ({ style }) => {
                   onPress={onFavorite}
                   style={[{ marginLeft: "auto" }]}
                   name="star"
-                  color={
-                    state.limitId !== null &&
-                    limitsById[state.limitId]?.isFavorite === 1
-                      ? "#e2cb16"
-                      : undefined
-                  }
+                  color={isFavorite ? "#e2cb16" : undefined}
+                  outline={!isFavorite}
                 />
                 <MyIcon
                   onPress={() => actions.setModal("delete")}

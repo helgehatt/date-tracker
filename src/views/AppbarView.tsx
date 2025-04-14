@@ -20,33 +20,33 @@ const AppbarView: React.FC<IProps> = ({ style, page, setPage }) => {
       <View style={styles.buttonContainer}>
         <MyIcon
           style={styles.button}
-          color={page === "calendar" ? COLORS.text : COLORS.dark}
           onPress={() => setPage("calendar")}
           disabled={disabled}
           name="calendar"
           size="md"
+          outline={page !== "calendar"}
         />
         <MyIcon
           style={styles.button}
-          color={page === "category" ? COLORS.text : COLORS.dark}
           onPress={() => setPage("category")}
           name="tag"
           size="md"
+          outline={page !== "category"}
         />
         <MyIcon
           style={styles.button}
-          color={page === "limits" ? COLORS.text : COLORS.dark}
           disabled={disabled}
           onPress={() => setPage("limits")}
           name="chart"
           size="md"
+          outline={page !== "limits"}
         />
         {/* <MyIcon
         style={styles.button}
-        color={page === "settings" ? COLORS.text : COLORS.dark}
         onPress={() => setPage("settings")}
         name="gear"
         size="md"
+        outline={page !== "settings"}
       /> */}
       </View>
     </SafeAreaView>

@@ -169,6 +169,7 @@ const CalendarView: React.FC<IProps> = ({ style }) => {
         onPress={() => actions.setMode("add")}
         name="plus"
         size="lg"
+        outline
       />
 
       {state.currentMonthIndex > state.thisMonthIndex + 2 && (
